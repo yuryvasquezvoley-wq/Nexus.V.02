@@ -186,3 +186,8 @@ en futuras versiones.
 
 ========================================================
 */
+## Arquitectura del proyecto
+
+El siguiente diagrama representa la estructura
+general del proyecto NEXUS y la organización de
+sus componentes principales.(https://gitdiagram.com/yuryvasquezvoley-wq/nexus.v.02)
