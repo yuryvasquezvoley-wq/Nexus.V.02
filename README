@@ -1,1 +1,188 @@
+/*
+========================================================
+                 PROYECTO NEXUS
+========================================================
 
+1. DESCRIPCIÓN DEL PROYECTO
+
+NEXUS es una aplicación de consola desarrollada en C#
+que simula la exploración de diferentes realidades.
+
+El usuario registra los datos de un explorador y puede
+realizar acciones como explorar realidades, analizar
+anomalías y consultar su estado actual.
+
+El sistema utiliza programación orientada a objetos,
+estructuras de control, métodos, propiedades y validación
+de datos para administrar el funcionamiento del programa.
+
+
+2. CLASE EXPLORADOR
+
+La clase Explorador representa al personaje principal
+del sistema.
+
+Dentro de esta clase se definen los atributos que
+almacenan su información y los métodos que permiten
+realizar diferentes acciones durante la simulación.
+
+
+3. ATRIBUTOS PRIVADOS
+
+Los atributos almacenan la información interna del
+explorador.
+
+- nombre: almacena el nombre del explorador.
+- edad: almacena su edad.
+- energia: representa la energía disponible.
+- conexion: representa el nivel de conexión.
+- vida: almacena la vida del explorador.
+
+Se utiliza el modificador private para proteger los
+atributos y evitar su acceso directo desde otras clases.
+
+
+4. PROPIEDADES
+
+Las propiedades permiten acceder a los atributos de
+forma controlada.
+
+El bloque get devuelve el valor de un atributo, mientras
+que set permite asignarle un nuevo valor.
+
+Cuando set es private, la modificación queda limitada
+al interior de la clase.
+
+Este mecanismo contribuye al encapsulamiento de datos.
+
+
+5. ENCAPSULAMIENTO
+
+El encapsulamiento consiste en proteger los datos
+internos de una clase y controlar cómo se accede a ellos.
+
+En NEXUS se aplica mediante atributos privados,
+propiedades y métodos que administran los cambios
+en el estado del explorador.
+
+
+6. MÉTODOS
+
+Los métodos agrupan instrucciones que realizan tareas
+específicas dentro del programa.
+
+Permiten organizar el código y separar las operaciones
+para facilitar su comprensión y mantenimiento.
+
+Entre las acciones del sistema se encuentran el registro
+del explorador, la exploración de realidades, el análisis
+de anomalías, la consulta del estado y la recuperación
+de energía, según las funciones implementadas.
+
+
+7. TIPOS DE DATOS
+
+El programa utiliza diferentes tipos de datos:
+
+- string: almacena cadenas de texto.
+- int: almacena números enteros.
+- bool: representa valores verdaderos o falsos.
+
+Cada tipo de dato se selecciona según la información
+que necesita almacenar el sistema.
+
+
+8. ESTRUCTURAS CONDICIONALES
+
+Las estructuras if y else permiten tomar decisiones
+según las condiciones establecidas.
+
+Se pueden utilizar para validar los datos ingresados,
+comprobar la energía disponible y determinar si una
+acción puede ejecutarse.
+
+
+9. ESTRUCTURA SWITCH
+
+La estructura switch permite ejecutar diferentes
+bloques de código según la opción seleccionada
+por el usuario en el menú principal.
+
+Cada case representa una alternativa del menú.
+
+
+10. CICLO DO-WHILE
+
+El ciclo do-while permite repetir instrucciones mientras
+se cumpla una condición.
+
+En NEXUS se utiliza para mantener activo el menú y
+permitir que el usuario realice varias acciones sin
+tener que registrar nuevamente al explorador.
+
+
+11. VALIDACIÓN DE DATOS
+
+La validación permite comprobar que los valores
+introducidos por el usuario sean correctos.
+
+Por ejemplo, se pueden establecer límites para la
+energía y solicitar nuevamente el dato si no cumple
+con las condiciones establecidas.
+
+
+12. ADMINISTRACIÓN DE ENERGÍA
+
+La energía representa un recurso del explorador.
+
+Algunas acciones, como viajar entre realidades o
+analizar anomalías, pueden consumir energía.
+
+La recuperación de energía permite aumentar el
+recurso disponible de acuerdo con las reglas del
+sistema.
+
+Estas operaciones modifican el estado del explorador.
+
+
+13. BIBLIOTECA SYSTEM.THREADING
+
+La biblioteca System.Threading proporciona herramientas
+relacionadas con la ejecución de tareas.
+
+Si el programa utiliza Thread.Sleep(), puede introducir
+pausas durante la ejecución para controlar el tiempo
+entre mensajes o acciones de la simulación.
+
+
+14. FLUJO GENERAL DEL PROGRAMA
+
+El funcionamiento general de NEXUS es el siguiente:
+
+1. Inicio de la aplicación.
+2. Registro de los datos del explorador.
+3. Validación de la información.
+4. Presentación del menú principal.
+5. Selección de una acción.
+6. Ejecución de la opción seleccionada.
+7. Actualización de los atributos correspondientes.
+8. Consulta del estado del explorador.
+9. Repetición del menú o finalización del programa.
+
+
+15. CONCLUSIÓN
+
+NEXUS es un proyecto educativo que permite aplicar
+los fundamentos de C# mediante una simulación
+interactiva.
+
+Su desarrollo ayuda a comprender las clases, los
+atributos, las propiedades, los métodos, el
+encapsulamiento y las estructuras de control.
+
+La organización del código facilita el mantenimiento
+del programa y permite incorporar nuevas funciones
+en futuras versiones.
+
+========================================================
+*/
