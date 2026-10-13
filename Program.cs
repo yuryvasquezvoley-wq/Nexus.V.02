@@ -1,659 +1,1095 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading;
-
-namespace NexusTrainingSystem
+namespace NEXUS
 {
-    // ==========================================
-    // ENTIDAD: EXPLORADOR (POO Encapsulado)
-    // ==========================================
-    public class Explorador
+    class Explorador
     {
-        // Propiedades Automáticas
-        public string Nombre { get; private set; }
-        public string Realidad { get; private set; }
-        public int Edad { get; private set; }
-
-        // Propiedades con Encapsulamiento y Control de Rangos (0 - 100)
-        private int _vida;
-        public int Vida
+        private string nombre;
+        private int edad;
+        private int energia;
+        private int conexion;
+        private int vida;
+        public string Nombre
         {
-            get => _vida;
-            private set => _vida = Math.Min(Math.Max(value, 0), 100);
+            get { return nombre; }
+            private set { nombre = value; }
         }
-
-        private int _energia;
+        public int Edad
+        {
+            get { return edad; }
+            private set { edad = value; }
+        }
         public int Energia
         {
-            get => _energia;
-            private set => _energia = Math.Min(Math.Max(value, 0), 100);
+            get { return energia; }
+            private set
+            {
+                if (value < 0)
+                    energia = 0;
+                else if (value > 100)
+                    energia = 100;
+                else
+                    energia = value;
+            }
         }
-
-        private int _estabilidad;
-        public int Estabilidad
+        public int Conexion
         {
-            get => _estabilidad;
-            private set => _estabilidad = Math.Min(Math.Max(value, 0), 100);
+            get { return conexion; }
+            private set
+            {
+                if (value < 0)
+                    conexion = 0;
+                else if (value > 100)
+                    conexion = 100;
+                else
+                    conexion = value;
+            }
         }
-
-        private int _peligro;
-        public int Peligro
+        public int Vida
         {
-            get => _peligro;
-            private set => _peligro = Math.Min(Math.Max(value, 0), 100);
+            get { return vida; }
+            private set
+            {
+                if (value < 0)
+                    vida = 0;
+                else if (value > 100)
+                    vida = 100;
+                else
+                    vida = value;
+            }
         }
-
-        // Constructor
-        public Explorador(string nombre, string realidad, int edad, int energiaInicial, int estabilidadInicial)
+        public Explorador(string nombre, int edad, int energia, int conexion)
         {
             Nombre = nombre;
-            Realidad = realidad;
             Edad = edad;
+            Energia = energia;
+            Conexion = conexion;
             Vida = 100;
-            Energia = energiaInicial;
-            Estabilidad = estabilidadInicial;
-            Peligro = 10;
         }
-
-        // Regla de Negocio: Validación de Inmersión Biométrica
-        public bool EsAptoParaInmersion()
-        {
-            return Edad >= 18 && Energia >= 30 && Estabilidad >= 30;
-        }
-
-        // Métodos de Comportamiento / Lógica del Dominio
-        public void RecibirDano(int cantidad)
+        public void RecibirDanio(int cantidad)
         {
             Vida -= cantidad;
         }
-
-        public void ConsumirEnergia(int cantidad)
+        public void RecuperarVida(int cantidad)
         {
-            Energia -= cantidad;
+            Vida += cantidad;
         }
-
-        public void RecargarEnergia(int cantidad)
+        public bool GastarEnergia(int cantidad)
+        {
+            if (Energia >= cantidad)
+            {
+                Energia -= cantidad;
+                Conexion -= 5;
+                return true;
+            }
+            return false;
+        }
+        public void RecuperarEnergia(int cantidad)
         {
             Energia += cantidad;
+            Conexion += 10;
         }
-
-        public void AjustarEstabilidad(int cantidad)
+        public void MostrarDatos()
         {
-            Estabilidad += cantidad;
-        }
-
-        public void AjustarPeligro(int cantidad)
-        {
-            Peligro += cantidad;
-        }
-
-        public bool EstaVivo() => Vida > 0;
-
-        public bool EstadoCritico()
-        {
-            return Energia <= 15 && Estabilidad <= 15 && Peligro >= 70;
-        }
-    }
-
-    // ==========================================
-    // ENTIDAD: MAPA (Gestión de Cartografía)
-    // ==========================================
-    public class Mapa
-    {
-        public string NombreRealidad { get; private set; }
-        private readonly int[,] _matriz;
-
-        public Mapa(string nombreRealidad, int[,] matriz)
-        {
-            NombreRealidad = nombreRealidad;
-            _matriz = matriz;
-        }
-
-        public void RenderizarAnimado()
-        {
-            Console.Clear();
-            Console.ForegroundColor = ConsoleColor.Cyan;
-            Console.WriteLine("╔══════════════════════════════════════════════════════════════╗");
-            Console.WriteLine($"║ NEXUS // RADAR DE ESCANEO CARTOGRÁFICO: {TruncarOAjustar(NombreRealidad, 20),-20} ║");
-            Console.WriteLine("╠══════════════════════════════════════════════════════════════╣");
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("╔══════════════════════════════════════╗");
+            Console.WriteLine("║          PERFIL DEL EXPLORADOR       ║");
+            Console.WriteLine("╠══════════════════════════════════════╣");
+            Console.WriteLine($"║ Nombre       : {Nombre,-20} ║");
+            Console.WriteLine($"║ Edad         : {Edad,-20} ║");
+            Console.WriteLine($"║ Vida         : {Vida,-20} ║");
+            Console.WriteLine($"║ Energía      : {Energia,-20} ║");
+            Console.WriteLine($"║ Conexión     : {Conexion,-20} ║");
+            Console.WriteLine("╚══════════════════════════════════════╝");
             Console.ResetColor();
-
-            int filas = _matriz.GetLength(0);
-            int columnas = _matriz.GetLength(1);
-            int totalCeldas = filas * columnas;
-            int celdasExploradas = 0;
-
-            Console.ForegroundColor = ConsoleColor.Cyan;
-            Console.WriteLine("║                                                              ║");
-
-            for (int i = 0; i < filas; i++)
+        }
+        public void MostrarEnergia()
+        {
+            int bloques = Energia / 10;
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.Write("ENERGÍA [");
+            for (int i = 0; i < 10; i++)
             {
-                Console.ForegroundColor = ConsoleColor.Cyan;
-                Console.Write("║                  ");
-
-                for (int j = 0; j < columnas; j++)
+                if (i < bloques)
                 {
-                    int celda = _matriz[i, j];
-                    if (celda != 0) celdasExploradas++;
-
-                    Thread.Sleep(30);
-
-                    switch (celda)
-                    {
-                        case 1:
-                            Console.ForegroundColor = ConsoleColor.Green;
-                            Console.Write(" [B] ");
-                            Console.Beep(1000, 40);
-                            break;
-                        case 2:
-                            Console.ForegroundColor = ConsoleColor.Yellow;
-                            Console.Write(" ($) ");
-                            Console.Beep(1200, 40);
-                            break;
-                        case 3:
-                            Console.ForegroundColor = ConsoleColor.Red;
-                            Console.Write(" (!) ");
-                            Console.Beep(400, 60);
-                            break;
-                        default:
-                            Console.ForegroundColor = ConsoleColor.DarkGray;
-                            Console.Write("  .  ");
-                            Console.Beep(600, 15);
-                            break;
-                    }
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.Write("█");
                 }
-
-                Console.ForegroundColor = ConsoleColor.Cyan;
-                Console.WriteLine("                     ║");
+                else
+                {
+                    Console.ForegroundColor = ConsoleColor.DarkGray;
+                    Console.Write("░");
+                }
             }
-
-            Console.ForegroundColor = ConsoleColor.Cyan;
-            Console.WriteLine("║                                                              ║");
-
-            double cobertura = ((double)celdasExploradas / totalCeldas) * 100;
-
-            Console.WriteLine("╠══════════════════════════════════════════════════════════════╣");
-            Console.WriteLine($"║ COBERTURA DE CARTOGRAFÍA DETECTADA: {cobertura,5:F1}%                  ║");
-            Console.WriteLine("╚══════════════════════════════════════════════════════════════╝");
-            Console.ResetColor();
-
-            Console.ForegroundColor = ConsoleColor.Gray;
-            Console.WriteLine("\nSIMBOLOGÍA DE CAMPO: [B] Base  |  ($) Recurso  |  (!) Anomalía  |  . Zona Vacía");
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine($"] {Energia}/100");
             Console.ResetColor();
         }
-
-        private static string TruncarOAjustar(string texto, int maxLongitud)
+        public void MostrarVida()
         {
-            if (string.IsNullOrEmpty(texto)) return new string(' ', maxLongitud);
-            if (texto.Length > maxLongitud) return texto.Substring(0, maxLongitud);
-            return texto;
+            int bloques = Vida / 10;
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.Write("VIDA    [");
+            for (int i = 0; i < 10; i++)
+            {
+                if (i < bloques)
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.Write("█");
+                }
+                else
+                {
+                    Console.ForegroundColor = ConsoleColor.DarkGray;
+                    Console.Write("░");
+                }
+            }
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine($"] {Vida}/100");
+            Console.ResetColor();
+        }
+        public void MostrarConexion()
+        {
+            int bloques = Conexion / 10;
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.Write("CONEXIÓN[");
+            for (int i = 0; i < 10; i++)
+            {
+                if (i < bloques)
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.Write("█");
+                }
+                else
+                {
+                    Console.ForegroundColor = ConsoleColor.DarkGray;
+                    Console.Write("░");
+                }
+            }
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine($"] {Conexion}/100");
+            Console.ResetColor();
         }
     }
-
-    // ==========================================
-    // CONTROLADOR: SISTEMA NEXUS
-    // ==========================================
-    public class SistemaNexus
+    class Objeto
     {
-        private Explorador _exploradorActual;
-        private readonly Random _rng = new Random();
-
-        private readonly Mapa _mapaIris07 = new Mapa("IRIS-07", new int[5, 5] {
-            { 0, 0, 0, 3, 0 },
-            { 0, 1, 0, 0, 0 },
-            { 0, 0, 2, 0, 0 },
-            { 3, 0, 0, 0, 0 },
-            { 0, 0, 0, 0, 2 }
-        });
-
-        private readonly Mapa _mapaIris12 = new Mapa("IRIS-12", new int[5, 5] {
-            { 3, 3, 0, 0, 2 },
-            { 0, 1, 0, 3, 0 },
-            { 2, 0, 0, 0, 0 },
-            { 0, 0, 3, 0, 2 },
-            { 0, 2, 0, 0, 3 }
-        });
-
-        public void Iniciar()
+        private string nombre;
+        private int cantidad;
+        public string Nombre
         {
-            MostrarPantallaDeCarga();
-
-            Console.Clear();
-            Console.ForegroundColor = ConsoleColor.Blue;
-            Console.WriteLine("╔══════════════════════════════════════════════════════════════╗");
-            Console.WriteLine("║      SISTEMA DE INMERSIÓN NEXUS // REGISTRO DE CADETE v1.0   ║");
-            Console.WriteLine("╚══════════════════════════════════════════════════════════════╝");
+            get { return nombre; }
+        }
+        public int Cantidad
+        {
+            get { return cantidad; }
+        }
+        public Objeto(string nombre)
+        {
+            this.nombre = nombre;
+            cantidad = 0;
+        }
+        public void Agregar()
+        {
+            cantidad++;
+        }
+        public bool Usar()
+        {
+            if (cantidad > 0)
+            {
+                cantidad--;
+                return true;
+            }
+            return false;
+        }
+    }
+    class Inventario
+    {
+        private List<Objeto> objetos;
+        public Inventario()
+        {
+            objetos = new List<Objeto>();
+            AgregarTipoObjeto("CELULA DE ENERGIA");
+            AgregarTipoObjeto("RECURSO");
+        }
+        private void AgregarTipoObjeto(string nombre)
+        {
+            objetos.Add(new Objeto(nombre));
+        }
+        public void AgregarObjeto(string nombre)
+        {
+            foreach (Objeto objeto in objetos)
+            {
+                if (objeto.Nombre == nombre)
+                {
+                    objeto.Agregar();
+                    return;
+                }
+            }
+            Objeto nuevo = new Objeto(nombre);
+            nuevo.Agregar();
+            objetos.Add(nuevo);
+        }
+        public bool TieneObjeto(string nombre)
+        {
+            foreach (Objeto objeto in objetos)
+            {
+                if (objeto.Nombre == nombre &&
+                    objeto.Cantidad > 0)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+        public bool UsarObjeto(string nombre)
+        {
+            foreach (Objeto objeto in objetos)
+            {
+                if (objeto.Nombre == nombre)
+                {
+                    return objeto.Usar();
+                }
+            }
+            return false;
+        }
+        public void MostrarInventario()
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("╔══════════════════════════════════════╗");
+            Console.WriteLine("║             INVENTARIO               ║");
+            Console.WriteLine("╠══════════════════════════════════════╣");
+            foreach (Objeto objeto in objetos)
+            {
+                Console.WriteLine(
+                    $"║ {objeto.Nombre,-24} x{objeto.Cantidad,-4}║"
+                );
+            }
+            Console.WriteLine("╚══════════════════════════════════════╝");
             Console.ResetColor();
-
-            Console.ForegroundColor = ConsoleColor.Cyan;
-            EscribirLento("[ALERTA]: Identidad no detectada en la red local. Iniciando protocolo...");
+        }
+    }
+    class Bicho
+    {
+        private string nombre;
+        private int vida;
+        private int ataque;
+        public string Nombre
+        {
+            get { return nombre; }
+        }
+        public int Vida
+        {
+            get { return vida; }
+        }
+        public int Ataque
+        {
+            get { return ataque; }
+        }
+        public Bicho()
+        {
+            nombre = "BICHO DIMENSIONAL";
+            vida = 30;
+            ataque = 10;
+        }
+        public void RecibirDanio(int cantidad)
+        {
+            vida -= cantidad;
+            if (vida < 0)
+                vida = 0;
+        }
+        public void Atacar(Explorador explorador)
+        {
+            explorador.RecibirDanio(ataque);
+        }
+    }
+    class Realidad
+    {
+        private string nombre;
+        private string[,] mapa;
+        public string Nombre
+        {
+            get { return nombre; }
+        }
+        public Realidad(string nombre)
+        {
+            this.nombre = nombre;
+            // MAPA 10 X 10
+            mapa = new string[,]
+            {
+                { "E", ".", ".", ".", ".", ".", ".", ".", ".", "." },
+                { ".", ".", "*", ".", ".", ".", ".", "+", ".", "." },
+                { ".", "#", ".", ".", "*", ".", ".", ".", ".", "." },
+                { ".", ".", ".", "+", ".", ".", "#", ".", ".", "." },
+                { ".", "*", ".", ".", ".", ".", ".", ".", "+", "." },
+                { ".", ".", "#", ".", ".", "R", ".", ".", ".", "." },
+                { ".", "+", ".", ".", "#", ".", ".", "*", ".", "." },
+                { ".", ".", ".", "*", ".", ".", ".", ".", "#", "." },
+                { ".", "#", ".", ".", "+", ".", "*", ".", ".", "." },
+                { ".", ".", ".", ".", ".", ".", ".", ".", "O", "." }
+            };
+        }
+        public string ObtenerElemento(int x, int y)
+        {
+            return mapa[y, x];
+        }
+        public void CambiarElemento(int x, int y, string elemento)
+        {
+            mapa[y, x] = elemento;
+        }
+        public void MostrarMapa(int jugadorX, int jugadorY)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("╔════════════════════════════════════════════════════════╗");
+            Console.WriteLine($"║                  {Nombre,-34}║");
+            Console.WriteLine("╠════════════════════════════════════════════════════════╣");
+            for (int fila = 0; fila < 10; fila++)
+            {
+                Console.Write("║ ");
+                for (int columna = 0; columna < 10; columna++)
+                {
+                    if (columna == jugadorX &&
+                        fila == jugadorY)
+                    {
+                        Console.ForegroundColor = ConsoleColor.Green;
+                        Console.Write("C  ");
+                        continue;
+                    }
+                    string elemento = mapa[fila, columna];
+                    if (elemento == "*")
+                        Console.ForegroundColor = ConsoleColor.White;
+                    else if (elemento == "+")
+                        Console.ForegroundColor = ConsoleColor.Red;
+                    else if (elemento == "#")
+                        Console.ForegroundColor = ConsoleColor.DarkRed;
+                    else if (elemento == "O")
+                        Console.ForegroundColor = ConsoleColor.Yellow;
+                    else if (elemento == "R")
+                        Console.ForegroundColor = ConsoleColor.Cyan;
+                    else
+                        Console.ForegroundColor = ConsoleColor.DarkGray;
+                    Console.Write(elemento + "  ");
+                }
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine("║");
+            }
+            Console.WriteLine("╚════════════════════════════════════════════════════════╝");
             Console.ResetColor();
             Console.WriteLine();
-
-            // Captura de Datos
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.Write(" IDENTIFICADOR BIOMÉTRICO (Nombre completo/Alias): ");
-            Console.ForegroundColor = ConsoleColor.White;
-            string nombre = Console.ReadLine();
-            SimularEscaneoRegistro("Sujeto", nombre);
-
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.Write(" DESTINO DE DESPLIEGUE (Sector/Realidad Asignada): ");
-            Console.ForegroundColor = ConsoleColor.White;
-            string realidad = Console.ReadLine();
-            SimularEscaneoRegistro("Coordenadas Vectoriales", realidad);
-
-            int edad = LeerEnteroValido(" CICLO VITAL COMPLETADO (Edad cronológica): ");
-            SimularEscaneoRegistro("Madurez biológica", edad.ToString());
-
-            int energia = LeerEnteroValido(" NIVEL DE ENERGÍA NEURAL (0 - 100%): ");
-            SimularEscaneoRegistro("Carga Celular", energia + "%");
-
-            int estabilidad = LeerEnteroValido(" ÍNDICE DE ANCLAJE PSÍQUICO / ESTABILIDAD (0 - 100%): ");
-            SimularEscaneoRegistro("Sincronización Mental", estabilidad + "%");
-
-            // Instanciación de la Entidad Explorador
-            _exploradorActual = new Explorador(nombre, realidad, edad, energia, estabilidad);
-
-            Console.WriteLine("\n--------------------------------------------------------------");
-            Console.ForegroundColor = ConsoleColor.Cyan;
-            EscribirLento("Sincronizando constantes biológicas con la matriz NEXUS...", 20);
-            Thread.Sleep(400);
-
-            if (!_exploradorActual.EsAptoParaInmersion())
-            {
-                Console.Beep(400, 300);
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("\n[INMERSIÓN RECHAZADA]: PARÁMETROS FUERA DE RANGO SEGURO.");
-                Console.WriteLine(" -> Fallo crítico: El cadete presenta incoherencias en la firma vital.");
-                Console.WriteLine(" Requisitos: Edad >= 18 | Energía >= 30% | Estabilidad >= 30%");
-                Console.ResetColor();
-                Console.WriteLine("\nPresione cualquier tecla para salir...");
-                Console.ReadKey(true);
-                return;
-            }
-
-            Console.Beep(1200, 150);
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine("\n[INMERSIÓN AUTORIZADA]: Enlace neuronal completado con éxito.");
-            Console.WriteLine($"[SISTEMA]: Cadete '{_exploradorActual.Nombre}' sincronizado en {_exploradorActual.Realidad}.");
-            Console.ResetColor();
-            Console.WriteLine("\nPresione cualquier tecla para iniciar el entrenamiento...");
-            Console.ReadKey(true);
-
-            EjecutarBuclePrincipal();
+            Console.WriteLine("C = CADETE");
+            Console.WriteLine("E = EXTRACCIÓN");
+            Console.WriteLine("* = RECURSO");
+            Console.WriteLine("+ = ANOMALÍA");
+            Console.WriteLine("# = PELIGRO");
+            Console.WriteLine("R = ZONA DE ANOMALÍA");
+            Console.WriteLine("O = NÚCLEO ENERGÉTICO");
         }
-
-        private void EjecutarBuclePrincipal()
+    }
+    class NexusGame
+    {
+        private Explorador explorador;
+        private Realidad[] realidades;
+        private Inventario inventario;
+        private bool juegoActivo;
+        private bool misionActiva;
+        private bool nucleoEncontrado;
+        private int posicionX;
+        private int posicionY;
+        private Realidad realidadActual;
+        public NexusGame(Explorador explorador)
         {
-            bool conectado = true;
-
-            while (conectado)
+            this.explorador = explorador;
+            realidades = new Realidad[]
             {
-                MostrarMenuHUD();
-
+                new Realidad("REALIDAD 102"),
+                new Realidad("REALIDAD 999")
+            };
+            inventario = new Inventario();
+            juegoActivo = true;
+            misionActiva = false;
+            nucleoEncontrado = false;
+            posicionX = 0;
+            posicionY = 0;
+        }
+        public void Iniciar()
+        {
+            CargarNexus();
+            while (juegoActivo)
+            {
+                RestaurarPantalla();
+                MostrarHUD();
+                MostrarMenu();
                 string opcion = Console.ReadLine();
-                Console.ResetColor();
-
                 switch (opcion)
                 {
                     case "1":
-                        ProcesarExploracion();
+                        ExplorarRealidad();
                         break;
-
                     case "2":
-                        ProcesarAnalisisAnomalia();
+                        AnalizarAnomalia();
                         break;
-
                     case "3":
-                        Console.ForegroundColor = ConsoleColor.Cyan;
-                        Console.WriteLine($"\n[REPORTE NEXUS]: Explorador {_exploradorActual.Nombre} en sector {_exploradorActual.Realidad}.");
-                        Console.WriteLine($"Vida: {_exploradorActual.Vida}% | Energía: {_exploradorActual.Energia}% | Estabilidad: {_exploradorActual.Estabilidad}% | Peligro: {_exploradorActual.Peligro}%");
-                        Console.ResetColor();
+                        ConsultarEstado();
                         break;
-
                     case "4":
-                        _exploradorActual.RecargarEnergia(25);
-                        Console.ForegroundColor = ConsoleColor.Green;
-                        Console.WriteLine("\n[RECARGA COMPLETADA]: Canalizando energía de la red (+25%).");
-                        Console.ResetColor();
+                        RecuperarEnergia();
                         break;
-
                     case "5":
-                        ProcesarSubmenuMapas();
+                        MostrarPerfil();
                         break;
-
                     case "6":
-                        Console.ForegroundColor = ConsoleColor.Yellow;
-                        Console.WriteLine("\nCerrando sesión de entrenamiento y guardando registros...");
-                        Console.ResetColor();
-                        conectado = false;
+                        inventario.MostrarInventario();
+                        Pausa();
                         break;
-
+                    case "0":
+                        Desconectar();
+                        break;
                     default:
-                        Console.ForegroundColor = ConsoleColor.Yellow;
-                        Console.WriteLine("\n[OPERACIÓN INVÁLIDA]: Opción no reconocida por el sistema.");
-                        Console.ResetColor();
+                        MensajeError("OPCIÓN NO VÁLIDA.");
                         break;
                 }
-
-                // Verificaciones de estado del explorador
-                if (!_exploradorActual.EstaVivo() && conectado)
-                {
-                    Console.Beep(200, 700);
-                    Console.ForegroundColor = ConsoleColor.DarkRed;
-                    Console.WriteLine("\n========================================");
-                    Console.WriteLine("  SOPORTE VITAL COLAPSADO - CADETE CAÍDO");
-                    Console.WriteLine("========================================");
-                    Console.WriteLine("La vida del operador ha llegado a 0. Desconexión forzada por muerte biométrica.");
-                    Console.ResetColor();
-                    conectado = false;
-                }
-                else if (_exploradorActual.EstadoCritico() && conectado)
-                {
-                    Console.Beep(300, 500);
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine("\n========================================");
-                    Console.WriteLine(" ALERTA DE INTERFERENCIA CRÍTICA IRIS");
-                    Console.WriteLine("========================================");
-                    Console.WriteLine("Entorno colapsado. NEXUS ha forzado la desconexión inmediata.");
-                    Console.ResetColor();
-                    conectado = false;
-                }
-
-                if (conectado)
-                {
-                    Console.WriteLine("\nPresione cualquier tecla para continuar...");
-                    Console.ReadKey(true);
-                }
-            }
-
-            Console.WriteLine("\nSesión finalizada. Presione cualquier tecla para salir...");
-            Console.ReadKey(true);
-        }
-
-        private void ProcesarExploracion()
-        {
-            if (_exploradorActual.Energia < 20)
-            {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("\n[ERROR]: Energía insuficiente para explorar (Mínimo 20%).");
-                Console.ResetColor();
-                return;
-            }
-
-            if (_exploradorActual.Peligro > 60)
-            {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("\nZONA DE PELIGRO ALTO: ATAQUE DE HOSTILES EN CURSO");
-                _exploradorActual.ConsumirEnergia(35);
-                _exploradorActual.AjustarEstabilidad(-25);
-                _exploradorActual.AjustarPeligro(10);
-            }
-            else if (_exploradorActual.Peligro >= 30)
-            {
-                Console.ForegroundColor = ConsoleColor.Yellow;
-                Console.WriteLine("\nZONA DE IMPACTO MEDIO: CUIDADO CON LAS ANOMALÍAS");
-                _exploradorActual.ConsumirEnergia(20);
-                _exploradorActual.AjustarEstabilidad(-10);
-                _exploradorActual.AjustarPeligro(15);
-            }
-            else
-            {
-                Console.ForegroundColor = ConsoleColor.Cyan;
-                Console.WriteLine("\nEXPLORACIÓN SEGURA: SECTOR DESPEJADO");
-                _exploradorActual.ConsumirEnergia(10);
-                _exploradorActual.AjustarPeligro(20);
-            }
-
-            if (_rng.Next(1, 101) <= 50)
-            {
-                int dano = _rng.Next(15, 31);
-                _exploradorActual.RecibirDano(dano);
-                Console.Beep(350, 250);
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("\n[¡ENEMIGO DETECTADO!]: Te ha emboscado una entidad de la red.");
-                Console.WriteLine($" -> Has recibido un impacto crítico: -{dano}% de Vida.");
-                Console.ResetColor();
             }
         }
-
-        private void ProcesarAnalisisAnomalia()
+        private void MostrarHUD()
         {
-            if (_exploradorActual.Energia < 20)
-            {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("\n[ERROR]: Energía insuficiente para procesar la anomalía.");
-                Console.ResetColor();
-                return;
-            }
-
-            _exploradorActual.ConsumirEnergia(10);
-            _exploradorActual.AjustarEstabilidad(10);
-
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine("\n[ANÁLISIS COMPLETADO]: Estabilización lograda (+10% Estabilidad, -10% Energía).");
-            Console.ResetColor();
-        }
-
-        private void ProcesarSubmenuMapas()
-        {
-            Console.Clear();
-            Console.ForegroundColor = ConsoleColor.Cyan;
-            Console.WriteLine("╔══════════════════════════════════════════════════════════════╗");
-            Console.WriteLine("║                      NEXUS // MAPAS DE REALIDADES            ║");
-            Console.WriteLine("╠══════════════════════════════════════════════════════════════╣");
-            Console.WriteLine("║                                                              ║");
-            Console.WriteLine("║   [1] IRIS-07  // Valle de Cristal                           ║");
-            Console.WriteLine("║   [2] IRIS-12  // Sector Abisal                              ║");
-            Console.WriteLine("║                                                              ║");
-            Console.WriteLine("╚══════════════════════════════════════════════════════════════╝");
-            Console.ResetColor();
-            Console.Write("\nSeleccione una realidad a escanear: ");
-
-            string subOpcion = Console.ReadLine();
-
-            if (subOpcion == "1") _mapaIris07.RenderizarAnimado();
-            else if (subOpcion == "2") _mapaIris12.RenderizarAnimado();
-            else
-            {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("\n[ERROR]: Realidad no encontrada o sin señal.");
-                Console.ResetColor();
-            }
-        }
-
-        // ==========================================
-        // MÉTODOS VISUALES AUXILIARES DE INTERFAZ
-        // ==========================================
-        private void MostrarMenuHUD()
-        {
-            Console.Clear();
-            Console.ForegroundColor = ConsoleColor.Cyan;
-            Console.WriteLine("╔══════════════════════════════════════════════════════════════╗");
-            Console.WriteLine("║                  NEXUS // TERMINAL DE CONTROL                ║");
-            Console.WriteLine("╠══════════════════════════════════════════════════════════════╣");
-
-            Console.Write("║ OPERADOR: ");
-            Console.ForegroundColor = ConsoleColor.White;
-            Console.Write($"{TruncarOAjustar(_exploradorActual.Nombre, 15),-15}");
-            Console.ForegroundColor = ConsoleColor.Cyan;
-            Console.Write(" SECTOR: ");
-            Console.ForegroundColor = ConsoleColor.White;
-            Console.Write($"{TruncarOAjustar(_exploradorActual.Realidad, 26),-26}");
-            Console.ForegroundColor = ConsoleColor.Cyan;
-            Console.WriteLine(" ║");
-
-            Console.WriteLine("╠══════════════════════════════════════════════════════════════╣");
-
-            Console.Write("║ VIDA (HP):   "); DibujarBarraColoreada(_exploradorActual.Vida);
-            Console.ForegroundColor = ConsoleColor.Cyan;
-            Console.Write("║ ENERGÍA:     "); DibujarBarraColoreada(_exploradorActual.Energia);
-            Console.ForegroundColor = ConsoleColor.Cyan;
-            Console.Write("║ ESTABILIDAD:"); DibujarBarraColoreada(_exploradorActual.Estabilidad);
-            Console.ForegroundColor = ConsoleColor.Cyan;
-            Console.Write("║ PELIGRO:     "); DibujarBarraPeligro(_exploradorActual.Peligro);
-
-            Console.ForegroundColor = ConsoleColor.Cyan;
-            Console.WriteLine("╠══════════════════════════════════════════════════════════════╣");
-            Console.WriteLine("║                       COMANDOS DE SISTEMA                    ║");
-            Console.WriteLine("╠══════════════════════════════════════════════════════════════╣");
-            Console.Write("║ "); Console.ForegroundColor = ConsoleColor.Yellow; Console.Write($"{TruncarOAjustar("[1] Explorar realidad actual", 60),-60}"); Console.ForegroundColor = ConsoleColor.Cyan; Console.WriteLine(" ║");
-            Console.Write("║ "); Console.ForegroundColor = ConsoleColor.Yellow; Console.Write($"{TruncarOAjustar("[2] Analizar anomalía de la zona", 60),-60}"); Console.ForegroundColor = ConsoleColor.Cyan; Console.WriteLine(" ║");
-            Console.Write("║ "); Console.ForegroundColor = ConsoleColor.Yellow; Console.Write($"{TruncarOAjustar("[3] Consultar reporte de estado", 60),-60}"); Console.ForegroundColor = ConsoleColor.Cyan; Console.WriteLine(" ║");
-            Console.Write("║ "); Console.ForegroundColor = ConsoleColor.Yellow; Console.Write($"{TruncarOAjustar("[4] Reabastecer energía de la red", 60),-60}"); Console.ForegroundColor = ConsoleColor.Cyan; Console.WriteLine(" ║");
-            Console.Write("║ "); Console.ForegroundColor = ConsoleColor.Yellow; Console.Write($"{TruncarOAjustar("[5] Cartografía y Mapas de Realidades", 60),-60}"); Console.ForegroundColor = ConsoleColor.Cyan; Console.WriteLine(" ║");
-            Console.Write("║ "); Console.ForegroundColor = ConsoleColor.Red; Console.Write($"{TruncarOAjustar("[6] Desconexión de emergencia / Salir", 60),-60}"); Console.ForegroundColor = ConsoleColor.Cyan; Console.WriteLine(" ║");
-            Console.WriteLine("╚══════════════════════════════════════════════════════════════╝");
-            Console.ResetColor();
-
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.Write("\n>> INGRESE CÓDIGO DE OPERACIÓN: ");
-            Console.ForegroundColor = ConsoleColor.White;
-        }
-
-        private void MostrarPantallaDeCarga()
-        {
-            Console.Clear();
-            Console.ForegroundColor = ConsoleColor.Cyan;
-            Console.WriteLine("╔══════════════════════════════════════════════════════════════╗");
-            Console.WriteLine("║         INICIONALIZANDO NÚCLEO DE SIMULACIÓN NEXUS v1.0        ║");
-            Console.WriteLine("╚══════════════════════════════════════════════════════════════╝\n");
-            Console.ResetColor();
-
-            string[] pasos = {
-                "Cargando protocolos de inmersión...",
-                "Estableciendo enlace con la red IRIS...",
-                "Sincronizando matrices cartográficas...",
-                "Verificando parámetros biométricos...",
-                "Calibrando sensores de peligro entorno..."
-            };
-
-            for (int i = 0; i < pasos.Length; i++)
-            {
-                int porcentaje = (i + 1) * 20;
-                Console.ForegroundColor = ConsoleColor.DarkGray;
-                Console.Write($"[{porcentaje,3}%] ");
-                Console.ForegroundColor = ConsoleColor.White;
-                Console.Write($"{pasos[i],-45}");
-
-                Console.ForegroundColor = ConsoleColor.Green;
-                for (int b = 0; b < 5; b++)
-                {
-                    Console.Write("█");
-                    Thread.Sleep(25);
-                }
-                Console.ResetColor();
-                Console.WriteLine(" [OK]");
-                Thread.Sleep(100);
-            }
-
-            Console.ForegroundColor = ConsoleColor.Cyan;
-            Console.WriteLine("\n[SISTEMA EN LÍNEA]: Presione cualquier tecla para acceder...");
-            Console.ResetColor();
-            Console.ReadKey(true);
-        }
-
-        private void DibujarBarraColoreada(int valor)
-        {
-            int bloques = Math.Min(Math.Max(valor, 0), 100) / 10;
-            Console.Write("[");
-
-            if (valor > 60) Console.ForegroundColor = ConsoleColor.Green;
-            else if (valor > 25) Console.ForegroundColor = ConsoleColor.Yellow;
-            else Console.ForegroundColor = ConsoleColor.Red;
-
-            for (int i = 0; i < 10; i++) Console.Write(i < bloques ? "█" : "░");
-
-            Console.ResetColor();
-            Console.ForegroundColor = ConsoleColor.Cyan;
-            Console.Write($"] {valor,4}%                      ");
-            Console.WriteLine("║");
-            Console.ResetColor();
-        }
-
-        private void DibujarBarraPeligro(int valor)
-        {
-            int bloques = Math.Min(Math.Max(valor, 0), 100) / 10;
-            Console.Write("[");
-
-            if (valor > 60) Console.ForegroundColor = ConsoleColor.Red;
-            else if (valor > 30) Console.ForegroundColor = ConsoleColor.Yellow;
-            else Console.ForegroundColor = ConsoleColor.DarkGreen;
-
-            for (int i = 0; i < 10; i++) Console.Write(i < bloques ? "█" : "░");
-
-            Console.ResetColor();
-            Console.ForegroundColor = ConsoleColor.Cyan;
-            Console.Write($"] {valor,4}%                      ");
-            Console.WriteLine("║");
-            Console.ResetColor();
-        }
-
-        private void EscribirLento(string texto, int velocidad = 15)
-        {
-            foreach (char c in texto)
-            {
-                Console.Write(c);
-                Thread.Sleep(velocidad);
-            }
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("╔════════════════════════════════════════╗");
+            Console.WriteLine("║              N E X U S                 ║");
+            Console.WriteLine("║          SYSTEM V2.0 ONLINE            ║");
+            Console.WriteLine("╠════════════════════════════════════════╣");
+            Console.WriteLine($"║ EXPLORADOR: {explorador.Nombre,-25}║");
+            explorador.MostrarVida();
+            explorador.MostrarEnergia();
+            explorador.MostrarConexion();
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("╚════════════════════════════════════════╝");
             Console.WriteLine();
         }
-
-        private void SimularEscaneoRegistro(string etiqueta, string valor)
+        private void MostrarMenu()
         {
-            Console.ForegroundColor = ConsoleColor.DarkGray;
-            Console.Write($" -> Procesando {etiqueta} [{valor}]...");
-            Thread.Sleep(200);
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine(" [VERIFICADO]");
-            Console.ResetColor();
-            Console.Beep(800, 80);
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("╔════════════════════════════════════════╗");
+            Console.WriteLine("║             NEXUS SYSTEM              ║");
+            Console.WriteLine("╠════════════════════════════════════════╣");
+            Console.WriteLine("║ [1] > EXPLORAR REALIDAD                ║");
+            Console.WriteLine("║ [2] > ANALIZAR ANOMALÍA                ║");
+            Console.WriteLine("║ [3] > CONSULTAR ESTADO                 ║");
+            Console.WriteLine("║ [4] > RECUPERAR ENERGÍA                ║");
+            Console.WriteLine("║ [5] > VER PERFIL                       ║");
+            Console.WriteLine("║ [6] > INVENTARIO                       ║");
+            Console.WriteLine("║ [0] > DESCONECTAR                      ║");
+            Console.WriteLine("╚════════════════════════════════════════╝");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.Write(">> SELECCIONE UNA OPCIÓN: ");
         }
-
-        private int LeerEnteroValido(string mensaje)
+        private void ExplorarRealidad()
         {
-            int numero;
-            bool esValido;
-            do
+            Console.Clear();
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("╔════════════════════════════════════════╗");
+            Console.WriteLine("║           SELECCIÓN DE REALIDAD        ║");
+            Console.WriteLine("╠════════════════════════════════════════╣");
+            Console.WriteLine("║ [1] REALIDAD 102                       ║");
+            Console.WriteLine("║ [2] REALIDAD 999                       ║");
+            Console.WriteLine("║ [0] REGRESAR                           ║");
+            Console.WriteLine("╚════════════════════════════════════════╝");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.Write(">> OPCIÓN: ");
+            string opcion = Console.ReadLine();
+            if (opcion == "0")
+                return;
+            int indice;
+            if (opcion == "1")
+                indice = 0;
+            else if (opcion == "2")
+                indice = 1;
+            else
             {
-                Console.ForegroundColor = ConsoleColor.Yellow;
-                Console.Write(mensaje);
+                MensajeError("REALIDAD NO VÁLIDA.");
+                return;
+            }
+            if (!explorador.GastarEnergia(30))
+            {
+                MensajeError("ENERGÍA INSUFICIENTE PARA VIAJAR.");
+                return;
+            }
+            realidadActual = realidades[indice];
+            posicionX = 0;
+            posicionY = 0;
+            nucleoEncontrado = false;
+            misionActiva = true;
+            MostrarNuevaMision();
+            Pausa();
+            IniciarExploracion();
+        }
+        private void MostrarNuevaMision()
+        {
+            Console.Clear();
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("╔════════════════════════════════════════╗");
+            Console.WriteLine("║             NUEVA MISIÓN               ║");
+            Console.WriteLine("╠════════════════════════════════════════╣");
+            Console.WriteLine($"║ REALIDAD: {realidadActual.Nombre,-25}║");
+            Console.WriteLine("╚════════════════════════════════════════╝");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.WriteLine();
+            Console.WriteLine(">> AL CADETE SE LE HA ASIGNADO UNA NUEVA MISIÓN.");
+            Console.WriteLine();
+            Console.WriteLine("OBJETIVOS:");
+            Console.WriteLine("1. Explorar la realidad.");
+            Console.WriteLine("2. Recolectar recursos.");
+            Console.WriteLine("3. Administrar el inventario.");
+            Console.WriteLine("4. Enfrentarse a las entidades.");
+            Console.WriteLine("5. Llegar a la zona de la anomalía.");
+            Console.WriteLine("6. Encontrar el núcleo energético.");
+            Console.WriteLine("7. Registrar el núcleo energético.");
+            Console.WriteLine();
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine(">> MISIÓN: LA ANOMALÍA PERDIDA");
+            Console.ResetColor();
+        }
+        private void IniciarExploracion()
+        {
+            bool explorando = true;
+            while (explorando &&
+                   misionActiva &&
+                   explorador.Vida > 0)
+            {
+                Console.Clear();
+                MostrarPanelExploracion();
+                Console.WriteLine();
                 Console.ForegroundColor = ConsoleColor.White;
-                string entrada = Console.ReadLine();
-                Console.ResetColor();
-
-                esValido = int.TryParse(entrada, out numero);
-
-                if (!esValido || numero < 0)
+                Console.WriteLine("W = ARRIBA");
+                Console.WriteLine("S = ABAJO");
+                Console.WriteLine("A = IZQUIERDA");
+                Console.WriteLine("D = DERECHA");
+                Console.WriteLine("ESC = SALIR DE LA EXPLORACIÓN");
+                Console.WriteLine();
+                Console.Write(">> MUEVE AL CADETE: ");
+                ConsoleKeyInfo tecla = Console.ReadKey(true);
+                if (tecla.Key == ConsoleKey.Escape)
+                {
+                    explorando = false;
+                    continue;
+                }
+                int nuevoX = posicionX;
+                int nuevoY = posicionY;
+                if (tecla.Key == ConsoleKey.W)
+                    nuevoY--;
+                else if (tecla.Key == ConsoleKey.S)
+                    nuevoY++;
+                else if (tecla.Key == ConsoleKey.A)
+                    nuevoX--;
+                else if (tecla.Key == ConsoleKey.D)
+                    nuevoX++;
+                else
+                    continue;
+                if (nuevoX < 0 ||
+                    nuevoX > 9 ||
+                    nuevoY < 0 ||
+                    nuevoY > 9)
                 {
                     Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine(" -> [ERROR DE LECTURA]: Valor no válido. Ingrese un entero positivo.");
-                    Console.ResetColor();
-                    esValido = false;
+                    Console.WriteLine();
+                    Console.WriteLine(">> NO PUEDES SALIR DEL MAPA.");
+                    Thread.Sleep(700);
+                    continue;
                 }
-
-            } while (!esValido);
-
-            return numero;
+                if (!explorador.GastarEnergia(2))
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine();
+                    Console.WriteLine(">> ENERGÍA INSUFICIENTE.");
+                    Thread.Sleep(1000);
+                    continue;
+                }
+                posicionX = nuevoX;
+                posicionY = nuevoY;
+                ProcesarCasilla();
+                if (explorador.Vida <= 0)
+                {
+                    Derrota();
+                    return;
+                }
+                if (!misionActiva)
+                {
+                    return;
+                }
+            }
         }
-
-        private static string TruncarOAjustar(string texto, int maxLongitud)
+        private void MostrarPanelExploracion()
         {
-            if (string.IsNullOrEmpty(texto)) return new string(' ', maxLongitud);
-            if (texto.Length > maxLongitud) return texto.Substring(0, maxLongitud);
-            return texto;
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("╔════════════════════════════════════════════════════════╗");
+            Console.WriteLine($"║ CADETE: {explorador.Nombre,-20} | VIDA: {explorador.Vida,3}/100 ║");
+            Console.WriteLine($"║ ENERGÍA: {explorador.Energia,3}/100 | POSICIÓN: ({posicionX},{posicionY})      ║");
+            Console.WriteLine("╠════════════════════════════════════════════════════════╣");
+            Console.WriteLine("║                    MAPA NEXUS 10 X 10                 ║");
+            Console.WriteLine("╠════════════════════════════════════════════════════════╣");
+            realidadActual.MostrarMapa(posicionX, posicionY);
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine();
+            inventario.MostrarInventario();
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine();
+            Console.WriteLine("MISIÓN ACTUAL:");
+            if (!nucleoEncontrado)
+                Console.WriteLine(">> ENCUENTRA EL NÚCLEO ENERGÉTICO.");
+            else
+                Console.WriteLine(">> NÚCLEO ENCONTRADO. REGÍSTRALO.");
+            Console.ResetColor();
+        }
+        private void ProcesarCasilla()
+        {
+            string elemento = realidadActual.ObtenerElemento(posicionX, posicionY);
+            if (elemento == ".")
+                return;
+            if (elemento == "*")
+            {
+                RecolectarRecurso();
+                return;
+            }
+            if (elemento == "+")
+            {
+                EncontrarBicho();
+                return;
+            }
+            if (elemento == "#")
+            {
+                EncontrarBicho();
+                return;
+            }
+            if (elemento == "R")
+            {
+                LlegarZonaAnomalia();
+                return;
+            }
+            if (elemento == "O")
+            {
+                EncontrarNucleo();
+                return;
+            }
+        }
+        private void RecolectarRecurso()
+        {
+            Console.Clear();
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine("╔════════════════════════════════════════╗");
+            Console.WriteLine("║           RECURSO ENCONTRADO            ║");
+            Console.WriteLine("╚════════════════════════════════════════╝");
+            Console.WriteLine();
+            Console.WriteLine(">> HAS ENCONTRADO UNA CÉLULA DE ENERGÍA.");
+            inventario.AgregarObjeto("CELULA DE ENERGIA");
+            realidadActual.CambiarElemento(posicionX, posicionY, ".");
+            Console.WriteLine();
+            inventario.MostrarInventario();
+            Pausa();
+        }
+        private void EncontrarBicho()
+        {
+            Bicho bicho = new Bicho();
+            Console.Clear();
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("╔════════════════════════════════════════╗");
+            Console.WriteLine("║       ¡ENTIDAD DE LA REALIDAD!         ║");
+            Console.WriteLine("╚════════════════════════════════════════╝");
+            Console.WriteLine();
+            Console.WriteLine(">> HAS ENCONTRADO UN BICHO DIMENSIONAL.");
+            Console.WriteLine(">> VIDA DEL BICHO: 30");
+            Console.WriteLine();
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.WriteLine("[1] ATACAR");
+            Console.WriteLine("[2] ESCAPAR");
+            Console.WriteLine();
+            Console.Write(">> DECISIÓN: ");
+            ConsoleKeyInfo tecla = Console.ReadKey(true);
+            if (tecla.Key == ConsoleKey.D2)
+            {
+                Console.WriteLine();
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine(">> HAS ESCAPADO DEL BICHO.");
+                Console.WriteLine(">> PUEDES CONTINUAR TU CAMINO.");
+                Console.ResetColor();
+                Pausa();
+                return;
+            }
+            if (tecla.Key == ConsoleKey.D1)
+            {
+                CombateBicho(bicho);
+                return;
+            }
+            Console.WriteLine();
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine(">> OPCIÓN NO VÁLIDA.");
+            Console.ResetColor();
+            Pausa();
+        }
+        private void CombateBicho(Bicho bicho)
+        {
+            while (bicho.Vida > 0 &&
+                   explorador.Vida > 0)
+            {
+                Console.Clear();
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine("╔════════════════════════════════════════╗");
+                Console.WriteLine("║             COMBATE NEXUS              ║");
+                Console.WriteLine("╚════════════════════════════════════════╝");
+                Console.WriteLine();
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine($"VIDA DEL BICHO: {bicho.Vida}/30");
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"VIDA DEL CADETE: {explorador.Vida}/100");
+                Console.WriteLine();
+                Console.ForegroundColor = ConsoleColor.White;
+                Console.WriteLine(">> PRESIONE ENTER PARA ATACAR.");
+                Console.ReadLine();
+                // Cadete ataca
+                bicho.RecibirDanio(20);
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine();
+                Console.WriteLine(">> EL CADETE ATACA.");
+                Console.WriteLine(">> DAÑO REALIZADO: 20");
+                if (bicho.Vida <= 0)
+                {
+                    Console.WriteLine();
+                    Console.WriteLine("✓ BICHO ELIMINADO.");
+                    Console.WriteLine(">> EL CAMINO HA QUEDADO LIBRE.");
+                    Console.ResetColor();
+                    Pausa();
+                    realidadActual.CambiarElemento(posicionX, posicionY, ".");
+                    return;
+                }
+                // Bicho ataca
+                bicho.Atacar(explorador);
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine();
+                Console.WriteLine(">> EL BICHO ATACA.");
+                Console.WriteLine(">> DAÑO RECIBIDO: 10");
+                Console.WriteLine($">> VIDA ACTUAL: {explorador.Vida}/100");
+                Console.ResetColor();
+                Thread.Sleep(800);
+            }
+            if (explorador.Vida <= 0)
+                Derrota();
+        }
+        private void LlegarZonaAnomalia()
+        {
+            Console.Clear();
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine("╔════════════════════════════════════════╗");
+            Console.WriteLine("║          ZONA DE ANOMALÍA              ║");
+            Console.WriteLine("╚════════════════════════════════════════╝");
+            Console.WriteLine();
+            Console.WriteLine("⚡ HAS LLEGADO A LA ZONA DE LA ANOMALÍA.");
+            Console.WriteLine();
+            Console.WriteLine(">> LOS SENSORES DETECTAN UNA GRAN");
+            Console.WriteLine(">> FUENTE DE ENERGÍA MÁS ADELANTE.");
+            Console.ResetColor();
+            Pausa();
+        }
+        private void EncontrarNucleo()
+        {
+            if (nucleoEncontrado)
+                return;
+            Console.Clear();
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine("╔════════════════════════════════════════╗");
+            Console.WriteLine("║        NÚCLEO ENERGÉTICO ENCONTRADO    ║");
+            Console.WriteLine("╚════════════════════════════════════════╝");
+            Console.WriteLine();
+            Console.WriteLine(">> EL CADETE HA ENCONTRADO EL NÚCLEO.");
+            Console.WriteLine();
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.WriteLine("¿QUIERES REGISTRAR EL NÚCLEO?");
+            Console.WriteLine();
+            Console.WriteLine("[1] SÍ");
+            Console.WriteLine("[2] NO");
+            Console.WriteLine();
+            Console.Write(">> OPCIÓN: ");
+            ConsoleKeyInfo tecla = Console.ReadKey(true);
+            if (tecla.Key == ConsoleKey.D1)
+                RegistrarNucleo();
+            else if (tecla.Key == ConsoleKey.D2)
+            {
+                Console.WriteLine();
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine(">> EL NÚCLEO NO HA SIDO REGISTRADO.");
+                Console.WriteLine(">> CONTINÚA LA EXPLORACIÓN.");
+                Console.ResetColor();
+                Pausa();
+            }
+        }
+        private void RegistrarNucleo()
+        {
+            nucleoEncontrado = true;
+            realidadActual.CambiarElemento(posicionX, posicionY, "E");
+            Console.Clear();
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine("╔════════════════════════════════════════╗");
+            Console.WriteLine("║          NÚCLEO REGISTRADO             ║");
+            Console.WriteLine("╚════════════════════════════════════════╝");
+            Console.WriteLine();
+            Console.WriteLine("✓ EL NÚCLEO ENERGÉTICO HA SIDO REGISTRADO.");
+            Console.WriteLine();
+            Console.WriteLine(">> INFORMACIÓN ENVIADA A LA NAVE.");
+            Console.WriteLine(">> ANOMALÍA IDENTIFICADA.");
+            Console.WriteLine();
+            Thread.Sleep(1500);
+            MisionCompletada();
+        }
+        private void MisionCompletada()
+        {
+            misionActiva = false;
+            Console.Clear();
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine("╔════════════════════════════════════════╗");
+            Console.WriteLine("║           MISIÓN COMPLETADA            ║");
+            Console.WriteLine("╚════════════════════════════════════════╝");
+            Console.WriteLine();
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.WriteLine(">> EL CADETE HA CUMPLIDO TODOS LOS OBJETIVOS.");
+            Console.WriteLine();
+            Console.WriteLine(">> NÚCLEO ENERGÉTICO REGISTRADO.");
+            Console.WriteLine(">> ANOMALÍA IDENTIFICADA.");
+            Console.WriteLine(">> DATOS ENVIADOS A LA NAVE.");
+            Console.WriteLine();
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine("==========================================");
+            Console.WriteLine("Y ASÍ ES COMO EL CADETE LOGRÓ");
+            Console.WriteLine("DETENER LA ANOMALÍA.");
+            Console.WriteLine();
+            Console.WriteLine("EL CADETE REGRESÓ A LA NAVE");
+            Console.WriteLine("CON EL NÚCLEO ENERGÉTICO REGISTRADO.");
+            Console.WriteLine("==========================================");
+            Console.ResetColor();
+            Pausa();
+        }
+        private void AnalizarAnomalia()
+        {
+            Console.Clear();
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("╔════════════════════════════════════════╗");
+            Console.WriteLine("║          ANÁLISIS DE ANOMALÍA          ║");
+            Console.WriteLine("╚════════════════════════════════════════╝");
+            if (!explorador.GastarEnergia(20))
+            {
+                MensajeError("ENERGÍA INSUFICIENTE.");
+                return;
+            }
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.WriteLine(">> ESCANEANDO ESPACIO DIMENSIONAL...");
+            Console.ForegroundColor = ConsoleColor.Red;
+            for (int i = 0; i < 20; i++)
+            {
+                Console.Write("█");
+                Thread.Sleep(50);
+            }
+            Console.WriteLine();
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine("⚡ ANOMALÍA DIMENSIONAL DETECTADA.");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.WriteLine(">> COSTO DEL ANÁLISIS: 20 ENERGÍA");
+            Pausa();
+        }
+        private void ConsultarEstado()
+        {
+            Console.Clear();
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("╔════════════════════════════════════════╗");
+            Console.WriteLine("║              ESTADO NEXUS              ║");
+            Console.WriteLine("╚════════════════════════════════════════╝");
+            Console.WriteLine();
+            explorador.MostrarVida();
+            explorador.MostrarEnergia();
+            explorador.MostrarConexion();
+            Console.WriteLine();
+            if (explorador.Energia <= 20)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine("⚠ NIVEL DE ENERGÍA CRÍTICO.");
+            }
+            else if (explorador.Energia <= 50)
+            {
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine("⚠ NIVEL DE ENERGÍA MEDIO.");
+            }
+            else
+            {
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine("✓ NIVEL DE ENERGÍA ESTABLE.");
+            }
+            Pausa();
+        }
+        private void RecuperarEnergia()
+        {
+            Console.Clear();
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("╔════════════════════════════════════════╗");
+            Console.WriteLine("║         RECUPERACIÓN DE ENERGÍA        ║");
+            Console.WriteLine("╚════════════════════════════════════════╝");
+            Console.WriteLine();
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.WriteLine(">> CONECTANDO AL NÚCLEO DE RECUPERACIÓN...");
+            Console.ForegroundColor = ConsoleColor.Red;
+            for (int i = 0; i < 20; i++)
+            {
+                Console.Write("█");
+                Thread.Sleep(50);
+            }
+            Console.WriteLine();
+            explorador.RecuperarEnergia(20);
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine("✓ SE RECUPERARON 20 PUNTOS DE ENERGÍA.");
+            explorador.MostrarEnergia();
+            Pausa();
+        }
+        private void MostrarPerfil()
+        {
+            Console.Clear();
+            explorador.MostrarDatos();
+            Pausa();
+        }
+        private void Derrota()
+        {
+            Console.Clear();
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("╔════════════════════════════════════════╗");
+            Console.WriteLine("║             MISIÓN FALLIDA             ║");
+            Console.WriteLine("╚════════════════════════════════════════╝");
+            Console.WriteLine();
+            Console.WriteLine(">> EL CADETE HA PERDIDO TODA SU VIDA.");
+            Console.WriteLine(">> LA MISIÓN HA FALLADO.");
+            Console.ResetColor();
+            misionActiva = false;
+            Pausa();
+        }
+        private void Desconectar()
+        {
+            Console.Clear();
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("╔════════════════════════════════════════╗");
+            Console.WriteLine("║          DESCONEXIÓN DE NEXUS          ║");
+            Console.WriteLine("╚════════════════════════════════════════╝");
+            Console.WriteLine();
+            Console.WriteLine(">> CERRANDO CONEXIÓN...");
+            for (int i = 0; i < 20; i++)
+            {
+                Console.Write("█");
+                Thread.Sleep(50);
+            }
+            juegoActivo = false;
+            Console.WriteLine();
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine("✓ CONEXIÓN FINALIZADA CORRECTAMENTE.");
+            Thread.Sleep(1000);
+            Console.ResetColor();
+        }
+        private void CargarNexus()
+        {
+            Console.Clear();
+            Console.BackgroundColor = ConsoleColor.Black;
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("███╗   ██╗███████╗██╗  ██╗");
+            Console.WriteLine("████╗  ██║██╔════╝╚██╗██╔╝");
+            Console.WriteLine("██╔██╗ ██║█████╗   ╚███╔╝ ");
+            Console.WriteLine("██║╚██╗██║██╔══╝   ██╔██╗ ");
+            Console.WriteLine("██║ ╚████║███████╗██╔╝ ██╗");
+            Console.WriteLine("╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.WriteLine("INITIALIZING NEXUS SYSTEM...");
+            Console.ForegroundColor = ConsoleColor.Red;
+            for (int i = 0; i < 25; i++)
+            {
+                Console.Write("█");
+                Thread.Sleep(40);
+            }
+            Console.WriteLine();
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine("✓ NEXUS V2.0 ONLINE.");
+            Thread.Sleep(1000);
+        }
+        private void MensajeError(string mensaje)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine();
+            Console.WriteLine("╔════════════════════════════════════════╗");
+            Console.WriteLine("║                 ALERTA                 ║");
+            Console.WriteLine("╚════════════════════════════════════════╝");
+            Console.WriteLine(">> " + mensaje);
+            Pausa();
+        }
+        private void Pausa()
+        {
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.WriteLine();
+            Console.Write(">> PRESIONE ENTER PARA CONTINUAR...");
+            Console.ReadLine();
+            Console.BackgroundColor = ConsoleColor.Black;
+            Console.ForegroundColor = ConsoleColor.Red;
+        }
+        private void RestaurarPantalla()
+        {
+            Console.BackgroundColor = ConsoleColor.Black;
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.Clear();
         }
     }
-
-    // ==========================================
-    // PUNTO DE ENTRADA PRINCIPAL
-    // ==========================================
     class Program
     {
         static void Main(string[] args)
         {
-            SistemaNexus sistema = new SistemaNexus();
-            sistema.Iniciar();
+            Console.OutputEncoding = System.Text.Encoding.UTF8;
+            Console.Title = "NEXUS V2.0 - MATRIX SYSTEM";
+            Console.BackgroundColor = ConsoleColor.Black;
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.Clear();
+            Console.WriteLine("╔════════════════════════════════════════╗");
+            Console.WriteLine("║       REGISTRO DE EXPLORADOR NEXUS     ║");
+            Console.WriteLine("╚════════════════════════════════════════╝");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.Write(">> NOMBRE: ");
+            string nombre = Console.ReadLine();
+            Console.Write(">> EDAD: ");
+            int edad = LeerEntero();
+            int energia;
+            do
+            {
+                Console.Write(">> ENERGÍA INICIAL (1 - 100): ");
+                energia = LeerEntero();
+                if (energia < 1 ||
+                    energia > 100)
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("⚠ LA ENERGÍA DEBE ESTAR ENTRE 1 Y 100.");
+                    Console.ForegroundColor = ConsoleColor.White;
+                }
+            } while (energia < 1 || energia > 100);
+            int conexion;
+            do
+            {
+                Console.Write(">> NIVEL DE CONEXIÓN (1 - 100): ");
+                conexion = LeerEntero();
+                if (conexion < 1 ||
+                    conexion > 100)
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("⚠ LA CONEXIÓN DEBE ESTAR ENTRE 1 Y 100.");
+                    Console.ForegroundColor = ConsoleColor.White;
+                }
+            } while (conexion < 1 || conexion > 100);
+            Explorador explorador = new Explorador(nombre, edad, energia, conexion);
+            NexusGame juego = new NexusGame(explorador);
+            juego.Iniciar();
+        }
+        static int LeerEntero()
+        {
+            int numero;
+            while (!int.TryParse(Console.ReadLine(), out numero))
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.Write(">> INGRESE UN NÚMERO VÁLIDO: ");
+                Console.ForegroundColor = ConsoleColor.White;
+            }
+            return numero;
         }
     }
 }
