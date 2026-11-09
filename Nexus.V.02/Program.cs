@@ -2,11 +2,11 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
-
+///hola 
 namespace NEXUS
 {
     class Explorador
-    {
+    
         private string nombre;
         private int edad;
         private int energia;
