@@ -2,7 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
-///holaa
+
 namespace NEXUS
 {
     class Explorador
