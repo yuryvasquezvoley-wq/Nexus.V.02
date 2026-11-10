@@ -2,7 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
-///se pudo
+
 namespace NEXUS
 {
     class Explorador
