@@ -42,7 +42,7 @@
             nave.BackColor = Color.Transparent;
             nave.BackgroundImageLayout = ImageLayout.Zoom;
             nave.Image = (Image)resources.GetObject("nave.Image");
-            nave.Location = new Point(595, 183);
+            nave.Location = new Point(585, 177);
             nave.Name = "nave";
             nave.Size = new Size(266, 200);
             nave.SizeMode = PictureBoxSizeMode.Zoom;
