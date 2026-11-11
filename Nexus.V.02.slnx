@@ -1,3 +1,4 @@
 <Solution>
   <Project Path="Nexus.V.02/Nexus.V.02.csproj" />
+  <Project Path="NexusWindowsForm/NexusWindowsForm.csproj" Id="cdc01b49-306e-4cf4-937a-d0f2548f3d55" />
 </Solution>
