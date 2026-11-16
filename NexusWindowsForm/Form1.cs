@@ -13,9 +13,6 @@ namespace NexusWindowsForm
         private readonly Color textMain = Color.FromArgb(235, 240, 245);
         private readonly Color textMuted = Color.FromArgb(150, 164, 178);
 
-        private Panel sidebar = null!;
-        private Panel content = null!;
-        private Panel topbar = null!;
         private Label titleLabel = null!;
         private Label subtitleLabel = null!;
         private Label explorerLabel = null!;
@@ -51,6 +48,7 @@ namespace NexusWindowsForm
             topbar.BackColor = Color.FromArgb(15, 22, 31);
             sidebar.BackColor = Color.FromArgb(14, 20, 29);
             content.BackColor = background;
+            topbar.Resize += (_, _) => onlineLabel.Location = new Point(topbar.ClientSize.Width - onlineLabel.Width - 24, 25);
 
             int y = 58;
             AddNavButton("⌂   PANEL PRINCIPAL", y, () => ShowDashboard(), true); y += 50;
