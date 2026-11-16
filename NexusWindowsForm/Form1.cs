@@ -29,8 +29,18 @@ namespace NexusWindowsForm
 
         private void iniciar_Click(object sender, EventArgs e)
         {
-            this.Hide();
-            System.Diagnostics.Process.Start("Nexus.V.02.exe");
+
+            string ruta = @"C:\Games\Programación\NexusClone\Nexus.V.02\Nexus.V.02\bin\Debug\net10.0\Nexus.V.02.exe";
+
+            if (System.IO.File.Exists(ruta))
+            {
+                this.Hide();
+                System.Diagnostics.Process.Start(ruta);
+            }
+            else
+            {
+                MessageBox.Show("El archivo no se encontró en la ruta:\n" + ruta, "Error de ruta", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private void salir_Click(object sender, EventArgs e)
