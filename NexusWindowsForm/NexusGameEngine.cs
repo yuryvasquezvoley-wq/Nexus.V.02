@@ -41,7 +41,7 @@ namespace NexusWindowsForm
     {
         private readonly Dictionary<string, int> items = new(StringComparer.OrdinalIgnoreCase)
         {
-            ["CÉLULA DE ENERGÍA"] = 0,
+            ["CELULA DE ENERGIA"] = 0,
             ["RECURSO"] = 0
         };
 
@@ -147,7 +147,7 @@ namespace NexusWindowsForm
             switch (cell)
             {
                 case "*":
-                    Inventory.Add("CÉLULA DE ENERGÍA");
+                    Inventory.Add("CELULA DE ENERGIA");
                     CurrentDimension.SetCell(X, Y, ".");
                     return Notice("RECURSO ENCONTRADO", "Has recolectado una célula de energía. Se agregó al inventario.", "success");
                 case "+":
