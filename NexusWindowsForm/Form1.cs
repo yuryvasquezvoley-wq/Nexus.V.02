@@ -42,28 +42,16 @@ namespace NexusWindowsForm
 
         private void BuildInterface()
         {
-            Text = "NEXUS V2.0 - Dimensional System";
-            StartPosition = FormStartPosition.CenterScreen;
-            MinimumSize = new Size(1100, 720);
-            Size = new Size(1360, 850);
             BackColor = background;
             ForeColor = textMain;
             Font = new Font("Segoe UI", 10F);
             KeyPreview = true;
             KeyDown += Form1_KeyDown;
 
-            topbar = new Panel { Dock = DockStyle.Top, Height = 66, BackColor = Color.FromArgb(15, 22, 31), Padding = new Padding(22, 0, 22, 0) };
-            var brand = new Label { Text = "N E X U S", AutoSize = true, Font = new Font("Segoe UI", 19F, FontStyle.Bold), ForeColor = accent, Location = new Point(22, 14) };
-            var version = new Label { Text = "SYSTEM V2.0  /  DIMENSIONAL EXPLORATION", AutoSize = true, ForeColor = textMuted, Font = new Font("Segoe UI", 8.5F, FontStyle.Bold), Location = new Point(190, 25) };
-            var online = new Label { Text = "● SISTEMA LISTO", AutoSize = true, ForeColor = Color.FromArgb(72, 201, 132), Anchor = AnchorStyles.Top | AnchorStyles.Right };
-            topbar.Controls.Add(brand);
-            topbar.Controls.Add(version);
-            topbar.Controls.Add(online);
-            topbar.Resize += (_, _) => online.Location = new Point(topbar.ClientSize.Width - online.Width - 24, 25);
+            topbar.BackColor = Color.FromArgb(15, 22, 31);
+            sidebar.BackColor = Color.FromArgb(14, 20, 29);
+            content.BackColor = background;
 
-            sidebar = new Panel { Dock = DockStyle.Left, Width = 225, BackColor = Color.FromArgb(14, 20, 29), Padding = new Padding(14, 18, 14, 14) };
-            var navTitle = new Label { Text = "CENTRO DE MANDO", AutoSize = true, ForeColor = textMuted, Font = new Font("Segoe UI", 8F, FontStyle.Bold), Location = new Point(18, 20) };
-            sidebar.Controls.Add(navTitle);
             int y = 58;
             AddNavButton("⌂   PANEL PRINCIPAL", y, () => ShowDashboard(), true); y += 50;
             AddNavButton("◎   EXPLORAR REALIDAD", y, () => ShowExploration()); y += 50;
@@ -74,11 +62,6 @@ namespace NexusWindowsForm
             var divider = new Panel { BackColor = Color.FromArgb(49, 62, 77), Height = 1, Width = 190, Location = new Point(16, y + 10) };
             sidebar.Controls.Add(divider);
             AddNavButton("⏻   DESCONECTAR", y + 28, Disconnect, false, true);
-
-            content = new Panel { Dock = DockStyle.Fill, BackColor = background, Padding = new Padding(28) };
-            Controls.Add(content);
-            Controls.Add(sidebar);
-            Controls.Add(topbar);
         }
 
         private void AddNavButton(string caption, int y, Action action, bool selected = false, bool danger = false)
