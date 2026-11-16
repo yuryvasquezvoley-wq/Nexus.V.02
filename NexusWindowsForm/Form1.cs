@@ -366,7 +366,7 @@ namespace NexusWindowsForm
                 var answer = MessageBox.Show(notice.Message + "\n\n¿Registrar el núcleo energético?", notice.Title, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                 if (answer == DialogResult.Yes) RunAction(game.RegisterCore(), "Registro del núcleo");
                 else MessageBox.Show("El núcleo no ha sido registrado. Continúa la exploración.", "NEXUS", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                if (game.MissionCompleted || !game.MissionActive) ShowDashboard(); else RefreshMap();
+                if (game.CoreFound || !game.MissionActive) ShowDashboard(); else RefreshMap();
                 return;
             }
             MessageBox.Show(notice.Message, notice.Title, MessageBoxButtons.OK, notice.Type == "error" ? MessageBoxIcon.Error : notice.Type == "success" ? MessageBoxIcon.Information : MessageBoxIcon.Warning);
