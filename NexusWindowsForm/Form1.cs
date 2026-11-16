@@ -259,9 +259,9 @@ namespace NexusWindowsForm
                 {
                     var cell = new Button { Dock = DockStyle.Fill, Margin = new Padding(2), FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 12F, FontStyle.Bold), Tag = new Point(col, row), Cursor = Cursors.Hand };
                     cell.FlatAppearance.BorderSize = 0;
-                    cell.Click += (_, _) =>
+                    cell.Click += (sender, args) =>
                     {
-                        var p = (Point)((Button)_.Sender!).Tag!;
+                        var p = (Point)((Button)sender!).Tag!;
                         int dx = Math.Sign(p.X - game.X);
                         int dy = Math.Sign(p.Y - game.Y);
                         if (Math.Abs(p.X - game.X) + Math.Abs(p.Y - game.Y) == 1) ProcessNotice(game.Move(dx, dy));
