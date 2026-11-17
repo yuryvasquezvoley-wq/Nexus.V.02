@@ -2,42 +2,37 @@ namespace NexusWindowsForm
 {
     public partial class Form1 : Form
     {
-        private Rectangle iniciarBounds;
-        private Rectangle salirBounds;
-        private const int HoverScale = 12;
-
         public Form1()
         {
             InitializeComponent();
-
-            // Guardar las posiciones y tamaños originales para restaurarlos al salir del botón.
-            iniciarBounds = iniciar.Bounds;
-            salirBounds = salir.Bounds;
-
-            ConfigurarEfectoHover(iniciar, iniciarBounds);
-            ConfigurarEfectoHover(salir, salirBounds);
+            nave.Visible = false;
+            realidad.Visible = false;
+            PrepararZonaClic(iniciar, "Iniciar juego");
+            PrepararZonaClic(salir, "Salir");
+            Resize += (_, _) => AjustarMenu();
+            AjustarMenu();
         }
 
-        private void ConfigurarEfectoHover(Button boton, Rectangle boundsOriginales)
+        private static void PrepararZonaClic(Button boton, string nombre)
         {
             boton.FlatStyle = FlatStyle.Flat;
             boton.FlatAppearance.BorderSize = 0;
-            boton.FlatAppearance.MouseOverBackColor = Color.Transparent;
+            boton.FlatAppearance.MouseOverBackColor = Color.FromArgb(35, 230, 235, 190);
             boton.FlatAppearance.MouseDownBackColor = Color.Transparent;
             boton.UseVisualStyleBackColor = false;
+            boton.Text = string.Empty;
+            boton.AccessibleName = nombre;
+            boton.Cursor = Cursors.Hand;
+        }
 
-            boton.MouseEnter += (sender, e) =>
-            {
-                int nuevoAncho = boundsOriginales.Width + HoverScale;
-                int nuevoAlto = boundsOriginales.Height + HoverScale;
-                boton.Bounds = new Rectangle(
-                    boundsOriginales.X - HoverScale / 2,
-                    boundsOriginales.Y - HoverScale / 2,
-                    nuevoAncho,
-                    nuevoAlto);
-            };
-
-            boton.MouseLeave += (sender, e) => boton.Bounds = boundsOriginales;
+        private void AjustarMenu()
+        {
+            iniciar.Bounds = new Rectangle(
+                (int)(ClientSize.Width * 0.36), (int)(ClientSize.Height * 0.425),
+                (int)(ClientSize.Width * 0.28), (int)(ClientSize.Height * 0.09));
+            salir.Bounds = new Rectangle(
+                (int)(ClientSize.Width * 0.39), (int)(ClientSize.Height * 0.535),
+                (int)(ClientSize.Width * 0.22), (int)(ClientSize.Height * 0.09));
         }
 
         private void Form1_Load(object sender, EventArgs e) { }

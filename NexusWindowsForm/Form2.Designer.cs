@@ -27,7 +27,7 @@ namespace NexusWindowsForm
         private Label lblPosicion = null!;
         private Panel panelMapaContenedor = null!;
         private Label lblTituloMapa = null!;
-        private Panel panelMapa = null!;
+        private BufferedPanel panelMapa = null!;
         private Panel panelLateral = null!;
         private Label lblTituloMision = null!;
         private Label lblMision = null!;
@@ -38,6 +38,9 @@ namespace NexusWindowsForm
         private PictureBox imgMonstruo = null!;
         private Label lblMonstruo = null!;
         private Label lblDetalleMonstruo = null!;
+        private Label lblVidaCadeteCombate = null!;
+        private ProgressBar barraVidaMonstruo = null!;
+        private ProgressBar barraVidaCadeteCombate = null!;
         private Button btnAtacar = null!;
         private Button btnEscapar = null!;
         private Button btnAnalizar = null!;
@@ -84,7 +87,7 @@ namespace NexusWindowsForm
             lblPosicion = new Label();
             panelMapaContenedor = new Panel();
             lblTituloMapa = new Label();
-            panelMapa = new Panel();
+            panelMapa = new BufferedPanel();
             panelLateral = new Panel();
             lblTituloMision = new Label();
             lblMision = new Label();
@@ -102,6 +105,9 @@ namespace NexusWindowsForm
             imgMonstruo = new PictureBox();
             lblMonstruo = new Label();
             lblDetalleMonstruo = new Label();
+            lblVidaCadeteCombate = new Label();
+            barraVidaMonstruo = new ProgressBar();
+            barraVidaCadeteCombate = new ProgressBar();
             btnAtacar = new Button();
             btnEscapar = new Button();
             imgPueblo = new PictureBox();
@@ -343,27 +349,38 @@ namespace NexusWindowsForm
 
             panelEncuentro.BackColor = Color.FromArgb(24, 3, 12);
             panelEncuentro.BorderStyle = BorderStyle.FixedSingle;
-            panelEncuentro.Size = new Size(520, 360);
+            panelEncuentro.Size = new Size(620, 420);
             panelEncuentro.Location = new Point(320, 170);
             panelEncuentro.Visible = false;
             lblMonstruo.Text = "ENTIDAD DETECTADA";
             lblMonstruo.Font = new Font("Consolas", 18F, FontStyle.Bold);
             lblMonstruo.ForeColor = Color.FromArgb(255, 35, 55);
             lblMonstruo.TextAlign = ContentAlignment.MiddleCenter;
-            lblMonstruo.Location = new Point(15, 10);
-            lblMonstruo.Size = new Size(490, 35);
-            imgMonstruo.Location = new Point(145, 55);
-            imgMonstruo.Size = new Size(230, 180);
+            lblMonstruo.Location = new Point(10, 8);
+            lblMonstruo.Size = new Size(600, 35);
+            imgMonstruo.Location = new Point(32, 45);
+            imgMonstruo.Size = new Size(556, 240);
             imgMonstruo.SizeMode = PictureBoxSizeMode.Zoom;
             imgMonstruo.BackColor = Color.Black;
-            lblDetalleMonstruo.Location = new Point(20, 240);
-            lblDetalleMonstruo.Size = new Size(480, 35);
+            lblDetalleMonstruo.Location = new Point(12, 289);
+            lblDetalleMonstruo.Size = new Size(596, 22);
             lblDetalleMonstruo.Font = new Font("Consolas", 10F, FontStyle.Bold);
             lblDetalleMonstruo.ForeColor = Color.White;
             lblDetalleMonstruo.TextAlign = ContentAlignment.MiddleCenter;
-            ConfigurarBotonAccion(btnAtacar, "ATACAR", 85, 295, 150);
-            ConfigurarBotonAccion(btnEscapar, "ESCAPAR", 275, 295, 150);
-            panelEncuentro.Controls.AddRange(new Control[] { lblMonstruo, imgMonstruo, lblDetalleMonstruo, btnAtacar, btnEscapar });
+            barraVidaMonstruo.Location = new Point(70, 312);
+            barraVidaMonstruo.Size = new Size(480, 18);
+            barraVidaMonstruo.Maximum = 60;
+            lblVidaCadeteCombate.Location = new Point(12, 334);
+            lblVidaCadeteCombate.Size = new Size(596, 22);
+            lblVidaCadeteCombate.Font = new Font("Consolas", 9F, FontStyle.Bold);
+            lblVidaCadeteCombate.ForeColor = Color.FromArgb(164, 220, 156);
+            lblVidaCadeteCombate.TextAlign = ContentAlignment.MiddleCenter;
+            barraVidaCadeteCombate.Location = new Point(70, 356);
+            barraVidaCadeteCombate.Size = new Size(480, 18);
+            barraVidaCadeteCombate.Maximum = 100;
+            ConfigurarBotonAccion(btnAtacar, "ATACAR", 135, 377, 160);
+            ConfigurarBotonAccion(btnEscapar, "ESCAPAR", 325, 377, 160);
+            panelEncuentro.Controls.AddRange(new Control[] { lblMonstruo, imgMonstruo, lblDetalleMonstruo, barraVidaMonstruo, lblVidaCadeteCombate, barraVidaCadeteCombate, btnAtacar, btnEscapar });
 
             panelJuego.Controls.Add(panelMapaContenedor);
             panelJuego.Controls.Add(panelLateral);
@@ -385,21 +402,6 @@ namespace NexusWindowsForm
             panelMapaContenedor.ResumeLayout(false);
             panelLateral.ResumeLayout(false);
             ResumeLayout(false);
-        }
-
-        private void ConfigurarBotonAccion(Button boton, string texto, int x, int y, int ancho)
-        {
-            boton.BackColor = Color.FromArgb(190, 12, 35);
-            boton.FlatStyle = FlatStyle.Flat;
-            boton.FlatAppearance.BorderColor = Color.FromArgb(255, 50, 70);
-            boton.FlatAppearance.BorderSize = 1;
-            boton.Font = new Font("Consolas", 9F, FontStyle.Bold);
-            boton.ForeColor = Color.White;
-            boton.Location = new Point(x, y);
-            boton.Size = new Size(ancho, 40);
-            boton.Text = texto;
-            boton.UseVisualStyleBackColor = false;
-            boton.Cursor = Cursors.Hand;
         }
 
     }

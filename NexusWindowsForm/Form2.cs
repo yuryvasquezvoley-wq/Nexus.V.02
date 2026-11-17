@@ -32,6 +32,7 @@ namespace NexusWindowsForm
             public string Tipo { get; init; } = "";
             public PointF Posicion { get; set; }
             public int Vida { get; set; } = 60;
+            public int VidaMaxima { get; init; } = 60;
             public Bitmap Sprite { get; init; } = null!;
             public bool Derrotada { get; set; }
         }
@@ -97,8 +98,8 @@ namespace NexusWindowsForm
             }
             panelRegistro.Location = new Point((ClientSize.Width - panelRegistro.Width) / 2, (ClientSize.Height - panelRegistro.Height) / 2);
             panelEncuentro.Location = new Point(
-                Math.Max(20, (panelMapaContenedor.Width - panelEncuentro.Width) / 2),
-                Math.Max(50, (panelMapaContenedor.Height - panelEncuentro.Height) / 2));
+                Math.Max(8, (panelMapa.ClientSize.Width - panelEncuentro.Width) / 2),
+                lblTituloMapa.Height + Math.Max(0, (panelMapa.ClientSize.Height - panelEncuentro.Height) / 2));
             camaraX = jugadorX - panelMapa.ClientSize.Width / 2f;
             camaraY = jugadorY - panelMapa.ClientSize.Height / 2f;
             panelMapa.Invalidate();
@@ -180,7 +181,7 @@ namespace NexusWindowsForm
         {
             entidades.Clear();
             entidades.Add(new Entidad { Nombre = "ACECHADOR DEL REVÉS", Tipo = "Entidad orgánica", Posicion = new PointF(2850, 2580), Sprite = CrearSpriteMonstruo(0), Vida = 60 });
-            entidades.Add(new Entidad { Nombre = "SOMBRA DEL VACÍO", Tipo = "Entidad de sombra", Posicion = new PointF(2150, 2200), Sprite = CrearSpriteMonstruo(1), Vida = 45 });
+            entidades.Add(new Entidad { Nombre = "SOMBRA DEL VACÍO", Tipo = "Entidad de sombra", Posicion = new PointF(2150, 2200), Sprite = CrearSpriteMonstruo(1), Vida = 45, VidaMaxima = 45 });
         }
 
         private void IniciarSistema()
@@ -264,8 +265,13 @@ namespace NexusWindowsForm
             if (encontrada == null) return;
             encuentroActivo = true; entidadActual = encontrada; teclas.Clear();
             lblMonstruo.Text = encontrada.Nombre;
-            lblDetalleMonstruo.Text = $"{encontrada.Tipo}  //  VIDA: {encontrada.Vida}";
-            imgMonstruo.Image = encontrada.Sprite;
+            lblDetalleMonstruo.Text = $"{encontrada.Tipo}  //  VIDA: {encontrada.Vida}/{encontrada.VidaMaxima}";
+            imgMonstruo.Image = Properties.Resources.Demogorgon;
+            barraVidaMonstruo.Value = 0;
+            barraVidaMonstruo.Maximum = encontrada.VidaMaxima;
+            barraVidaMonstruo.Value = encontrada.Vida;
+            barraVidaCadeteCombate.Value = Math.Clamp(vida, 0, 100);
+            lblVidaCadeteCombate.Text = $"VIDA DEL CADETE: {vida}/100";
             panelEncuentro.Visible = true; panelEncuentro.BringToFront();
             Mensaje("ALERTA: UNA ENTIDAD TE HA DETECTADO.");
         }
@@ -274,6 +280,7 @@ namespace NexusWindowsForm
         {
             if (!encuentroActivo || entidadActual == null) return;
             entidadActual.Vida -= 20;
+            barraVidaMonstruo.Value = Math.Clamp(entidadActual.Vida, 0, barraVidaMonstruo.Maximum);
             if (entidadActual.Vida <= 0)
             {
                 entidadActual.Derrotada = true;
@@ -284,8 +291,10 @@ namespace NexusWindowsForm
             else
             {
                 vida = Math.Max(0, vida - 12);
-                lblDetalleMonstruo.Text = $"{entidadActual.Tipo}  //  VIDA: {entidadActual.Vida}  //  TE ATACÓ (-12)";
+                lblDetalleMonstruo.Text = $"{entidadActual.Tipo}  //  VIDA: {entidadActual.Vida}/{entidadActual.VidaMaxima}";
                 barraVida.Value = vida;
+                barraVidaCadeteCombate.Value = vida;
+                lblVidaCadeteCombate.Text = $"VIDA DEL CADETE: {vida}/100  //  {entidadActual.Nombre} TE ATACÓ (-12)";
                 if (vida <= 0)
                 {
                     encuentroActivo = false; panelEncuentro.Visible = false;
@@ -325,7 +334,7 @@ namespace NexusWindowsForm
                 Color suelo = realidad == "REALIDAD 102" ? Color.FromArgb(30, 13, 23) : Color.FromArgb(18, 12, 27);
                 using (SolidBrush b = new(carretera ? Color.FromArgb(42, 22, 29) : suelo)) g.FillRectangle(b, sx, sy, tile, tile);
                 using (Pen p = new(Color.FromArgb(42, 28, 39))) g.DrawRectangle(p, sx, sy, tile, tile);
-                int semilla = Math.Abs((tx * 73856093) ^ (ty * 19349663));
+                int semilla = unchecked((tx * 73856093) ^ (ty * 19349663)) & int.MaxValue;
                 if (carretera)
                 {
                     using SolidBrush marca = new(Color.FromArgb(95, 70, 65));
@@ -339,6 +348,21 @@ namespace NexusWindowsForm
                     g.FillRectangle(mancha, sx + 20, sy + 22, 8, 8);
                     g.FillRectangle(mancha, sx + 37, sy + 39, 5, 5);
                 }
+            }
+
+            // Las casas ocupan varias casillas, así que se dibujan después del suelo
+            // para que las baldosas vecinas no tapen sus paredes ni el tejado.
+            for (int ty = inicioY - 2; ty <= finY + 2; ty++)
+            for (int tx = inicioX - 2; tx <= finX + 2; tx++)
+            {
+                bool anclaCasa = ModuloPositivo(tx, 9) == 4 && ModuloPositivo(ty, 9) == 4;
+                bool juntoCarretera = Math.Abs(ty % 13) <= 2 || Math.Abs(tx % 17) <= 2;
+                if (!anclaCasa || juntoCarretera) continue;
+
+                int semillaCasa = unchecked((tx * 73856093) ^ (ty * 19349663));
+                int casaX = tx * tile - (int)camaraX - 112;
+                int casaY = ty * tile - (int)camaraY - 76;
+                DibujarCasaAbandonada(g, casaX, casaY, semillaCasa);
             }
 
             foreach (PointF celda in celdasEnergia)
@@ -400,6 +424,129 @@ namespace NexusWindowsForm
             g.FillRectangle(ventana, x + 34, y + 15, 7, 8);
         }
 
+        private static int ModuloPositivo(int valor, int modulo) => (valor % modulo + modulo) % modulo;
+
+        private void DibujarCasaAbandonada(Graphics g, int x, int y, int semilla)
+        {
+            void Poligono(Color color, params Point[] puntos)
+            {
+                using SolidBrush b = new(color);
+                g.FillPolygon(b, puntos);
+            }
+
+            void Linea(Color color, int ancho, params Point[] puntos)
+            {
+                using Pen p = new(color, ancho);
+                g.DrawLines(p, puntos);
+            }
+
+            Point Pt(int px, int py) => new(x + px, y + py);
+            int variante = ModuloPositivo(semilla, 3);
+            Color tierra = realidad == "REALIDAD 102" ? Color.FromArgb(76 + variante * 4, 76, 45) : Color.FromArgb(48, 43, 61 + variante * 5);
+            Color tejadoA = variante switch
+            {
+                0 => Color.FromArgb(24, 18, 24),
+                1 => Color.FromArgb(23, 20, 29),
+                _ => Color.FromArgb(31, 17, 25)
+            };
+            Color tejadoB = variante switch
+            {
+                0 => Color.FromArgb(31, 19, 28),
+                1 => Color.FromArgb(29, 22, 34),
+                _ => Color.FromArgb(39, 18, 29)
+            };
+
+            // Jardín en rombo, ruinas, raíces y sendero de piedra.
+            Poligono(Color.FromArgb(90, 0, 0, 0), Pt(125, 18), Pt(246, 88), Pt(125, 166), Pt(4, 91));
+            Poligono(tierra, Pt(125, 8), Pt(246, 78), Pt(125, 158), Pt(4, 83));
+            Linea(Color.FromArgb(115, 104, 76), 2, Pt(7, 83), Pt(125, 158), Pt(242, 78));
+            for (int i = 0; i < 15; i++)
+            {
+                int gx = 18 + ModuloPositivo(semilla + i * 37, 205);
+                int gy = 45 + ModuloPositivo(semilla / 7 + i * 19, 88);
+                using SolidBrush hierba = new(Color.FromArgb(95, 91 + i % 3 * 8, 100, 55));
+                g.FillRectangle(hierba, x + gx, y + gy, 3, 2);
+            }
+            Linea(Color.FromArgb(42, 18, 17), 4, Pt(12, 111), Pt(36, 104), Pt(51, 112), Pt(63, 104));
+            Linea(Color.FromArgb(42, 18, 17), 3, Pt(212, 108), Pt(193, 98), Pt(177, 104), Pt(163, 96));
+            for (int i = 0; i < 4; i++)
+            {
+                int py = 130 + i * 6;
+                Poligono(Color.FromArgb(104, 92, 75), Pt(96 - i * 4, py), Pt(130 + i * 3, py - 2), Pt(139 + i * 2, py + 5), Pt(104 - i * 3, py + 7));
+                Linea(Color.FromArgb(48, 36, 32), 1, Pt(110 - i * 2, py + 1), Pt(119 + i * 2, py + 4));
+            }
+
+            // Paredes de madera y cimientos vistos en perspectiva isométrica.
+            Poligono(Color.FromArgb(29, 25, 28), Pt(31, 64), Pt(125, 106), Pt(125, 145), Pt(31, 101));
+            Poligono(Color.FromArgb(46, 38, 37), Pt(125, 106), Pt(219, 61), Pt(219, 105), Pt(125, 145));
+            Poligono(Color.FromArgb(63, 62, 52), Pt(34, 62), Pt(125, 103), Pt(125, 111), Pt(34, 70));
+            Poligono(Color.FromArgb(82, 72, 58), Pt(125, 103), Pt(216, 59), Pt(216, 67), Pt(125, 111));
+            for (int i = 0; i < 5; i++)
+            {
+                int wy = 77 + i * 11;
+                Linea(Color.FromArgb(82, 80, 65), 1, Pt(39, wy), Pt(119, wy + 36));
+                Linea(Color.FromArgb(102, 83, 67), 1, Pt(131, wy + 34), Pt(211, wy - 5));
+            }
+
+            // Tejado roto, con capas de teja, corte abierto e interior iluminado.
+            Poligono(tejadoA, Pt(21, 62), Pt(109, 11), Pt(132, 24), Pt(44, 76));
+            Poligono(tejadoB, Pt(109, 11), Pt(237, 59), Pt(145, 108), Pt(132, 24));
+            Linea(Color.FromArgb(101, 79, 70), 2, Pt(21, 62), Pt(109, 11), Pt(237, 59));
+            Linea(Color.FromArgb(101, 79, 70), 2, Pt(21, 62), Pt(44, 76), Pt(132, 37));
+            Linea(Color.FromArgb(101, 79, 70), 2, Pt(132, 37), Pt(145, 108), Pt(237, 59));
+            for (int i = 0; i < 7; i++)
+            {
+                int offset = i * 8;
+                Linea(Color.FromArgb(65, 58, 56), 1, Pt(31 + offset, 60 - offset / 2), Pt(112 + offset / 2, 17 + offset / 4));
+                Linea(Color.FromArgb(73, 55, 56), 1, Pt(117 + offset, 16 + offset / 3), Pt(225 - offset / 2, 60 + offset / 3));
+            }
+            Poligono(Color.FromArgb(34, 22, 29), Pt(76, 48), Pt(111, 29), Pt(155, 48), Pt(119, 69));
+            Poligono(Color.FromArgb(63, 43, 39), Pt(80, 48), Pt(111, 32), Pt(151, 49), Pt(119, 66));
+            for (int i = 0; i < 5; i++)
+            {
+                int dx = i * 7;
+                Linea(Color.FromArgb(95, 65, 48), 1, Pt(86 + dx, 49 - dx / 3), Pt(124 + dx / 2, 65 - dx / 3));
+            }
+            // Guirnalda de luces cálidas dentro del corte del tejado.
+            Color[] luces = { Color.FromArgb(255, 205, 105), Color.FromArgb(111, 192, 210), Color.FromArgb(231, 101, 91), Color.FromArgb(201, 183, 111) };
+            Linea(Color.FromArgb(24, 17, 22), 1, Pt(88, 44), Pt(111, 37), Pt(143, 49));
+            for (int i = 0; i < 9; i++)
+            {
+                int lx = 89 + i * 6;
+                int ly = i < 4 ? 44 - i * 2 : 37 + (i - 4) * 3;
+                using SolidBrush luz = new(luces[(i + Math.Abs(semilla % luces.Length)) % luces.Length]);
+                g.FillRectangle(luz, x + lx, y + ly, 3, 4);
+            }
+            using (Font letras = new("Consolas", 5, FontStyle.Bold))
+            using (SolidBrush brilloLetras = new(Color.FromArgb(242, 210, 151)))
+                g.DrawString("A B C D E", letras, brilloLetras, x + 98, y + 47);
+
+            // Ventanas encendidas, puerta y escalones.
+            Poligono(Color.FromArgb(69, 10, 28), Pt(50, 77), Pt(67, 85), Pt(67, 101), Pt(50, 93));
+            Poligono(Color.FromArgb(207, 105, 64), Pt(53, 80), Pt(64, 85), Pt(64, 96), Pt(53, 91));
+            Linea(Color.FromArgb(34, 19, 22), 2, Pt(58, 82), Pt(58, 94));
+            Poligono(Color.FromArgb(27, 17, 22), Pt(158, 93), Pt(179, 83), Pt(179, 100), Pt(158, 111));
+            Poligono(Color.FromArgb(194, 76, 51), Pt(161, 94), Pt(176, 87), Pt(176, 98), Pt(161, 106));
+            Linea(Color.FromArgb(32, 17, 19), 2, Pt(169, 90), Pt(169, 102));
+            Poligono(Color.FromArgb(18, 13, 18), Pt(105, 111), Pt(126, 120), Pt(126, 145), Pt(105, 135));
+            Poligono(Color.FromArgb(90, 34, 37), Pt(109, 115), Pt(122, 121), Pt(122, 139), Pt(109, 133));
+            using SolidBrush perilla = new(Color.FromArgb(231, 183, 101));
+            g.FillRectangle(perilla, x + 119, y + 127, 2, 2);
+            Poligono(Color.FromArgb(73, 63, 56), Pt(98, 137), Pt(128, 148), Pt(138, 143), Pt(108, 132));
+            Poligono(Color.FromArgb(92, 78, 65), Pt(91, 144), Pt(131, 158), Pt(143, 151), Pt(103, 137));
+
+            // Lianas colgantes y valla rota alrededor de la casa.
+            Linea(Color.FromArgb(20, 35, 25), 3, Pt(29, 60), Pt(25, 76), Pt(34, 84));
+            Linea(Color.FromArgb(26, 44, 28), 2, Pt(205, 73), Pt(198, 89), Pt(205, 96));
+            Linea(Color.FromArgb(53, 47, 39), 2, Pt(15, 94), Pt(34, 105), Pt(49, 99));
+            Linea(Color.FromArgb(53, 47, 39), 2, Pt(188, 117), Pt(208, 127), Pt(225, 116));
+            for (int i = 0; i < 4; i++)
+            {
+                using SolidBrush hoja = new(Color.FromArgb(55, 61 + i * 3, 48, 35));
+                g.FillRectangle(hoja, x + 22 + i * 9, y + 100 - i * 3, 5, 3);
+            }
+        }
+
         private void AnalizarAnomalia()
         {
             if (energia < 20) { Mensaje("ENERGÍA INSUFICIENTE. SE NECESITAN 20 PUNTOS."); return; }
@@ -456,6 +603,21 @@ namespace NexusWindowsForm
         private void Mensaje(string mensaje)
         {
             lblMensaje.Text = ">> " + mensaje;
+        }
+
+        private void ConfigurarBotonAccion(Button boton, string texto, int x, int y, int ancho)
+        {
+            boton.BackColor = Color.FromArgb(190, 12, 35);
+            boton.FlatStyle = FlatStyle.Flat;
+            boton.FlatAppearance.BorderColor = Color.FromArgb(255, 50, 70);
+            boton.FlatAppearance.BorderSize = 1;
+            boton.Font = new Font("Consolas", 9F, FontStyle.Bold);
+            boton.ForeColor = Color.White;
+            boton.Location = new Point(x, y);
+            boton.Size = new Size(ancho, 40);
+            boton.Text = texto;
+            boton.UseVisualStyleBackColor = false;
+            boton.Cursor = Cursors.Hand;
         }
     }
 }
