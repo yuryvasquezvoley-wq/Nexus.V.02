@@ -45,6 +45,10 @@ namespace NexusWindowsForm
         private Button btnCambiarRealidad = null!;
         private Button btnVolver = null!;
         private Label lblMensaje = null!;
+        private PictureBox imgPueblo = null!;
+        private PictureBox imgBosque = null!;
+        private PictureBox imgLaboratorio = null!;
+        private PictureBox imgPortal = null!;
 
         protected override void Dispose(bool disposing)
         {
@@ -96,6 +100,10 @@ namespace NexusWindowsForm
             btnCambiarRealidad = new Button();
             btnVolver = new Button();
             lblMensaje = new Label();
+            imgPueblo = new PictureBox();
+            imgBosque = new PictureBox();
+            imgLaboratorio = new PictureBox();
+            imgPortal = new PictureBox();
             ((System.ComponentModel.ISupportInitialize)numEdad).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numEnergia).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numConexion).BeginInit();
@@ -248,7 +256,7 @@ namespace NexusWindowsForm
             // Map container
             panelMapaContenedor.BackColor = Color.FromArgb(18, 5, 11);
             panelMapaContenedor.Location = new Point(16, 125);
-            panelMapaContenedor.Size = new Size(720, 535);
+            panelMapaContenedor.Size = new Size(535, 535);
             lblTituloMapa.Dock = DockStyle.Top;
             lblTituloMapa.Font = new Font("Consolas", 13F, FontStyle.Bold);
             lblTituloMapa.ForeColor = Color.FromArgb(220, 35, 55);
@@ -272,8 +280,8 @@ namespace NexusWindowsForm
             panelMapaContenedor.Controls.Add(lblTituloMapa);
             // Sidebar
             panelLateral.BackColor = Color.FromArgb(22, 6, 12);
-            panelLateral.Location = new Point(750, 125);
-            panelLateral.Size = new Size(390, 535);
+            panelLateral.Location = new Point(565, 125);
+            panelLateral.Size = new Size(575, 535);
             lblTituloMision.Font = new Font("Consolas", 14F, FontStyle.Bold);
             lblTituloMision.ForeColor = Color.FromArgb(220, 35, 55);
             lblTituloMision.Location = new Point(15, 12);
@@ -397,7 +405,31 @@ namespace NexusWindowsForm
             btnVolver.Text = "VOLVER AL MENÚ";
             btnVolver.UseVisualStyleBackColor = false;
             btnVolver.Cursor = Cursors.Hand;
-            panelLateral.Controls.AddRange(new Control[] { lblTituloMision, lblMision, lblTituloInventario, lblInventario, lblTituloControles, btnArriba, btnIzquierda, btnAbajo, btnDerecha, btnAnalizar, btnRecuperar, btnUsarCelula, btnPerfil, btnCambiarRealidad, btnVolver });
+            imgPueblo.BackColor = Color.FromArgb(10, 3, 8);
+            imgPueblo.BorderStyle = BorderStyle.FixedSingle;
+            imgPueblo.Location = new Point(385, 18);
+            imgPueblo.Size = new Size(175, 95);
+            imgPueblo.SizeMode = PictureBoxSizeMode.StretchImage;
+            imgPueblo.TabStop = false;
+            imgBosque.BackColor = Color.FromArgb(10, 3, 8);
+            imgBosque.BorderStyle = BorderStyle.FixedSingle;
+            imgBosque.Location = new Point(385, 135);
+            imgBosque.Size = new Size(175, 95);
+            imgBosque.SizeMode = PictureBoxSizeMode.StretchImage;
+            imgBosque.TabStop = false;
+            imgLaboratorio.BackColor = Color.FromArgb(10, 3, 8);
+            imgLaboratorio.BorderStyle = BorderStyle.FixedSingle;
+            imgLaboratorio.Location = new Point(385, 252);
+            imgLaboratorio.Size = new Size(175, 95);
+            imgLaboratorio.SizeMode = PictureBoxSizeMode.StretchImage;
+            imgLaboratorio.TabStop = false;
+            imgPortal.BackColor = Color.FromArgb(10, 3, 8);
+            imgPortal.BorderStyle = BorderStyle.FixedSingle;
+            imgPortal.Location = new Point(385, 369);
+            imgPortal.Size = new Size(175, 95);
+            imgPortal.SizeMode = PictureBoxSizeMode.StretchImage;
+            imgPortal.TabStop = false;
+            panelLateral.Controls.AddRange(new Control[] { imgPueblo, imgBosque, imgLaboratorio, imgPortal, lblTituloMision, lblMision, lblTituloInventario, lblInventario, lblTituloControles, btnArriba, btnIzquierda, btnAbajo, btnDerecha, btnAnalizar, btnRecuperar, btnUsarCelula, btnPerfil, btnCambiarRealidad, btnVolver });
             lblMensaje.BackColor = Color.FromArgb(30, 5, 12);
             lblMensaje.Dock = DockStyle.Bottom;
             lblMensaje.Font = new Font("Consolas", 9F, FontStyle.Bold);
