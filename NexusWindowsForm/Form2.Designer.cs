@@ -13,6 +13,7 @@ namespace NexusWindowsForm
         private NumericUpDown numEnergia = null!;
         private Label lblEtiquetaConexion = null!;
         private NumericUpDown numConexion = null!;
+        private Label lblControlesRegistro = null!;
         private Button btnInicializar = null!;
         private Label lblEncabezado = null!;
         private Panel panelJuego = null!;
@@ -57,7 +58,14 @@ namespace NexusWindowsForm
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing && components != null) components.Dispose();
+            if (disposing)
+            {
+                for (int direccion = 0; direccion < spritesCadete.GetLength(0); direccion++)
+                for (int paso = 0; paso < spritesCadete.GetLength(1); paso++)
+                    spritesCadete[direccion, paso]?.Dispose();
+                foreach (Entidad entidad in entidades) entidad.Sprite?.Dispose();
+                components?.Dispose();
+            }
             base.Dispose(disposing);
         }
 
@@ -73,6 +81,7 @@ namespace NexusWindowsForm
             numEnergia = new NumericUpDown();
             lblEtiquetaConexion = new Label();
             numConexion = new NumericUpDown();
+            lblControlesRegistro = new Label();
             btnInicializar = new Button();
             lblEncabezado = new Label();
             panelJuego = new Panel();
@@ -212,6 +221,12 @@ namespace NexusWindowsForm
             numConexion.Minimum = 1;
             numConexion.Maximum = 100;
             numConexion.Value = 100;
+            lblControlesRegistro.Font = new Font("Consolas", 9F, FontStyle.Bold);
+            lblControlesRegistro.ForeColor = Color.FromArgb(92, 207, 224);
+            lblControlesRegistro.Location = new Point(30, 326);
+            lblControlesRegistro.Size = new Size(450, 28);
+            lblControlesRegistro.Text = "CONTROLES DE MOVIMIENTO: W / A / S / D";
+            lblControlesRegistro.TextAlign = ContentAlignment.MiddleCenter;
             btnInicializar.BackColor = Color.FromArgb(220, 35, 55);
             btnInicializar.FlatStyle = FlatStyle.Flat;
             btnInicializar.FlatAppearance.BorderSize = 0;
@@ -221,7 +236,7 @@ namespace NexusWindowsForm
             btnInicializar.Size = new Size(450, 58);
             btnInicializar.Text = "INICIALIZAR NEXUS";
             btnInicializar.UseVisualStyleBackColor = false;
-            panelRegistro.Controls.AddRange(new Control[] { lblTituloRegistro, lblEtiquetaNombre, txtNombre, lblEtiquetaEdad, numEdad, lblEtiquetaEnergia, numEnergia, lblEtiquetaConexion, numConexion, btnInicializar });
+            panelRegistro.Controls.AddRange(new Control[] { lblTituloRegistro, lblEtiquetaNombre, txtNombre, lblEtiquetaEdad, numEdad, lblEtiquetaEnergia, numEnergia, lblEtiquetaConexion, numConexion, lblControlesRegistro, btnInicializar });
             // Game area
             panelJuego.BackColor = Color.FromArgb(7, 9, 14);
             panelJuego.Dock = DockStyle.Fill;

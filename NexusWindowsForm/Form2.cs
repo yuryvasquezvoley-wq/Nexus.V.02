@@ -12,6 +12,7 @@ namespace NexusWindowsForm
         private readonly HashSet<Keys> teclas = new();
         private readonly System.Windows.Forms.Timer relojMovimiento = new();
         private readonly System.Windows.Forms.Timer relojEscena = new();
+        private readonly Bitmap[,] spritesCadete = new Bitmap[4, 2];
 
         private string nombreExplorador = "";
         private int edad;
@@ -24,6 +25,8 @@ namespace NexusWindowsForm
         private int fotograma;
         private int ticksMovimiento;
         private int celulasEnergia;
+        private int direccionJugador = 2;
+        private bool jugadorCaminando;
         private readonly PointF nucleo = new(3400, 3400);
 
         private sealed class Entidad
@@ -48,6 +51,7 @@ namespace NexusWindowsForm
             {
                 CrearEscenasPixelArt();
                 CrearEntidades();
+                CrearSpritesCadete();
                 panelMapa.Paint += DibujarMundo;
                 panelMapa.Resize += (_, _) => panelMapa.Invalidate();
                 relojMovimiento.Interval = 16;
@@ -62,7 +66,7 @@ namespace NexusWindowsForm
             btnRecuperar.Click += (_, _) => RecuperarEnergia();
             btnUsarCelula.Click += (_, _) => UsarCelula();
             btnPerfil.Click += (_, _) => MostrarPerfil();
-            btnCambiarRealidad.Click += (_, _) => CambiarRealidad();
+            btnCambiarRealidad.Click += (_, _) => SeleccionarRealidad();
             btnVolver.Click += (_, _) => Close();
             btnAtacar.Click += (_, _) => AtacarEntidad();
             btnEscapar.Click += (_, _) => EscaparEntidad();
@@ -107,7 +111,7 @@ namespace NexusWindowsForm
 
         private void CrearEscenasPixelArt()
         {
-            imgPueblo.Image = CrearEscenaPixelArt(0);
+            imgPueblo.Image = Properties.Resources.MapaHawkins;
             imgBosque.Image = CrearEscenaPixelArt(1);
             imgLaboratorio.Image = CrearEscenaPixelArt(2);
             imgPortal.Image = CrearEscenaPixelArt(3);
@@ -179,9 +183,82 @@ namespace NexusWindowsForm
 
         private void CrearEntidades()
         {
+            foreach (Entidad anterior in entidades) anterior.Sprite.Dispose();
             entidades.Clear();
             entidades.Add(new Entidad { Nombre = "ACECHADOR DEL REVÉS", Tipo = "Entidad orgánica", Posicion = new PointF(2850, 2580), Sprite = CrearSpriteMonstruo(0), Vida = 60 });
             entidades.Add(new Entidad { Nombre = "SOMBRA DEL VACÍO", Tipo = "Entidad de sombra", Posicion = new PointF(2150, 2200), Sprite = CrearSpriteMonstruo(1), Vida = 45, VidaMaxima = 45 });
+        }
+
+        private void CrearSpritesCadete()
+        {
+            for (int direccion = 0; direccion < 4; direccion++)
+            for (int paso = 0; paso < 2; paso++)
+                spritesCadete[direccion, paso] = CrearSpriteCadete(direccion, paso);
+        }
+
+        private static Bitmap CrearSpriteCadete(int direccion, int paso)
+        {
+            Bitmap bmp = new(28, 38);
+            using Graphics g = Graphics.FromImage(bmp);
+            g.Clear(Color.Transparent);
+            g.SmoothingMode = SmoothingMode.None;
+            void P(Color c, int x, int y, int w, int h)
+            {
+                using SolidBrush b = new(c);
+                g.FillRectangle(b, x, y, w, h);
+            }
+
+            Color borde = Color.FromArgb(14, 20, 31);
+            Color armadura = Color.FromArgb(74, 91, 111);
+            Color luz = Color.FromArgb(155, 178, 190);
+            Color cyan = Color.FromArgb(36, 222, 239);
+            int zancada = paso == 0 ? 0 : 2;
+
+            // Botas y piernas: cambian de posición en cada fotograma.
+            P(borde, 5 - zancada, 27, 8, 9); P(armadura, 6 - zancada, 28, 6, 6); P(luz, 6 - zancada, 29, 3, 2);
+            P(borde, 15 + zancada, 27, 8, 9); P(armadura, 16 + zancada, 28, 6, 6); P(luz, 18 + zancada, 29, 3, 2);
+            P(Color.FromArgb(21, 29, 43), 8 - zancada, 23, 6, 7); P(armadura, 9 - zancada, 24, 4, 5);
+            P(Color.FromArgb(21, 29, 43), 15 + zancada, 23, 6, 7); P(armadura, 16 + zancada, 24, 4, 5);
+
+            // Mochila técnica, torso blindado y brazos articulados.
+            P(borde, 5, 14, 18, 13); P(Color.FromArgb(39, 51, 68), 6, 15, 16, 11);
+            P(borde, 3, 16, 6, 10); P(armadura, 4, 17, 4, 7); P(luz, 4, 18, 2, 2);
+            P(borde, 19, 16, 6, 10); P(armadura, 20, 17, 4, 7); P(luz, 21, 18, 2, 2);
+            P(borde, 7, 15, 14, 11); P(armadura, 8, 16, 12, 9); P(luz, 9, 16, 8, 2);
+            P(Color.FromArgb(30, 42, 57), 10, 20, 8, 4); P(cyan, 11, 20, 2, 2); P(cyan, 16, 20, 2, 2);
+            P(Color.FromArgb(29, 40, 55), 5, 16, 3, 9); P(Color.FromArgb(29, 40, 55), 20, 16, 3, 9);
+
+            // Casco de exploración con visor luminoso orientado según WASD.
+            P(borde, 6, 1, 16, 15); P(armadura, 7, 2, 14, 12); P(luz, 9, 3, 8, 2);
+            P(Color.FromArgb(54, 70, 89), 8, 5, 11, 7);
+            if (direccion == 2)
+            {
+                P(borde, 7, 6, 14, 7); P(Color.FromArgb(10, 80, 106), 8, 7, 12, 5);
+                P(cyan, 9, 7, 8, 3); P(Color.FromArgb(156, 250, 255), 10, 7, 3, 1);
+            }
+            else if (direccion == 1)
+            {
+                P(borde, 15, 5, 8, 8); P(Color.FromArgb(10, 80, 106), 17, 6, 5, 6); P(cyan, 18, 6, 3, 4);
+            }
+            else if (direccion == 3)
+            {
+                P(borde, 5, 5, 8, 8); P(Color.FromArgb(10, 80, 106), 6, 6, 5, 6); P(cyan, 7, 6, 3, 4);
+            }
+            else
+            {
+                P(Color.FromArgb(39, 51, 68), 9, 5, 10, 7);
+                P(cyan, 10, 8, 3, 3); P(cyan, 15, 8, 3, 3);
+            }
+            P(luz, 6, 7, 2, 4); P(borde, 7, 13, 14, 3);
+
+            // Paneles de la mochila y baliza cian al mirar hacia arriba.
+            if (direccion == 0)
+            {
+                P(borde, 8, 16, 12, 8); P(Color.FromArgb(63, 77, 93), 9, 17, 10, 6);
+                P(cyan, 10, 18, 2, 3); P(cyan, 16, 18, 2, 3); P(luz, 12, 17, 2, 2);
+            }
+            P(borde, 9, 25, 10, 2); P(Color.FromArgb(28, 38, 53), 11, 26, 6, 1);
+            return bmp;
         }
 
         private void IniciarSistema()
@@ -191,11 +268,18 @@ namespace NexusWindowsForm
                 MessageBox.Show("Ingresa el nombre del cadete para iniciar NEXUS.", "NEXUS", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 txtNombre.Focus(); return;
             }
+            using Form3 selector = new(realidad);
+            if (selector.ShowDialog(this) != DialogResult.OK) return;
+
             nombreExplorador = txtNombre.Text.Trim();
             edad = (int)numEdad.Value;
             energia = (int)numEnergia.Value;
             conexion = (int)numConexion.Value;
             vida = 100; iniciado = true; encuentroActivo = false; nucleoEncontrado = false;
+            realidad = selector.RealidadSeleccionada;
+            jugadorX = 2500; jugadorY = 2500;
+            camaraX = jugadorX - panelMapa.ClientSize.Width / 2f;
+            camaraY = jugadorY - panelMapa.ClientSize.Height / 2f;
             panelRegistro.Visible = false; panelJuego.Visible = true; panelJuego.BringToFront(); lblEncabezado.BringToFront();
             AjustarLayout();
             relojMovimiento.Start();
@@ -205,6 +289,8 @@ namespace NexusWindowsForm
 
         private void Form2_KeyDown(object? sender, KeyEventArgs e)
         {
+            // En el registro las letras WASD se escriben normalmente en el nombre.
+            if (!iniciado) return;
             if (e.KeyCode == Keys.Escape && encuentroActivo) { EscaparEntidad(); e.Handled = true; return; }
             if (e.KeyCode is Keys.W or Keys.A or Keys.S or Keys.D or Keys.Up or Keys.Down or Keys.Left or Keys.Right)
             {
@@ -215,6 +301,11 @@ namespace NexusWindowsForm
         private void Form2_KeyUp(object? sender, KeyEventArgs e)
         {
             teclas.Remove(e.KeyCode);
+            if (teclas.Count == 0 && jugadorCaminando)
+            {
+                jugadorCaminando = false;
+                panelMapa.Invalidate();
+            }
         }
 
         private void ActualizarMovimiento()
@@ -225,7 +316,15 @@ namespace NexusWindowsForm
             if (teclas.Contains(Keys.S) || teclas.Contains(Keys.Down)) dy++;
             if (teclas.Contains(Keys.A) || teclas.Contains(Keys.Left)) dx--;
             if (teclas.Contains(Keys.D) || teclas.Contains(Keys.Right)) dx++;
-            if (dx == 0 && dy == 0) return;
+            if (dx == 0 && dy == 0)
+            {
+                if (jugadorCaminando) { jugadorCaminando = false; panelMapa.Invalidate(); }
+                return;
+            }
+            jugadorCaminando = true;
+            direccionJugador = Math.Abs(dx) > Math.Abs(dy)
+                ? (dx > 0 ? 1 : 3)
+                : (dy > 0 ? 2 : 0);
             float magnitud = (float)Math.Sqrt(dx * dx + dy * dy);
             dx /= magnitud; dy /= magnitud;
             float velocidad = energia > 0 ? 4.2f : 1.4f;
@@ -330,18 +429,34 @@ namespace NexusWindowsForm
             for (int tx = inicioX; tx <= finX; tx++)
             {
                 int sx = tx * tile - (int)camaraX, sy = ty * tile - (int)camaraY;
-                bool carretera = (Math.Abs(ty % 13) <= 1) || (Math.Abs(tx % 17) <= 1);
-                Color suelo = realidad == "REALIDAD 102" ? Color.FromArgb(30, 13, 23) : Color.FromArgb(18, 12, 27);
-                using (SolidBrush b = new(carretera ? Color.FromArgb(42, 22, 29) : suelo)) g.FillRectangle(b, sx, sy, tile, tile);
-                using (Pen p = new(Color.FromArgb(42, 28, 39))) g.DrawRectangle(p, sx, sy, tile, tile);
+                int calleY = Math.Abs(ty % 13), calleX = Math.Abs(tx % 17);
+                bool carretera = calleY <= 1 || calleX <= 1;
+                bool acera = !carretera && (calleY == 2 || calleX == 2);
+                Color suelo = realidad == "REALIDAD 102" ? Color.FromArgb(50, 59, 42) : Color.FromArgb(31, 24, 39);
+                Color asfalto = realidad == "REALIDAD 102" ? Color.FromArgb(48, 47, 45) : Color.FromArgb(40, 27, 39);
+                Color pavimento = realidad == "REALIDAD 102" ? Color.FromArgb(86, 80, 66) : Color.FromArgb(61, 48, 62);
+                using (SolidBrush b = new(carretera ? asfalto : acera ? pavimento : suelo)) g.FillRectangle(b, sx, sy, tile, tile);
+                if (acera)
+                {
+                    using Pen junta = new(Color.FromArgb(38, 22, 20), 1);
+                    g.DrawLine(junta, sx + 31, sy, sx + 31, sy + tile);
+                    g.DrawLine(junta, sx, sy + 31, sx + tile, sy + 31);
+                }
                 int semilla = unchecked((tx * 73856093) ^ (ty * 19349663)) & int.MaxValue;
                 if (carretera)
                 {
-                    using SolidBrush marca = new(Color.FromArgb(95, 70, 65));
-                    g.FillRectangle(marca, sx + 8, sy + 30, 18, 3);
+                    using SolidBrush marca = new(Color.FromArgb(140, 174, 151, 104));
+                    if (calleY == 0 && tx % 3 == 0) g.FillRectangle(marca, sx + 25, sy + 30, 19, 3);
+                    if (calleX == 0 && ty % 3 == 0) g.FillRectangle(marca, sx + 30, sy + 24, 3, 19);
                 }
                 else if (semilla % 7 == 0) DibujarArbol(g, sx + 8, sy + 8);
-                else if (semilla % 11 == 0) DibujarRuina(g, sx + 5, sy + 8);
+                else if (semilla % 11 == 0)
+                {
+                    using SolidBrush escombro = new(Color.FromArgb(104, 67, 57, 54));
+                    g.FillRectangle(escombro, sx + 15, sy + 17, 12, 7);
+                    g.FillRectangle(escombro, sx + 34, sy + 31, 8, 12);
+                    g.FillRectangle(escombro, sx + 20, sy + 42, 6, 4);
+                }
                 else if (semilla % 5 == 0)
                 {
                     using SolidBrush mancha = new(Color.FromArgb(65, 7, 25));
@@ -355,14 +470,15 @@ namespace NexusWindowsForm
             for (int ty = inicioY - 2; ty <= finY + 2; ty++)
             for (int tx = inicioX - 2; tx <= finX + 2; tx++)
             {
-                bool anclaCasa = ModuloPositivo(tx, 9) == 4 && ModuloPositivo(ty, 9) == 4;
+                int loteX = ModuloPositivo(tx, 17), loteY = ModuloPositivo(ty, 13);
+                bool anclaCasa = (loteX == 4 || loteX == 12) && (loteY == 4 || loteY == 9);
                 bool juntoCarretera = Math.Abs(ty % 13) <= 2 || Math.Abs(tx % 17) <= 2;
                 if (!anclaCasa || juntoCarretera) continue;
 
-                int semillaCasa = unchecked((tx * 73856093) ^ (ty * 19349663));
-                int casaX = tx * tile - (int)camaraX - 112;
-                int casaY = ty * tile - (int)camaraY - 76;
-                DibujarCasaAbandonada(g, casaX, casaY, semillaCasa);
+                int semillaCasa = unchecked((tx * 73856093) ^ (ty * 19349663)) & int.MaxValue;
+                int casaX = tx * tile - (int)camaraX - 126;
+                int casaY = ty * tile - (int)camaraY - 84;
+                DibujarCasaBarrio(g, casaX, casaY, semillaCasa);
             }
 
             foreach (PointF celda in celdasEnergia)
@@ -381,14 +497,11 @@ namespace NexusWindowsForm
                     g.DrawImage(entidad.Sprite, ex - 24, ey - 24, 48, 48);
             }
 
-            // Cadete: sprite cenital pixelado y sombra.
+            // Cadete astronauta, con dirección y paso animado en pixel art.
             float px = jugadorX - camaraX, py = jugadorY - camaraY;
-            using (SolidBrush sombra = new(Color.FromArgb(150, 0, 0, 0))) g.FillEllipse(sombra, px - 14, py + 8, 28, 10);
-            using (SolidBrush cuerpo = new(Color.FromArgb(25, 25, 35))) g.FillRectangle(cuerpo, px - 9, py - 11, 18, 22);
-            using (SolidBrush chaqueta = new(Color.FromArgb(40, 120, 85))) g.FillRectangle(chaqueta, px - 8, py - 8, 16, 15);
-            using (SolidBrush cabeza = new(Color.FromArgb(220, 175, 145))) g.FillRectangle(cabeza, px - 5, py - 15, 10, 8);
-            using (SolidBrush mochila = new(Color.FromArgb(150, 15, 35))) g.FillRectangle(mochila, px - 11, py - 5, 4, 10);
-            using (Pen p = new(Color.FromArgb(255, 60, 75), 2)) g.DrawRectangle(p, px - 13, py - 18, 26, 38);
+            using (SolidBrush sombra = new(Color.FromArgb(175, 0, 0, 0))) g.FillEllipse(sombra, px - 20, py + 15, 40, 12);
+            int frameCadete = jugadorCaminando ? fotograma % 2 : 0;
+            g.DrawImage(spritesCadete[direccionJugador, frameCadete], px - 22, py - 38, 44, 58);
 
             if (!nucleoEncontrado)
             {
@@ -405,26 +518,100 @@ namespace NexusWindowsForm
         private void DibujarArbol(Graphics g, int x, int y)
         {
             using SolidBrush tronco = new(Color.FromArgb(38, 15, 20));
-            using SolidBrush copa = new(Color.FromArgb(15, 35, 24));
-            using SolidBrush brillo = new(Color.FromArgb(95, 5, 25));
+            using SolidBrush copa = new(realidad == "REALIDAD 102" ? Color.FromArgb(15, 43, 29) : Color.FromArgb(45, 13, 37));
+            using SolidBrush brillo = new(realidad == "REALIDAD 102" ? Color.FromArgb(67, 81, 44) : Color.FromArgb(132, 21, 54));
             g.FillRectangle(tronco, x + 22, y + 28, 12, 22);
             g.FillRectangle(copa, x + 8, y + 5, 40, 35);
             g.FillRectangle(brillo, x + 16, y + 12, 8, 7);
             g.FillRectangle(brillo, x + 34, y + 24, 7, 6);
         }
 
-        private void DibujarRuina(Graphics g, int x, int y)
-        {
-            using SolidBrush edificio = new(Color.FromArgb(40, 27, 35));
-            using SolidBrush techo = new(Color.FromArgb(92, 9, 28));
-            g.FillRectangle(edificio, x, y, 52, 45);
-            g.FillRectangle(techo, x - 3, y - 4, 58, 10);
-            using SolidBrush ventana = new(Color.FromArgb(230, 30, 50));
-            g.FillRectangle(ventana, x + 10, y + 15, 7, 8);
-            g.FillRectangle(ventana, x + 34, y + 15, 7, 8);
-        }
-
         private static int ModuloPositivo(int valor, int modulo) => (valor % modulo + modulo) % modulo;
+        private void DibujarCasaBarrio(Graphics g, int x, int y, int semilla)
+        {
+            void R(Color color, int rx, int ry, int rw, int rh)
+            {
+                using SolidBrush b = new(color);
+                g.FillRectangle(b, x + rx, y + ry, rw, rh);
+            }
+            void L(Color color, int width, Point a, Point b)
+            {
+                using Pen p = new(color, width);
+                g.DrawLine(p, x + a.X, y + a.Y, x + b.X, y + b.Y);
+            }
+
+            int variante = ModuloPositivo(semilla, 3);
+            Color lawn = realidad == "REALIDAD 102" ? Color.FromArgb(65 + variante * 5, 77, 48) : Color.FromArgb(42, 35, 48 + variante * 5);
+            Color roof = realidad == "REALIDAD 102"
+                ? new[] { Color.FromArgb(69, 55, 48), Color.FromArgb(54, 61, 60), Color.FromArgb(77, 57, 48) }[variante]
+                : new[] { Color.FromArgb(43, 29, 46), Color.FromArgb(56, 27, 43), Color.FromArgb(37, 35, 52) }[variante];
+            Color window = realidad == "REALIDAD 102" ? Color.FromArgb(107, 171, 183) : Color.FromArgb(201, 67, 94);
+
+            // Patio rectangular, cercas, césped y acceso desde la calle.
+            R(Color.FromArgb(100, 0, 0, 0), 3, 7, 246, 158);
+            R(lawn, 0, 0, 244, 154);
+            using (Pen cerca = new(Color.FromArgb(74, 62, 48), 2))
+            {
+                g.DrawLine(cerca, x + 4, y + 5, x + 4, y + 147);
+                g.DrawLine(cerca, x + 240, y + 5, x + 240, y + 147);
+                g.DrawLine(cerca, x + 4, y + 5, x + 92, y + 5);
+                g.DrawLine(cerca, x + 152, y + 5, x + 240, y + 5);
+                g.DrawLine(cerca, x + 4, y + 147, x + 92, y + 147);
+                g.DrawLine(cerca, x + 152, y + 147, x + 240, y + 147);
+            }
+            for (int i = 0; i < 18; i++)
+            {
+                int gx = 12 + ModuloPositivo(semilla + i * 29, 216);
+                int gy = 10 + ModuloPositivo(semilla / 11 + i * 17, 130);
+                R(Color.FromArgb(105, 99 + i % 3 * 8, 102, 61), gx, gy, 3, 2);
+            }
+
+            // Cimientos y paredes bajo el tejado, con fachada de madera y ladrillo.
+            R(Color.FromArgb(23, 20, 21), 41, 22, 165, 112);
+            R(Color.FromArgb(89, 77, 62), 46, 28, 155, 99);
+            R(Color.FromArgb(107, 88, 67), 49, 31, 149, 94);
+            for (int i = 0; i < 7; i++)
+                L(Color.FromArgb(74, 59, 48), 1, new Point(49, 43 + i * 11), new Point(198, 43 + i * 11));
+
+            // Tejado visto desde arriba: faldones, tejas, respiradero y una zona dañada.
+            R(Color.FromArgb(22, 18, 22), 42, 18, 164, 96);
+            R(roof, 47, 21, 154, 89);
+            for (int row = 0; row < 9; row++)
+            {
+                int yy = 27 + row * 9;
+                L(Color.FromArgb(103, 96, 79), 1, new Point(50, yy), new Point(198, yy));
+                int salto = row % 2 == 0 ? 0 : 10;
+                for (int col = 0; col < 8; col++)
+                {
+                    int xx = 52 + salto + col * 18;
+                    if (xx < 195) L(Color.FromArgb(48, 35, 34), 1, new Point(xx, yy), new Point(xx, yy + 8));
+                }
+            }
+            R(Color.FromArgb(44, 40, 38), 109, 25, 27, 6);
+            R(Color.FromArgb(91, 84, 70), 112, 26, 20, 3);
+            R(Color.FromArgb(19, 15, 19), 162, 31, 23, 18);
+            R(Color.FromArgb(117, 39, 48), 166, 34, 15, 11);
+            R(Color.FromArgb(53, 39, 40), 172, 20, 14, 7);
+
+            // Ventanas, puerta, porche y garaje con detalles luminosos.
+            R(Color.FromArgb(24, 25, 30), 53, 54, 25, 19); R(window, 56, 57, 19, 13);
+            R(Color.FromArgb(24, 25, 30), 174, 54, 22, 19); R(window, 177, 57, 16, 13);
+            R(Color.FromArgb(35, 25, 24), 105, 83, 28, 27); R(Color.FromArgb(129, 73, 50), 109, 86, 20, 23);
+            R(Color.FromArgb(191, 175, 124), 124, 96, 2, 2);
+            R(Color.FromArgb(86, 74, 59), 95, 108, 50, 8);
+            R(Color.FromArgb(111, 98, 76), 88, 116, 64, 7);
+            R(Color.FromArgb(81, 78, 69), 167, 78, 29, 45);
+            for (int i = 0; i < 4; i++) R(Color.FromArgb(122, 111, 91), 169, 81 + i * 9, 25, 2);
+            R(Color.FromArgb(77, 71, 60), 171, 124, 24, 28);
+
+            // Arbustos, árboles pequeños y piedras en cada parcela.
+            DibujarArbol(g, x + 3, y + 15);
+            DibujarArbol(g, x + 194, y + 101);
+            R(Color.FromArgb(26, 52, 34), 79, 11, 32, 8);
+            R(Color.FromArgb(38, 70, 42), 82, 9, 25, 7);
+            R(Color.FromArgb(102, 93, 74), 22, 120, 8, 5);
+            R(Color.FromArgb(102, 93, 74), 31, 127, 6, 4);
+        }
 
         private void DibujarCasaAbandonada(Graphics g, int x, int y, int semilla)
         {
@@ -569,15 +756,28 @@ namespace NexusWindowsForm
             Mensaje("CÉLULA UTILIZADA. +30 ENERGÍA.");
         }
 
-        private void CambiarRealidad()
+        private void SeleccionarRealidad()
         {
-            realidad = realidad == "REALIDAD 102" ? "REALIDAD 999" : "REALIDAD 102";
+            using Form3 selector = new(realidad);
+            if (selector.ShowDialog(this) == DialogResult.OK)
+                CambiarRealidad(selector.RealidadSeleccionada);
+        }
+
+        private void CambiarRealidad(string nuevaRealidad)
+        {
+            if (nuevaRealidad == realidad) return;
+            encuentroActivo = false;
+            entidadActual = null;
+            panelEncuentro.Visible = false;
+            teclas.Clear();
+            jugadorCaminando = false;
+            realidad = nuevaRealidad;
             jugadorX = 2500; jugadorY = 2500; camaraX = jugadorX - panelMapa.Width / 2f; camaraY = jugadorY - panelMapa.Height / 2f;
             CrearEntidades();
             celdasEnergia.Clear();
             celdasEnergia.AddRange(new[] { new PointF(2700, 2500), new PointF(2300, 2400), new PointF(3100, 2850), new PointF(1900, 3000) });
             ActualizarHUD(); panelMapa.Invalidate();
-            Mensaje("CRUCE DIMENSIONAL COMPLETADO: " + realidad);
+            Mensaje("CRUCE DIMENSIONAL COMPLETADO: " + realidad + ". USA W, A, S Y D PARA EXPLORAR.");
         }
 
         private void MostrarPerfil()
