@@ -1,6 +1,6 @@
 namespace NexusWindowsForm
 {
-    partial class Form2
+    public partial class Form2
     {
         private System.ComponentModel.IContainer? components = null;
         private Panel panelRegistro = null!;
@@ -285,16 +285,106 @@ namespace NexusWindowsForm
             lblTituloControles.Location = new Point(15, 185);
             lblTituloControles.Size = new Size(350, 26);
             lblTituloControles.Text = "CONTROLES";
-            ConfigurarBotonDisenador(btnArriba, "W ▲", new Point(115, 215), new Size(75, 34), Color.FromArgb(220, 35, 55));
-            ConfigurarBotonDisenador(btnIzquierda, "A ◀", new Point(35, 253), new Size(75, 34), Color.FromArgb(220, 35, 55));
-            ConfigurarBotonDisenador(btnAbajo, "S ▼", new Point(115, 253), new Size(75, 34), Color.FromArgb(220, 35, 55));
-            ConfigurarBotonDisenador(btnDerecha, "D ▶", new Point(195, 253), new Size(75, 34), Color.FromArgb(220, 35, 55));
-            ConfigurarBotonDisenador(btnAnalizar, "ANALIZAR ANOMALÍA (-20)", new Point(15, 300), new Size(350, 34), Color.FromArgb(220, 35, 55));
-            ConfigurarBotonDisenador(btnRecuperar, "RECUPERAR ENERGÍA (+20)", new Point(15, 340), new Size(350, 34), Color.FromArgb(25, 115, 85));
-            ConfigurarBotonDisenador(btnUsarCelula, "USAR CÉLULA (+30)", new Point(15, 380), new Size(350, 34), Color.FromArgb(25, 115, 85));
-            ConfigurarBotonDisenador(btnPerfil, "VER PERFIL", new Point(15, 420), new Size(165, 34), Color.FromArgb(55, 65, 85));
-            ConfigurarBotonDisenador(btnCambiarRealidad, "CAMBIAR REALIDAD", new Point(190, 420), new Size(175, 34), Color.FromArgb(55, 65, 85));
-            ConfigurarBotonDisenador(btnVolver, "VOLVER AL MENÚ", new Point(15, 462), new Size(350, 34), Color.FromArgb(90, 35, 45));
+            btnArriba.BackColor = Color.FromArgb(220, 35, 55);
+            btnArriba.FlatStyle = FlatStyle.Flat;
+            btnArriba.FlatAppearance.BorderSize = 0;
+            btnArriba.Font = new Font("Consolas", 8.5F, FontStyle.Bold);
+            btnArriba.ForeColor = Color.White;
+            btnArriba.Location = new Point(115, 215);
+            btnArriba.Size = new Size(75, 34);
+            btnArriba.Text = "W ▲";
+            btnArriba.UseVisualStyleBackColor = false;
+            btnArriba.Cursor = Cursors.Hand;
+            btnIzquierda.BackColor = Color.FromArgb(220, 35, 55);
+            btnIzquierda.FlatStyle = FlatStyle.Flat;
+            btnIzquierda.FlatAppearance.BorderSize = 0;
+            btnIzquierda.Font = new Font("Consolas", 8.5F, FontStyle.Bold);
+            btnIzquierda.ForeColor = Color.White;
+            btnIzquierda.Location = new Point(35, 253);
+            btnIzquierda.Size = new Size(75, 34);
+            btnIzquierda.Text = "A ◀";
+            btnIzquierda.UseVisualStyleBackColor = false;
+            btnIzquierda.Cursor = Cursors.Hand;
+            btnAbajo.BackColor = Color.FromArgb(220, 35, 55);
+            btnAbajo.FlatStyle = FlatStyle.Flat;
+            btnAbajo.FlatAppearance.BorderSize = 0;
+            btnAbajo.Font = new Font("Consolas", 8.5F, FontStyle.Bold);
+            btnAbajo.ForeColor = Color.White;
+            btnAbajo.Location = new Point(115, 253);
+            btnAbajo.Size = new Size(75, 34);
+            btnAbajo.Text = "S ▼";
+            btnAbajo.UseVisualStyleBackColor = false;
+            btnAbajo.Cursor = Cursors.Hand;
+            btnDerecha.BackColor = Color.FromArgb(220, 35, 55);
+            btnDerecha.FlatStyle = FlatStyle.Flat;
+            btnDerecha.FlatAppearance.BorderSize = 0;
+            btnDerecha.Font = new Font("Consolas", 8.5F, FontStyle.Bold);
+            btnDerecha.ForeColor = Color.White;
+            btnDerecha.Location = new Point(195, 253);
+            btnDerecha.Size = new Size(75, 34);
+            btnDerecha.Text = "D ▶";
+            btnDerecha.UseVisualStyleBackColor = false;
+            btnDerecha.Cursor = Cursors.Hand;
+            btnAnalizar.BackColor = Color.FromArgb(220, 35, 55);
+            btnAnalizar.FlatStyle = FlatStyle.Flat;
+            btnAnalizar.FlatAppearance.BorderSize = 0;
+            btnAnalizar.Font = new Font("Consolas", 8.5F, FontStyle.Bold);
+            btnAnalizar.ForeColor = Color.White;
+            btnAnalizar.Location = new Point(15, 300);
+            btnAnalizar.Size = new Size(350, 34);
+            btnAnalizar.Text = "ANALIZAR ANOMALÍA (-20)";
+            btnAnalizar.UseVisualStyleBackColor = false;
+            btnAnalizar.Cursor = Cursors.Hand;
+            btnRecuperar.BackColor = Color.FromArgb(25, 115, 85);
+            btnRecuperar.FlatStyle = FlatStyle.Flat;
+            btnRecuperar.FlatAppearance.BorderSize = 0;
+            btnRecuperar.Font = new Font("Consolas", 8.5F, FontStyle.Bold);
+            btnRecuperar.ForeColor = Color.White;
+            btnRecuperar.Location = new Point(15, 340);
+            btnRecuperar.Size = new Size(350, 34);
+            btnRecuperar.Text = "RECUPERAR ENERGÍA (+20)";
+            btnRecuperar.UseVisualStyleBackColor = false;
+            btnRecuperar.Cursor = Cursors.Hand;
+            btnUsarCelula.BackColor = Color.FromArgb(25, 115, 85);
+            btnUsarCelula.FlatStyle = FlatStyle.Flat;
+            btnUsarCelula.FlatAppearance.BorderSize = 0;
+            btnUsarCelula.Font = new Font("Consolas", 8.5F, FontStyle.Bold);
+            btnUsarCelula.ForeColor = Color.White;
+            btnUsarCelula.Location = new Point(15, 380);
+            btnUsarCelula.Size = new Size(350, 34);
+            btnUsarCelula.Text = "USAR CÉLULA (+30)";
+            btnUsarCelula.UseVisualStyleBackColor = false;
+            btnUsarCelula.Cursor = Cursors.Hand;
+            btnPerfil.BackColor = Color.FromArgb(55, 65, 85);
+            btnPerfil.FlatStyle = FlatStyle.Flat;
+            btnPerfil.FlatAppearance.BorderSize = 0;
+            btnPerfil.Font = new Font("Consolas", 8.5F, FontStyle.Bold);
+            btnPerfil.ForeColor = Color.White;
+            btnPerfil.Location = new Point(15, 420);
+            btnPerfil.Size = new Size(165, 34);
+            btnPerfil.Text = "VER PERFIL";
+            btnPerfil.UseVisualStyleBackColor = false;
+            btnPerfil.Cursor = Cursors.Hand;
+            btnCambiarRealidad.BackColor = Color.FromArgb(55, 65, 85);
+            btnCambiarRealidad.FlatStyle = FlatStyle.Flat;
+            btnCambiarRealidad.FlatAppearance.BorderSize = 0;
+            btnCambiarRealidad.Font = new Font("Consolas", 8.5F, FontStyle.Bold);
+            btnCambiarRealidad.ForeColor = Color.White;
+            btnCambiarRealidad.Location = new Point(190, 420);
+            btnCambiarRealidad.Size = new Size(175, 34);
+            btnCambiarRealidad.Text = "CAMBIAR REALIDAD";
+            btnCambiarRealidad.UseVisualStyleBackColor = false;
+            btnCambiarRealidad.Cursor = Cursors.Hand;
+            btnVolver.BackColor = Color.FromArgb(90, 35, 45);
+            btnVolver.FlatStyle = FlatStyle.Flat;
+            btnVolver.FlatAppearance.BorderSize = 0;
+            btnVolver.Font = new Font("Consolas", 8.5F, FontStyle.Bold);
+            btnVolver.ForeColor = Color.White;
+            btnVolver.Location = new Point(15, 462);
+            btnVolver.Size = new Size(350, 34);
+            btnVolver.Text = "VOLVER AL MENÚ";
+            btnVolver.UseVisualStyleBackColor = false;
+            btnVolver.Cursor = Cursors.Hand;
             panelLateral.Controls.AddRange(new Control[] { lblTituloMision, lblMision, lblTituloInventario, lblInventario, lblTituloControles, btnArriba, btnIzquierda, btnAbajo, btnDerecha, btnAnalizar, btnRecuperar, btnUsarCelula, btnPerfil, btnCambiarRealidad, btnVolver });
             lblMensaje.BackColor = Color.FromArgb(17, 20, 29);
             lblMensaje.Dock = DockStyle.Bottom;
@@ -322,18 +412,5 @@ namespace NexusWindowsForm
             ResumeLayout(false);
         }
 
-        private void ConfigurarBotonDisenador(Button boton, string texto, Point ubicacion, Size tamano, Color color)
-        {
-            boton.BackColor = color;
-            boton.FlatStyle = FlatStyle.Flat;
-            boton.FlatAppearance.BorderSize = 0;
-            boton.Font = new Font("Consolas", 8.5F, FontStyle.Bold);
-            boton.ForeColor = Color.White;
-            boton.Location = ubicacion;
-            boton.Size = tamano;
-            boton.Text = texto;
-            boton.UseVisualStyleBackColor = false;
-            boton.Cursor = Cursors.Hand;
-        }
     }
 }
