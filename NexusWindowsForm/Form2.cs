@@ -45,7 +45,8 @@ namespace NexusWindowsForm
         public Form2()
         {
             InitializeComponent();
-            CrearCasillas();
+            if (System.ComponentModel.LicenseManager.UsageMode != System.ComponentModel.LicenseUsageMode.Designtime)
+                CrearCasillas();
 
             btnInicializar.Click += (_, _) => IniciarSistema();
             btnArriba.Click += (_, _) => Mover(0, -1);
