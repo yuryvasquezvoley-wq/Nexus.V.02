@@ -3,7 +3,7 @@ using System.Windows.Forms;
 
 namespace NexusWindowsForm
 {
-    public class Form2 : Form
+    public partial class Form2 : Form
     {
         private readonly Color fondo = Color.FromArgb(7, 9, 14);
         private readonly Color panel = Color.FromArgb(17, 20, 29);
@@ -63,240 +63,21 @@ namespace NexusWindowsForm
 
         public Form2()
         {
-            Text = "NEXUS V2.0 - MATRIX SYSTEM";
-            StartPosition = FormStartPosition.CenterParent;
-            ClientSize = new Size(1180, 760);
-            MinimumSize = new Size(1000, 680);
-            BackColor = fondo;
-            ForeColor = texto;
-            Font = new Font("Segoe UI", 10F);
-            KeyPreview = true;
-            FormBorderStyle = FormBorderStyle.FixedSingle;
-            MaximizeBox = false;
-
-            ConstruirInterfaz();
-            KeyDown += Form2_KeyDown;
-        }
-
-        private void ConstruirInterfaz()
-        {
-            var encabezado = new Label
-            {
-                Text = "N E X U S     //     SYSTEM V2.0 ONLINE",
-                Dock = DockStyle.Top,
-                Height = 62,
-                TextAlign = ContentAlignment.MiddleCenter,
-                BackColor = Color.Black,
-                ForeColor = rojo,
-                Font = new Font("Consolas", 20F, FontStyle.Bold)
-            };
-            Controls.Add(encabezado);
-
-            panelJuego = new Panel
-            {
-                Dock = DockStyle.Fill,
-                BackColor = fondo,
-                Padding = new Padding(18),
-                Visible = false
-            };
-            Controls.Add(panelJuego);
-            panelJuego.BringToFront();
-            encabezado.BringToFront();
-
-            ConstruirPanelRegistro();
-            ConstruirPanelJuego();
-        }
-
-        private void ConstruirPanelRegistro()
-        {
-            panelRegistro = new Panel
-            {
-                Size = new Size(520, 470),
-                BackColor = panel,
-                Padding = new Padding(28),
-                Location = new Point((ClientSize.Width - 520) / 2, 135),
-                Anchor = AnchorStyles.None
-            };
-            Controls.Add(panelRegistro);
-
-            var titulo = CrearLabel("REGISTRO DEL CADETE", 24, rojo, true);
-            titulo.Dock = DockStyle.Top;
-            titulo.Height = 55;
-            titulo.TextAlign = ContentAlignment.MiddleCenter;
-            panelRegistro.Controls.Add(titulo);
-
-            var tabla = new TableLayoutPanel
-            {
-                Dock = DockStyle.Fill,
-                ColumnCount = 2,
-                RowCount = 5,
-                Padding = new Padding(12, 75, 12, 5)
-            };
-            tabla.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 52));
-            tabla.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 48));
-            for (int i = 0; i < 5; i++)
-                tabla.RowStyles.Add(new RowStyle(SizeType.Percent, 20));
-            panelRegistro.Controls.Add(tabla);
-            titulo.BringToFront();
-
-            txtNombre = new TextBox { Dock = DockStyle.Fill, Font = new Font("Segoe UI", 12F), BackColor = Color.FromArgb(30, 34, 44), ForeColor = texto, BorderStyle = BorderStyle.FixedSingle };
-            numEdad = CrearNumero(18, 80);
-            numEnergia = CrearNumero(1, 100);
-            numConexion = CrearNumero(1, 100);
-            AgregarCampo(tabla, 0, "NOMBRE DEL CADETE:", txtNombre);
-            AgregarCampo(tabla, 1, "EDAD:", numEdad);
-            AgregarCampo(tabla, 2, "ENERGÍA INICIAL:", numEnergia);
-            AgregarCampo(tabla, 3, "NIVEL DE CONEXIÓN:", numConexion);
-
-            var iniciar = CrearBoton("INICIALIZAR NEXUS", rojo);
-            iniciar.Dock = DockStyle.Fill;
-            iniciar.Click += (_, _) => IniciarSistema();
-            tabla.Controls.Add(iniciar, 0, 4);
-            tabla.SetColumnSpan(iniciar, 2);
-        }
-
-        private NumericUpDown CrearNumero(int min, int max) => new()
-        {
-            Minimum = min,
-            Maximum = max,
-            Value = max,
-            Dock = DockStyle.Fill,
-            BackColor = Color.FromArgb(30, 34, 44),
-            ForeColor = texto,
-            Font = new Font("Segoe UI", 12F)
-        };
-
-        private void AgregarCampo(TableLayoutPanel tabla, int fila, string etiqueta, Control control)
-        {
-            tabla.Controls.Add(CrearLabel(etiqueta, 10, texto, true), 0, fila);
-            tabla.Controls.Add(control, 1, fila);
-        }
-
-        private void ConstruirPanelJuego()
-        {
-            var hud = new TableLayoutPanel
-            {
-                Dock = DockStyle.Top,
-                Height = 105,
-                ColumnCount = 4,
-                BackColor = panel,
-                Padding = new Padding(12)
-            };
-            for (int i = 0; i < 4; i++)
-                hud.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25));
-            panelJuego.Controls.Add(hud);
-
-            var perfil = new Panel { Dock = DockStyle.Fill };
-            lblNombre = CrearLabel("EXPLORADOR", 12, rojo, true);
-            lblNombre.Dock = DockStyle.Top;
-            lblVida = CrearLabel("VIDA: 100/100", 9, texto);
-            lblVida.Dock = DockStyle.Bottom;
-            barraVida = CrearBarra();
-            barraVida.Dock = DockStyle.Bottom;
-            perfil.Controls.Add(lblVida);
-            perfil.Controls.Add(barraVida);
-            perfil.Controls.Add(lblNombre);
-            hud.Controls.Add(perfil, 0, 0);
-
-            lblEnergia = CrearLabel("ENERGÍA: 100/100", 10, texto);
-            barraEnergia = CrearBarra();
-            barraEnergia.Dock = DockStyle.Bottom;
-            lblEnergia.Dock = DockStyle.Top;
-            var energiaPanel = new Panel { Dock = DockStyle.Fill, Padding = new Padding(8) };
-            energiaPanel.Controls.Add(barraEnergia);
-            energiaPanel.Controls.Add(lblEnergia);
-            hud.Controls.Add(energiaPanel, 1, 0);
-
-            lblConexion = CrearLabel("CONEXIÓN: 100/100", 10, texto);
-            barraConexion = CrearBarra();
-            barraConexion.Dock = DockStyle.Bottom;
-            lblConexion.Dock = DockStyle.Top;
-            var conexionPanel = new Panel { Dock = DockStyle.Fill, Padding = new Padding(8) };
-            conexionPanel.Controls.Add(barraConexion);
-            conexionPanel.Controls.Add(lblConexion);
-            hud.Controls.Add(conexionPanel, 2, 0);
-
-            lblPosicion = CrearLabel("POSICIÓN: (0,0)", 11, texto, true);
-            lblPosicion.Dock = DockStyle.Fill;
-            lblPosicion.TextAlign = ContentAlignment.MiddleCenter;
-            hud.Controls.Add(lblPosicion, 3, 0);
-
-            var contenido = new TableLayoutPanel
-            {
-                Dock = DockStyle.Fill,
-                ColumnCount = 2,
-                RowCount = 1,
-                Padding = new Padding(0, 15, 0, 0)
-            };
-            contenido.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 67));
-            contenido.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33));
-            panelJuego.Controls.Add(contenido);
-
-            var mapaPanel = new Panel { Dock = DockStyle.Fill, BackColor = panel, Padding = new Padding(12) };
-            contenido.Controls.Add(mapaPanel, 0, 0);
-            var tituloMapa = CrearLabel("MAPA DIMENSIONAL  //  " + realidad, 13, rojo, true);
-            tituloMapa.Dock = DockStyle.Top;
-            tituloMapa.Height = 38;
-            mapaPanel.Controls.Add(tituloMapa);
-
-            panelMapa = new FlowLayoutPanel
-            {
-                Dock = DockStyle.Fill,
-                Padding = new Padding(8),
-                BackColor = Color.FromArgb(10, 13, 20),
-                WrapContents = true
-            };
-            mapaPanel.Controls.Add(panelMapa);
-            tituloMapa.BringToFront();
+            InitializeComponent();
             CrearCasillas();
 
-            var lateral = new FlowLayoutPanel
-            {
-                Dock = DockStyle.Fill,
-                FlowDirection = FlowDirection.TopDown,
-                WrapContents = false,
-                AutoScroll = true,
-                BackColor = panel,
-                Padding = new Padding(14)
-            };
-            contenido.Controls.Add(lateral, 1, 0);
-
-            lateral.Controls.Add(CrearLabel("MISIÓN ACTUAL", 15, rojo, true));
-            lblMision = CrearLabel("LA ANOMALÍA PERDIDA\nExplora la realidad, reúne recursos y registra el núcleo energético.", 10, texto);
-            lblMision.Size = new Size(300, 95);
-            lateral.Controls.Add(lblMision);
-
-            lateral.Controls.Add(CrearLabel("INVENTARIO", 14, rojo, true));
-            lblInventario = CrearLabel("", 10, texto);
-            lblInventario.Size = new Size(300, 70);
-            lateral.Controls.Add(lblInventario);
-
-            lateral.Controls.Add(CrearLabel("CONTROLES", 14, rojo, true));
-            var controles = new TableLayoutPanel { Width = 290, Height = 145, ColumnCount = 3, RowCount = 3 };
-            for (int i = 0; i < 3; i++)
-            {
-                controles.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33F));
-                controles.RowStyles.Add(new RowStyle(SizeType.Percent, 33.33F));
-            }
-            controles.Controls.Add(CrearBoton("W ▲", rojo, (_, _) => Mover(0, -1)), 1, 0);
-            controles.Controls.Add(CrearBoton("A ◀", rojo, (_, _) => Mover(-1, 0)), 0, 1);
-            controles.Controls.Add(CrearBoton("S ▼", rojo, (_, _) => Mover(0, 1)), 1, 1);
-            controles.Controls.Add(CrearBoton("D ▶", rojo, (_, _) => Mover(1, 0)), 2, 1);
-            lateral.Controls.Add(controles);
-
-            lateral.Controls.Add(CrearBoton("ANALIZAR ANOMALÍA  (-20)", rojo, (_, _) => AnalizarAnomalia()));
-            lateral.Controls.Add(CrearBoton("RECUPERAR ENERGÍA  (+20)", Color.FromArgb(25, 115, 85), (_, _) => RecuperarEnergia()));
-            lateral.Controls.Add(CrearBoton("USAR CÉLULA  (+30)", Color.FromArgb(25, 115, 85), (_, _) => UsarCelula()));
-            lateral.Controls.Add(CrearBoton("VER PERFIL", Color.FromArgb(55, 65, 85), (_, _) => MostrarPerfil()));
-            lateral.Controls.Add(CrearBoton("CAMBIAR REALIDAD", Color.FromArgb(55, 65, 85), (_, _) => CambiarRealidad()));
-            lateral.Controls.Add(CrearBoton("VOLVER AL MENÚ", Color.FromArgb(90, 35, 45), (_, _) => Close()));
-
-            lblMensaje = CrearLabel("SISTEMA LISTO. REGISTRA AL EXPLORADOR PARA COMENZAR.", 10, Color.FromArgb(255, 190, 90), true);
-            lblMensaje.Dock = DockStyle.Bottom;
-            lblMensaje.Height = 35;
-            lblMensaje.TextAlign = ContentAlignment.MiddleLeft;
-            panelJuego.Controls.Add(lblMensaje);
-            lblMensaje.BringToFront();
+            btnInicializar.Click += (_, _) => IniciarSistema();
+            btnArriba.Click += (_, _) => Mover(0, -1);
+            btnIzquierda.Click += (_, _) => Mover(-1, 0);
+            btnAbajo.Click += (_, _) => Mover(0, 1);
+            btnDerecha.Click += (_, _) => Mover(1, 0);
+            btnAnalizar.Click += (_, _) => AnalizarAnomalia();
+            btnRecuperar.Click += (_, _) => RecuperarEnergia();
+            btnUsarCelula.Click += (_, _) => UsarCelula();
+            btnPerfil.Click += (_, _) => MostrarPerfil();
+            btnCambiarRealidad.Click += (_, _) => CambiarRealidad();
+            btnVolver.Click += (_, _) => Close();
+            KeyDown += Form2_KeyDown;
         }
 
         private void CrearCasillas()
@@ -580,43 +361,4 @@ namespace NexusWindowsForm
             ActualizarTodo();
         }
 
-        private Label CrearLabel(string textoLabel, float tamano, Color color, bool negrita = false) => new()
-        {
-            Text = textoLabel,
-            ForeColor = color,
-            BackColor = Color.Transparent,
-            Font = new Font("Consolas", tamano, negrita ? FontStyle.Bold : FontStyle.Regular),
-            AutoSize = false,
-            TextAlign = ContentAlignment.MiddleLeft
-        };
-
-        private ProgressBar CrearBarra() => new()
-        {
-            Minimum = 0,
-            Maximum = 100,
-            Value = 100,
-            Height = 16,
-            Style = ProgressBarStyle.Continuous
-        };
-
-        private Button CrearBoton(string textoBoton, Color color, EventHandler? accion = null)
-        {
-            var boton = new Button
-            {
-                Text = textoBoton,
-                Height = 38,
-                Width = 290,
-                Margin = new Padding(3, 5, 3, 5),
-                BackColor = color,
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Font = new Font("Consolas", 9F, FontStyle.Bold),
-                Cursor = Cursors.Hand
-            };
-            boton.FlatAppearance.BorderColor = Color.FromArgb(90, color);
-            boton.FlatAppearance.MouseOverBackColor = ControlPaint.Light(color, 0.15F);
-            if (accion != null) boton.Click += accion;
-            return boton;
-        }
-    }
-}
+    }\n}\n
