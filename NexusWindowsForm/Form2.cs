@@ -41,6 +41,7 @@ namespace NexusWindowsForm
         private bool nucleoEncontrado;
         private string realidad = "REALIDAD 102";
         private bool iniciado;
+        private bool teclaMovimientoPresionada;
 
         public Form2()
         {
@@ -63,6 +64,7 @@ namespace NexusWindowsForm
             btnCambiarRealidad.Click += (_, _) => CambiarRealidad();
             btnVolver.Click += (_, _) => Close();
             KeyDown += Form2_KeyDown;
+            KeyUp += Form2_KeyUp;
         }
 
         private void CrearCasillas()
@@ -124,6 +126,17 @@ namespace NexusWindowsForm
         private void Form2_KeyDown(object? sender, KeyEventArgs e)
         {
             if (!iniciado) return;
+
+            // Windows repite KeyDown mientras la tecla permanece presionada.
+            // Bloqueamos esas repeticiones: una pulsación = una casilla.
+            if (e.KeyCode is Keys.W or Keys.A or Keys.S or Keys.D or Keys.Up or Keys.Down or Keys.Left or Keys.Right)
+            {
+                e.Handled = true;
+                e.SuppressKeyPress = true;
+                if (teclaMovimientoPresionada) return;
+                teclaMovimientoPresionada = true;
+            }
+
             switch (e.KeyCode)
             {
                 case Keys.W:
@@ -136,6 +149,12 @@ namespace NexusWindowsForm
                 case Keys.Right: Mover(1, 0); e.Handled = true; break;
                 case Keys.Escape: Close(); break;
             }
+        }
+
+        private void Form2_KeyUp(object? sender, KeyEventArgs e)
+        {
+            if (e.KeyCode is Keys.W or Keys.A or Keys.S or Keys.D or Keys.Up or Keys.Down or Keys.Left or Keys.Right)
+                teclaMovimientoPresionada = false;
         }
 
         private void Mover(int dx, int dy)
