@@ -20,7 +20,6 @@ namespace NexusWindowsForm
 
         private void ConfigurarEfectoHover(Button boton, Rectangle boundsOriginales)
         {
-            // Evita el cambio a blanco del estilo visual predeterminado de Windows.
             boton.FlatStyle = FlatStyle.Flat;
             boton.FlatAppearance.BorderSize = 0;
             boton.FlatAppearance.MouseOverBackColor = Color.Transparent;
@@ -31,8 +30,6 @@ namespace NexusWindowsForm
             {
                 int nuevoAncho = boundsOriginales.Width + HoverScale;
                 int nuevoAlto = boundsOriginales.Height + HoverScale;
-
-                // Agrandar desde el centro para que el botón parezca acercarse.
                 boton.Bounds = new Rectangle(
                     boundsOriginales.X - HoverScale / 2,
                     boundsOriginales.Y - HoverScale / 2,
@@ -40,41 +37,21 @@ namespace NexusWindowsForm
                     nuevoAlto);
             };
 
-            boton.MouseLeave += (sender, e) =>
-            {
-                boton.Bounds = boundsOriginales;
-            };
+            boton.MouseLeave += (sender, e) => boton.Bounds = boundsOriginales;
         }
 
-        private void Form1_Load(object sender, EventArgs e)
-        {
-        }
-
-        private void pictureBox1_Click(object sender, EventArgs e)
-        {
-        }
-
-        private void pictureBox1_Click_1(object sender, EventArgs e)
-        {
-        }
-
-        private void pictureBox1_Click_2(object sender, EventArgs e)
-        {
-        }
+        private void Form1_Load(object sender, EventArgs e) { }
+        private void pictureBox1_Click(object sender, EventArgs e) { }
+        private void pictureBox1_Click_1(object sender, EventArgs e) { }
+        private void pictureBox1_Click_2(object sender, EventArgs e) { }
 
         private void iniciar_Click(object sender, EventArgs e)
         {
-            string ruta = @"C:\Games\Programación\NexusClone\Nexus.V.02\Nexus.V.02\bin\Debug\net10.0\Nexus.V.02.exe";
-
-            if (System.IO.File.Exists(ruta))
-            {
-                this.Hide();
-                System.Diagnostics.Process.Start(ruta);
-            }
-            else
-            {
-                MessageBox.Show("El archivo no se encontró en la ruta:\n" + ruta, "Error de ruta", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            using Form2 juego = new Form2();
+            Hide();
+            juego.ShowDialog(this);
+            Show();
+            Activate();
         }
 
         private void salir_Click(object sender, EventArgs e)
