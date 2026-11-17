@@ -373,7 +373,7 @@ namespace NexusWindowsForm
 
         private void Mover(int dx, int dy)
         {
-            if (!iniciado || !misionActiva && realidad == "") return;
+            if (!iniciado || !misionActiva) return;
             int nx = x + dx, ny = y + dy;
             if (nx < 0 || nx > 9 || ny < 0 || ny > 9)
             {
