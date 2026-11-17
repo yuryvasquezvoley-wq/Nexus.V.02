@@ -69,6 +69,20 @@ namespace NexusWindowsForm.Properties {
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
+
+        internal static System.Drawing.Bitmap Demogorgon {
+            get {
+                object obj = ResourceManager.GetObject("Demogorgon", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+
+        internal static System.Drawing.Bitmap MenuReferencia {
+            get {
+                object obj = ResourceManager.GetObject("MenuReferencia", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
         
         /// <summary>
         ///   Busca un recurso adaptado de tipo System.Drawing.Bitmap.

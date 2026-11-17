@@ -53,13 +53,13 @@
             // iniciar
             // 
             iniciar.BackColor = Color.Transparent;
-            iniciar.BackgroundImage = Properties.Resources.Boton_de_inicio4;
-            iniciar.BackgroundImageLayout = ImageLayout.Zoom;
+            iniciar.AccessibleName = "Iniciar juego";
+            iniciar.BackgroundImage = null;
             iniciar.FlatAppearance.BorderSize = 0;
             iniciar.FlatStyle = FlatStyle.Flat;
-            iniciar.Location = new Point(66, 455);
+            iniciar.Location = new Point(500, 327);
             iniciar.Name = "iniciar";
-            iniciar.Size = new Size(264, 183);
+            iniciar.Size = new Size(380, 66);
             iniciar.TabIndex = 1;
             iniciar.UseVisualStyleBackColor = false;
             iniciar.Click += iniciar_Click;
@@ -67,13 +67,13 @@
             // salir
             // 
             salir.BackColor = Color.Transparent;
-            salir.BackgroundImage = Properties.Resources.Salir1;
-            salir.BackgroundImageLayout = ImageLayout.Zoom;
+            salir.AccessibleName = "Salir del juego";
+            salir.BackgroundImage = null;
             salir.FlatAppearance.BorderSize = 0;
             salir.FlatStyle = FlatStyle.Flat;
-            salir.Location = new Point(692, 475);
+            salir.Location = new Point(535, 410);
             salir.Name = "salir";
-            salir.Size = new Size(264, 163);
+            salir.Size = new Size(300, 62);
             salir.TabIndex = 2;
             salir.TabStop = false;
             salir.UseVisualStyleBackColor = false;
@@ -95,14 +95,16 @@
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.Black;
-            BackgroundImage = Properties.Resources.Fondo_del_menu;
-            ClientSize = new Size(990, 650);
+            BackgroundImage = Properties.Resources.MenuReferencia;
+            BackgroundImageLayout = ImageLayout.Stretch;
+            ClientSize = new Size(1365, 768);
             Controls.Add(nave);
             Controls.Add(salir);
             Controls.Add(iniciar);
             Controls.Add(realidad);
             FormBorderStyle = FormBorderStyle.None;
             Name = "Form1";
+            WindowState = FormWindowState.Maximized;
             Text = "Form1";
             Load += Form1_Load;
             ((System.ComponentModel.ISupportInitialize)nave).EndInit();

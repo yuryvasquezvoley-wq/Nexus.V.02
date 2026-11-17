@@ -414,17 +414,9 @@ namespace NEXUS
         {
             Console.ForegroundColor = ConsoleColor.Red;
 
-            Console.WriteLine(
-                "╔════════════════════════════════════════════════════════╗"
-            );
-
-            Console.WriteLine(
-                $"║                  {Nombre,-34}║"
-            );
-
-            Console.WriteLine(
-                "╠════════════════════════════════════════════════════════╣"
-            );
+            Console.WriteLine("╔════════════════════════════════════════════════╗");
+            Console.WriteLine($"║              {Nombre,-30}║");
+            Console.WriteLine("╠════════════════════════════════════════════════╣");
 
             for (int fila = 0; fila < 10; fila++)
             {
@@ -438,7 +430,7 @@ namespace NEXUS
                         Console.ForegroundColor =
                             ConsoleColor.Green;
 
-                        Console.Write("C  ");
+                        Console.Write("@   ");
 
                         continue;
                     }
@@ -470,7 +462,24 @@ namespace NEXUS
                         Console.ForegroundColor =
                             ConsoleColor.DarkGray;
 
-                    Console.Write(elemento + "  ");
+                    string baldosa = elemento switch
+                    {
+                        "." => ((fila * 7 + columna * 3) % 5) switch
+                        {
+                            0 => "::  ",
+                            1 => "''  ",
+                            2 => "..  ",
+                            _ => "··  "
+                        },
+                        "E" => "[E] ",
+                        "*" => "[+] ",
+                        "+" => "[!] ",
+                        "#" => "[X] ",
+                        "O" => "[O] ",
+                        "R" => "[R] ",
+                        _ => "??  "
+                    };
+                    Console.Write(baldosa);
                 }
 
                 Console.ForegroundColor =
@@ -479,20 +488,13 @@ namespace NEXUS
                 Console.WriteLine("║");
             }
 
-            Console.WriteLine(
-                "╚════════════════════════════════════════════════════════╝"
-            );
+            Console.WriteLine("╚════════════════════════════════════════════════╝");
 
             Console.ResetColor();
 
             Console.WriteLine();
-            Console.WriteLine("C = CADETE");
-            Console.WriteLine("E = EXTRACCIÓN");
-            Console.WriteLine("* = RECURSO");
-            Console.WriteLine("+ = ANOMALÍA");
-            Console.WriteLine("# = PELIGRO");
-            Console.WriteLine("R = ZONA DE ANOMALÍA");
-            Console.WriteLine("O = NÚCLEO ENERGÉTICO");
+            Console.WriteLine("@ Cadete   [E] Extracción   [+] Recurso   [!] Anomalía");
+            Console.WriteLine("[X] Peligro   [R] Zona de anomalía   [O] Núcleo   :: Ruinas");
         }
     }
 
@@ -868,12 +870,13 @@ namespace NEXUS
         private void IniciarExploracion()
         {
             bool explorando = true;
+            Console.Clear();
 
             while (explorando &&
                    misionActiva &&
                    explorador.Vida > 0)
             {
-                Console.Clear();
+                Console.SetCursorPosition(0, 0);
 
                 MostrarPanelExploracion();
 
@@ -1167,97 +1170,7 @@ namespace NEXUS
         {
             Bicho bicho =
                 new Bicho();
-
-            Console.Clear();
-
-            Console.ForegroundColor =
-                ConsoleColor.Red;
-
-            Console.WriteLine(
-                "╔════════════════════════════════════════╗"
-            );
-
-            Console.WriteLine(
-                "║       ¡ENTIDAD DE LA REALIDAD!         ║"
-            );
-
-            Console.WriteLine(
-                "╚════════════════════════════════════════╝"
-            );
-
-            Console.WriteLine();
-
-            Console.WriteLine(
-                ">> HAS ENCONTRADO UN BICHO DIMENSIONAL."
-            );
-
-            Console.WriteLine(
-                ">> VIDA DEL BICHO: 30"
-            );
-
-            Console.WriteLine();
-
-            Console.ForegroundColor =
-                ConsoleColor.White;
-
-            Console.WriteLine(
-                "[1] ATACAR"
-            );
-
-            Console.WriteLine(
-                "[2] ESCAPAR"
-            );
-
-            Console.WriteLine();
-
-            Console.Write(
-                ">> DECISIÓN: "
-            );
-
-            ConsoleKeyInfo tecla =
-                Console.ReadKey(true);
-
-            if (tecla.Key ==
-                ConsoleKey.D2)
-            {
-                Console.WriteLine();
-
-                Console.ForegroundColor =
-                    ConsoleColor.Green;
-
-                Console.WriteLine(
-                    ">> HAS ESCAPADO DEL BICHO."
-                );
-
-                Console.WriteLine(
-                    ">> PUEDES CONTINUAR TU CAMINO."
-                );
-
-                Console.ResetColor();
-
-                Pausa();
-                return;
-            }
-
-            if (tecla.Key ==
-                ConsoleKey.D1)
-            {
-                CombateBicho(bicho);
-                return;
-            }
-
-            Console.WriteLine();
-
-            Console.ForegroundColor =
-                ConsoleColor.Red;
-
-            Console.WriteLine(
-                ">> OPCIÓN NO VÁLIDA."
-            );
-
-            Console.ResetColor();
-
-            Pausa();
+            CombateBicho(bicho);
         }
 
 
@@ -1266,49 +1179,12 @@ namespace NEXUS
             while (bicho.Vida > 0 &&
                    explorador.Vida > 0)
             {
-                Console.Clear();
-
-                Console.ForegroundColor =
-                    ConsoleColor.Red;
-
-                Console.WriteLine(
-                    "╔════════════════════════════════════════╗"
-                );
-
-                Console.WriteLine(
-                    "║             COMBATE NEXUS              ║"
-                );
-
-                Console.WriteLine(
-                    "╚════════════════════════════════════════╝"
-                );
-
-                Console.WriteLine();
-
-                Console.ForegroundColor =
-                    ConsoleColor.Yellow;
-
-                Console.WriteLine(
-                    $"VIDA DEL BICHO: {bicho.Vida}/30"
-                );
-
-                Console.ForegroundColor =
-                    ConsoleColor.Red;
-
-                Console.WriteLine(
-                    $"VIDA DEL CADETE: {explorador.Vida}/100"
-                );
-
-                Console.WriteLine();
-
-                Console.ForegroundColor =
-                    ConsoleColor.White;
-
-                Console.WriteLine(
-                    ">> PRESIONE ENTER PARA ATACAR."
-                );
-
-                Console.ReadLine();
+                var decision = NexusWindowsForm.BattleDialog.Show(explorador.Vida, bicho.Vida);
+                if (decision == System.Windows.Forms.DialogResult.Abort)
+                {
+                    Console.WriteLine(">> HAS ESCAPADO DEL BICHO.");
+                    return;
+                }
 
                 // Cadete ataca
                 bicho.RecibirDanio(20);
@@ -2043,8 +1919,12 @@ namespace NEXUS
 
     class Program
     {
+        [STAThread]
         static void Main(string[] args)
         {
+            System.Windows.Forms.Application.EnableVisualStyles();
+            System.Windows.Forms.Application.SetCompatibleTextRenderingDefault(false);
+
             Console.OutputEncoding =
                 System.Text.Encoding.UTF8;
 

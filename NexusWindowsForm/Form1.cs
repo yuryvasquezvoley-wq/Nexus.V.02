@@ -2,48 +2,37 @@ namespace NexusWindowsForm
 {
     public partial class Form1 : Form
     {
-        private Rectangle iniciarBounds;
-        private Rectangle salirBounds;
-        private const int HoverScale = 12;
-
         public Form1()
         {
             InitializeComponent();
-
-            // Guardar las posiciones y tamaños originales para restaurarlos al salir del botón.
-            iniciarBounds = iniciar.Bounds;
-            salirBounds = salir.Bounds;
-
-            ConfigurarEfectoHover(iniciar, iniciarBounds);
-            ConfigurarEfectoHover(salir, salirBounds);
+            nave.Visible = false;
+            realidad.Visible = false;
+            PrepararZonaClic(iniciar, "Iniciar juego");
+            PrepararZonaClic(salir, "Salir");
+            Resize += (_, _) => AjustarMenu();
+            AjustarMenu();
         }
 
-        private void ConfigurarEfectoHover(Button boton, Rectangle boundsOriginales)
+        private static void PrepararZonaClic(Button boton, string nombre)
         {
-            // Evita el cambio a blanco del estilo visual predeterminado de Windows.
             boton.FlatStyle = FlatStyle.Flat;
             boton.FlatAppearance.BorderSize = 0;
-            boton.FlatAppearance.MouseOverBackColor = Color.Transparent;
+            boton.FlatAppearance.MouseOverBackColor = Color.FromArgb(35, 230, 235, 190);
             boton.FlatAppearance.MouseDownBackColor = Color.Transparent;
             boton.UseVisualStyleBackColor = false;
+            boton.Text = string.Empty;
+            boton.AccessibleName = nombre;
+            boton.Cursor = Cursors.Hand;
+        }
 
-            boton.MouseEnter += (sender, e) =>
-            {
-                int nuevoAncho = boundsOriginales.Width + HoverScale;
-                int nuevoAlto = boundsOriginales.Height + HoverScale;
-
-                // Agrandar desde el centro para que el botón parezca acercarse.
-                boton.Bounds = new Rectangle(
-                    boundsOriginales.X - HoverScale / 2,
-                    boundsOriginales.Y - HoverScale / 2,
-                    nuevoAncho,
-                    nuevoAlto);
-            };
-
-            boton.MouseLeave += (sender, e) =>
-            {
-                boton.Bounds = boundsOriginales;
-            };
+        private void AjustarMenu()
+        {
+            iniciar.Bounds = new Rectangle(
+                (int)(ClientSize.Width * 0.36), (int)(ClientSize.Height * 0.425),
+                (int)(ClientSize.Width * 0.28), (int)(ClientSize.Height * 0.09));
+            salir.Bounds = new Rectangle(
+                (int)(ClientSize.Width * 0.39), (int)(ClientSize.Height * 0.535),
+                (int)(ClientSize.Width * 0.22), (int)(ClientSize.Height * 0.09));
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -64,16 +53,43 @@ namespace NexusWindowsForm
 
         private void iniciar_Click(object sender, EventArgs e)
         {
-            string ruta = @"C:\Games\Programación\NexusClone\Nexus.V.02\Nexus.V.02\bin\Debug\net10.0\Nexus.V.02.exe";
+            string? directorio = AppContext.BaseDirectory;
+            string? proyecto = null;
 
-            if (System.IO.File.Exists(ruta))
+            // Encuentra el proyecto junto a la solución para que el botón funcione
+            // también en otros equipos y configuraciones de compilación.
+            for (int nivel = 0; nivel < 8 && directorio is not null; nivel++)
             {
-                this.Hide();
-                System.Diagnostics.Process.Start(ruta);
+                string candidato = System.IO.Path.Combine(directorio, "Nexus.V.02", "Nexus.V.02.csproj");
+                if (System.IO.File.Exists(candidato))
+                {
+                    proyecto = candidato;
+                    break;
+                }
+
+                directorio = System.IO.Directory.GetParent(directorio)?.FullName;
             }
-            else
+
+            if (proyecto is null)
             {
-                MessageBox.Show("El archivo no se encontró en la ruta:\n" + ruta, "Error de ruta", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("No se encontró el proyecto del juego junto a la solución.", "NEXUS", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            try
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "dotnet",
+                    Arguments = $"run --project \"{proyecto}\" --no-launch-profile",
+                    WorkingDirectory = System.IO.Path.GetDirectoryName(proyecto)!,
+                    UseShellExecute = true
+                });
+                Hide();
+            }
+            catch (System.ComponentModel.Win32Exception)
+            {
+                MessageBox.Show("No se pudo iniciar .NET. Instala el SDK de .NET 11 para ejecutar NEXUS.", "NEXUS", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
