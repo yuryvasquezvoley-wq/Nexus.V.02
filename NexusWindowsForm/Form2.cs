@@ -8,6 +8,7 @@ namespace NexusWindowsForm
     {
         private readonly Color rojo = Color.FromArgb(230, 20, 48);
         private readonly List<Entidad> entidades = new();
+        private readonly List<PointF> celdasEnergia = new() { new(2700, 2500), new(2300, 2400), new(3100, 2850), new(1900, 3000) };
         private readonly HashSet<Keys> teclas = new();
         private readonly System.Windows.Forms.Timer relojMovimiento = new();
         private readonly System.Windows.Forms.Timer relojEscena = new();
@@ -94,6 +95,7 @@ namespace NexusWindowsForm
                 botones[i].SetBounds(x, 16, anchos[i], 40);
                 x += anchos[i] + espacio;
             }
+            panelRegistro.Location = new Point((ClientSize.Width - panelRegistro.Width) / 2, (ClientSize.Height - panelRegistro.Height) / 2);
             panelEncuentro.Location = new Point(
                 Math.Max(20, (panelMapaContenedor.Width - panelEncuentro.Width) / 2),
                 Math.Max(50, (panelMapaContenedor.Height - panelEncuentro.Height) / 2));
@@ -245,7 +247,8 @@ namespace NexusWindowsForm
                     Mensaje("NÚCLEO REGISTRADO. MISIÓN COMPLETADA.");
                 }
             }
-            if ((int)jugadorX % 1100 < 8 && (int)jugadorY % 900 < 8)
+            PointF? celda = celdasEnergia.FirstOrDefault(p => Math.Abs(p.X - jugadorX) < 34 && Math.Abs(p.Y - jugadorY) < 34);
+            if (celda.HasValue && celdasEnergia.Remove(celda.Value))
             {
                 celulasEnergia++;
                 Mensaje("CÉLULA DE ENERGÍA RECOLECTADA.");
@@ -338,6 +341,15 @@ namespace NexusWindowsForm
                 }
             }
 
+            foreach (PointF celda in celdasEnergia)
+            {
+                float cx = celda.X - camaraX, cy = celda.Y - camaraY;
+                using SolidBrush energiaBrush = new(Color.Gold);
+                g.FillRectangle(energiaBrush, cx - 8, cy - 8, 16, 16);
+                using Pen energiaPen = new(Color.OrangeRed, 2);
+                g.DrawRectangle(energiaPen, cx - 11, cy - 11, 22, 22);
+            }
+
             foreach (Entidad entidad in entidades.Where(z => !z.Derrotada))
             {
                 float ex = entidad.Posicion.X - camaraX, ey = entidad.Posicion.Y - camaraY;
@@ -414,7 +426,10 @@ namespace NexusWindowsForm
         {
             realidad = realidad == "REALIDAD 102" ? "REALIDAD 999" : "REALIDAD 102";
             jugadorX = 2500; jugadorY = 2500; camaraX = jugadorX - panelMapa.Width / 2f; camaraY = jugadorY - panelMapa.Height / 2f;
-            CrearEntidades(); ActualizarHUD(); panelMapa.Invalidate();
+            CrearEntidades();
+            celdasEnergia.Clear();
+            celdasEnergia.AddRange(new[] { new PointF(2700, 2500), new PointF(2300, 2400), new PointF(3100, 2850), new PointF(1900, 3000) });
+            ActualizarHUD(); panelMapa.Invalidate();
             Mensaje("CRUCE DIMENSIONAL COMPLETADO: " + realidad);
         }
 
