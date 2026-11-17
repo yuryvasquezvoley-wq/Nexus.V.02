@@ -27,7 +27,7 @@ namespace NexusWindowsForm
         private Label lblPosicion = null!;
         private Panel panelMapaContenedor = null!;
         private Label lblTituloMapa = null!;
-        private FlowLayoutPanel panelMapa = null!;
+        private TableLayoutPanel panelMapa = null!;
         private Panel panelLateral = null!;
         private Label lblTituloMision = null!;
         private Label lblMision = null!;
@@ -78,7 +78,7 @@ namespace NexusWindowsForm
             lblPosicion = new Label();
             panelMapaContenedor = new Panel();
             lblTituloMapa = new Label();
-            panelMapa = new FlowLayoutPanel();
+            panelMapa = new TableLayoutPanel();
             panelLateral = new Panel();
             lblTituloMision = new Label();
             lblMision = new Label();
@@ -107,7 +107,7 @@ namespace NexusWindowsForm
             SuspendLayout();
             // Form2
             AutoScaleMode = AutoScaleMode.Font;
-            BackColor = Color.FromArgb(7, 9, 14);
+            BackColor = Color.FromArgb(8, 3, 8);
             ClientSize = new Size(1180, 760);
             Font = new Font("Segoe UI", 9F);
             ForeColor = Color.FromArgb(235, 238, 245);
@@ -126,7 +126,7 @@ namespace NexusWindowsForm
             lblEncabezado.Text = "N E X U S     //     SYSTEM V2.0 ONLINE";
             lblEncabezado.TextAlign = ContentAlignment.MiddleCenter;
             // Registration panel
-            panelRegistro.BackColor = Color.FromArgb(17, 20, 29);
+            panelRegistro.BackColor = Color.FromArgb(20, 7, 13);
             panelRegistro.Location = new Point(330, 145);
             panelRegistro.Name = "panelRegistro";
             panelRegistro.Size = new Size(520, 480);
@@ -144,7 +144,7 @@ namespace NexusWindowsForm
             lblEtiquetaNombre.Size = new Size(190, 34);
             lblEtiquetaNombre.Text = "NOMBRE DEL CADETE:";
             lblEtiquetaNombre.TextAlign = ContentAlignment.MiddleLeft;
-            txtNombre.BackColor = Color.FromArgb(30, 34, 44);
+            txtNombre.BackColor = Color.FromArgb(38, 12, 20);
             txtNombre.BorderStyle = BorderStyle.FixedSingle;
             txtNombre.Font = new Font("Segoe UI", 12F);
             txtNombre.ForeColor = Color.FromArgb(235, 238, 245);
@@ -207,7 +207,7 @@ namespace NexusWindowsForm
             panelJuego.Dock = DockStyle.Fill;
             panelJuego.Padding = new Padding(16, 12, 16, 12);
             panelJuego.Visible = false;
-            panelHud.BackColor = Color.FromArgb(17, 20, 29);
+            panelHud.BackColor = Color.FromArgb(25, 6, 13);
             panelHud.Dock = DockStyle.Top;
             panelHud.Height = 100;
             lblNombre.Font = new Font("Consolas", 12F, FontStyle.Bold);
@@ -222,6 +222,7 @@ namespace NexusWindowsForm
             barraVida.Location = new Point(130, 50);
             barraVida.Size = new Size(130, 16);
             barraVida.Maximum = 100;
+            barraVida.ForeColor = Color.FromArgb(220, 20, 45);
             lblEnergia.Font = new Font("Consolas", 9F);
             lblEnergia.Location = new Point(300, 25);
             lblEnergia.Size = new Size(150, 22);
@@ -229,6 +230,7 @@ namespace NexusWindowsForm
             barraEnergia.Location = new Point(300, 55);
             barraEnergia.Size = new Size(180, 16);
             barraEnergia.Maximum = 100;
+            barraEnergia.ForeColor = Color.FromArgb(220, 20, 45);
             lblConexion.Font = new Font("Consolas", 9F);
             lblConexion.Location = new Point(535, 25);
             lblConexion.Size = new Size(160, 22);
@@ -236,6 +238,7 @@ namespace NexusWindowsForm
             barraConexion.Location = new Point(535, 55);
             barraConexion.Size = new Size(180, 16);
             barraConexion.Maximum = 100;
+            barraConexion.ForeColor = Color.FromArgb(220, 20, 45);
             lblPosicion.Font = new Font("Consolas", 10F, FontStyle.Bold);
             lblPosicion.Location = new Point(760, 20);
             lblPosicion.Size = new Size(340, 55);
@@ -243,7 +246,7 @@ namespace NexusWindowsForm
             lblPosicion.TextAlign = ContentAlignment.MiddleCenter;
             panelHud.Controls.AddRange(new Control[] { lblNombre, lblVida, barraVida, lblEnergia, barraEnergia, lblConexion, barraConexion, lblPosicion });
             // Map container
-            panelMapaContenedor.BackColor = Color.FromArgb(17, 20, 29);
+            panelMapaContenedor.BackColor = Color.FromArgb(18, 5, 11);
             panelMapaContenedor.Location = new Point(16, 125);
             panelMapaContenedor.Size = new Size(720, 535);
             lblTituloMapa.Dock = DockStyle.Top;
@@ -253,13 +256,22 @@ namespace NexusWindowsForm
             lblTituloMapa.Text = "MAPA DIMENSIONAL // REALIDAD 102";
             lblTituloMapa.TextAlign = ContentAlignment.MiddleLeft;
             panelMapa.Dock = DockStyle.Fill;
-            panelMapa.BackColor = Color.FromArgb(10, 13, 20);
+            panelMapa.BackColor = Color.FromArgb(10, 5, 10);
             panelMapa.Padding = new Padding(8);
-            panelMapa.WrapContents = true;
+            panelMapa.ColumnCount = 10;
+            panelMapa.RowCount = 10;
+            panelMapa.GrowStyle = TableLayoutPanelGrowStyle.FixedSize;
+            panelMapa.ColumnStyles.Clear();
+            panelMapa.RowStyles.Clear();
+            for (int i = 0; i < 10; i++)
+            {
+                panelMapa.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 10F));
+                panelMapa.RowStyles.Add(new RowStyle(SizeType.Percent, 10F));
+            }
             panelMapaContenedor.Controls.Add(panelMapa);
             panelMapaContenedor.Controls.Add(lblTituloMapa);
             // Sidebar
-            panelLateral.BackColor = Color.FromArgb(17, 20, 29);
+            panelLateral.BackColor = Color.FromArgb(22, 6, 12);
             panelLateral.Location = new Point(750, 125);
             panelLateral.Size = new Size(390, 535);
             lblTituloMision.Font = new Font("Consolas", 14F, FontStyle.Bold);
@@ -386,7 +398,7 @@ namespace NexusWindowsForm
             btnVolver.UseVisualStyleBackColor = false;
             btnVolver.Cursor = Cursors.Hand;
             panelLateral.Controls.AddRange(new Control[] { lblTituloMision, lblMision, lblTituloInventario, lblInventario, lblTituloControles, btnArriba, btnIzquierda, btnAbajo, btnDerecha, btnAnalizar, btnRecuperar, btnUsarCelula, btnPerfil, btnCambiarRealidad, btnVolver });
-            lblMensaje.BackColor = Color.FromArgb(17, 20, 29);
+            lblMensaje.BackColor = Color.FromArgb(30, 5, 12);
             lblMensaje.Dock = DockStyle.Bottom;
             lblMensaje.Font = new Font("Consolas", 9F, FontStyle.Bold);
             lblMensaje.ForeColor = Color.FromArgb(255, 190, 90);
