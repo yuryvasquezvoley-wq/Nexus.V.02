@@ -119,7 +119,7 @@ namespace NexusWindowsForm
             };
             Controls.Add(panelRegistro);
 
-            var titulo = CrearLabel("REGISTRO DE EXPLORADOR", 24, rojo, true);
+            var titulo = CrearLabel("REGISTRO DEL CADETE", 24, rojo, true);
             titulo.Dock = DockStyle.Top;
             titulo.Height = 55;
             titulo.TextAlign = ContentAlignment.MiddleCenter;
@@ -143,7 +143,7 @@ namespace NexusWindowsForm
             numEdad = CrearNumero(18, 80);
             numEnergia = CrearNumero(1, 100);
             numConexion = CrearNumero(1, 100);
-            AgregarCampo(tabla, 0, "NOMBRE:", txtNombre);
+            AgregarCampo(tabla, 0, "NOMBRE DEL CADETE:", txtNombre);
             AgregarCampo(tabla, 1, "EDAD:", numEdad);
             AgregarCampo(tabla, 2, "ENERGÍA INICIAL:", numEnergia);
             AgregarCampo(tabla, 3, "NIVEL DE CONEXIÓN:", numConexion);
@@ -334,7 +334,7 @@ namespace NexusWindowsForm
         {
             if (string.IsNullOrWhiteSpace(txtNombre.Text))
             {
-                MessageBox.Show("Ingresa el nombre del explorador.", "NEXUS", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Ingresa el nombre del cadete para iniciar NEXUS.", "NEXUS", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 txtNombre.Focus();
                 return;
             }
@@ -512,7 +512,7 @@ namespace NexusWindowsForm
 
         private void MostrarPerfil()
         {
-            MessageBox.Show($"EXPLORADOR: {nombreExplorador}\nEDAD: {edad}\nVIDA: {vida}/100\nENERGÍA: {energia}/100\nCONEXIÓN: {conexion}/100", "PERFIL DEL EXPLORADOR", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show($"CADETE: {nombreExplorador}\nEDAD: {edad}\nVIDA: {vida}/100\nENERGÍA: {energia}/100\nCONEXIÓN: {conexion}/100", "PERFIL DEL EXPLORADOR", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private void ActualizarTodo()
