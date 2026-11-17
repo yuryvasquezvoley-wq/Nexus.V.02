@@ -45,7 +45,10 @@ namespace NexusWindowsForm
         public Form2()
         {
             InitializeComponent();
-            if (System.ComponentModel.LicenseManager.UsageMode != System.ComponentModel.LicenseUsageMode.Designtime)
+            bool enDisenador = System.ComponentModel.LicenseManager.UsageMode == System.ComponentModel.LicenseUsageMode.Designtime;
+            panelJuego.Visible = enDisenador;
+            panelRegistro.Visible = true;
+            if (!enDisenador)
                 CrearCasillas();
 
             btnInicializar.Click += (_, _) => IniciarSistema();
@@ -112,6 +115,7 @@ namespace NexusWindowsForm
             panelRegistro.Visible = false;
             panelJuego.Visible = true;
             panelJuego.BringToFront();
+            lblEncabezado.BringToFront();
             ActualizarHUD();
             ActualizarInventario();
             Mensaje("NEXUS V2.0 ONLINE. EXPLORADOR REGISTRADO.");
@@ -292,6 +296,7 @@ namespace NexusWindowsForm
             lblEnergia.Text = $"ENERGÍA: {energia}/100";
             lblConexion.Text = $"CONEXIÓN: {conexion}/100";
             lblPosicion.Text = $"POSICIÓN: ({x},{y})  //  {realidad}";
+            lblTituloMapa.Text = "MAPA DIMENSIONAL // " + realidad;
             barraVida.Value = Math.Clamp(vida, 0, 100);
             barraEnergia.Value = Math.Clamp(energia, 0, 100);
             barraConexion.Value = Math.Clamp(conexion, 0, 100);
