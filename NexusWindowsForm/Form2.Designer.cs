@@ -27,13 +27,20 @@ namespace NexusWindowsForm
         private Label lblPosicion = null!;
         private Panel panelMapaContenedor = null!;
         private Label lblTituloMapa = null!;
-        private TableLayoutPanel panelMapa = null!;
+        private Panel panelMapa = null!;
         private Panel panelLateral = null!;
         private Label lblTituloMision = null!;
         private Label lblMision = null!;
         private Label lblTituloInventario = null!;
         private Label lblInventario = null!;
         private Label lblTituloControles = null!;
+        private Panel panelAcciones = null!;
+        private Panel panelEncuentro = null!;
+        private PictureBox imgMonstruo = null!;
+        private Label lblMonstruo = null!;
+        private Label lblDetalleMonstruo = null!;
+        private Button btnAtacar = null!;
+        private Button btnEscapar = null!;
         private Button btnArriba = null!;
         private Button btnIzquierda = null!;
         private Button btnAbajo = null!;
@@ -82,7 +89,7 @@ namespace NexusWindowsForm
             lblPosicion = new Label();
             panelMapaContenedor = new Panel();
             lblTituloMapa = new Label();
-            panelMapa = new TableLayoutPanel();
+            panelMapa = new Panel();
             panelLateral = new Panel();
             lblTituloMision = new Label();
             lblMision = new Label();
@@ -100,6 +107,13 @@ namespace NexusWindowsForm
             btnCambiarRealidad = new Button();
             btnVolver = new Button();
             lblMensaje = new Label();
+            panelAcciones = new Panel();
+            panelEncuentro = new Panel();
+            imgMonstruo = new PictureBox();
+            lblMonstruo = new Label();
+            lblDetalleMonstruo = new Label();
+            btnAtacar = new Button();
+            btnEscapar = new Button();
             imgPueblo = new PictureBox();
             imgBosque = new PictureBox();
             imgLaboratorio = new PictureBox();
@@ -116,13 +130,15 @@ namespace NexusWindowsForm
             // Form2
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.FromArgb(8, 3, 8);
-            ClientSize = new Size(1180, 760);
+            WindowState = FormWindowState.Maximized;
+            FormBorderStyle = FormBorderStyle.None;
+            ClientSize = new Size(1600, 900);
             Font = new Font("Segoe UI", 9F);
             ForeColor = Color.FromArgb(235, 238, 245);
-            FormBorderStyle = FormBorderStyle.FixedSingle;
+
             KeyPreview = true;
-            MaximizeBox = false;
-            MinimumSize = new Size(1000, 680);
+            MaximizeBox = true;
+            MinimumSize = new Size(1200, 800);
             StartPosition = FormStartPosition.CenterParent;
             Text = "NEXUS V2.0 - MATRIX SYSTEM";
             // Header
@@ -255,8 +271,8 @@ namespace NexusWindowsForm
             panelHud.Controls.AddRange(new Control[] { lblNombre, lblVida, barraVida, lblEnergia, barraEnergia, lblConexion, barraConexion, lblPosicion });
             // Map container
             panelMapaContenedor.BackColor = Color.FromArgb(18, 5, 11);
-            panelMapaContenedor.Location = new Point(16, 125);
-            panelMapaContenedor.Size = new Size(535, 535);
+            panelMapaContenedor.Location = new Point(16, 112);
+            panelMapaContenedor.Size = new Size(1180, 690);
             lblTituloMapa.Dock = DockStyle.Top;
             lblTituloMapa.Font = new Font("Consolas", 13F, FontStyle.Bold);
             lblTituloMapa.ForeColor = Color.FromArgb(220, 35, 55);
@@ -264,47 +280,38 @@ namespace NexusWindowsForm
             lblTituloMapa.Text = "MAPA DIMENSIONAL // REALIDAD 102";
             lblTituloMapa.TextAlign = ContentAlignment.MiddleLeft;
             panelMapa.Dock = DockStyle.Fill;
-            panelMapa.BackColor = Color.FromArgb(10, 5, 10);
-            panelMapa.Padding = new Padding(8);
-            panelMapa.ColumnCount = 10;
-            panelMapa.RowCount = 10;
-            panelMapa.GrowStyle = TableLayoutPanelGrowStyle.FixedSize;
-            panelMapa.ColumnStyles.Clear();
-            panelMapa.RowStyles.Clear();
-            for (int i = 0; i < 10; i++)
-            {
-                panelMapa.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 10F));
-                panelMapa.RowStyles.Add(new RowStyle(SizeType.Percent, 10F));
-            }
+            panelMapa.BackColor = Color.FromArgb(8, 3, 10);
+            panelMapa.Padding = new Padding(0);
+            panelMapa.BorderStyle = BorderStyle.FixedSingle;
             panelMapaContenedor.Controls.Add(panelMapa);
             panelMapaContenedor.Controls.Add(lblTituloMapa);
             // Sidebar
             panelLateral.BackColor = Color.FromArgb(22, 6, 12);
-            panelLateral.Location = new Point(565, 125);
-            panelLateral.Size = new Size(575, 535);
+            panelLateral.Location = new Point(1210, 112);
+            panelLateral.Size = new Size(360, 690);
             lblTituloMision.Font = new Font("Consolas", 14F, FontStyle.Bold);
             lblTituloMision.ForeColor = Color.FromArgb(220, 35, 55);
             lblTituloMision.Location = new Point(15, 12);
-            lblTituloMision.Size = new Size(350, 28);
+            lblTituloMision.Size = new Size(155, 28);
             lblTituloMision.Text = "MISIÓN ACTUAL";
             lblMision.Font = new Font("Consolas", 9F);
             lblMision.Location = new Point(15, 42);
-            lblMision.Size = new Size(350, 55);
+            lblMision.Size = new Size(155, 80);
             lblMision.Text = "LA ANOMALÍA PERDIDA\r\nExplora la realidad, reúne recursos y registra el núcleo energético.";
             lblInventario.Font = new Font("Consolas", 9F);
-            lblInventario.Location = new Point(15, 135);
-            lblInventario.Size = new Size(350, 48);
+            lblInventario.Location = new Point(15, 145);
+            lblInventario.Size = new Size(155, 70);
             lblInventario.Text = "CÉLULA DE ENERGÍA: 0\r\nRECURSOS: 0";
             lblTituloInventario.Font = new Font("Consolas", 13F, FontStyle.Bold);
             lblTituloInventario.ForeColor = Color.FromArgb(220, 35, 55);
-            lblTituloInventario.Location = new Point(15, 105);
-            lblTituloInventario.Size = new Size(350, 26);
+            lblTituloInventario.Location = new Point(15, 112);
+            lblTituloInventario.Size = new Size(155, 26);
             lblTituloInventario.Text = "INVENTARIO";
             lblTituloControles.Font = new Font("Consolas", 13F, FontStyle.Bold);
             lblTituloControles.ForeColor = Color.FromArgb(220, 35, 55);
             lblTituloControles.Location = new Point(15, 185);
             lblTituloControles.Size = new Size(350, 26);
-            lblTituloControles.Text = "CONTROLES";
+            lblTituloControles.Text = "";
             btnArriba.BackColor = Color.FromArgb(220, 35, 55);
             btnArriba.FlatStyle = FlatStyle.Flat;
             btnArriba.FlatAppearance.BorderSize = 0;
@@ -407,29 +414,29 @@ namespace NexusWindowsForm
             btnVolver.Cursor = Cursors.Hand;
             imgPueblo.BackColor = Color.FromArgb(10, 3, 8);
             imgPueblo.BorderStyle = BorderStyle.FixedSingle;
-            imgPueblo.Location = new Point(385, 18);
-            imgPueblo.Size = new Size(175, 95);
+            imgPueblo.Location = new Point(175, 18);
+            imgPueblo.Size = new Size(165, 95);
             imgPueblo.SizeMode = PictureBoxSizeMode.StretchImage;
             imgPueblo.TabStop = false;
             imgBosque.BackColor = Color.FromArgb(10, 3, 8);
             imgBosque.BorderStyle = BorderStyle.FixedSingle;
-            imgBosque.Location = new Point(385, 135);
+            imgBosque.Location = new Point(175, 135);
             imgBosque.Size = new Size(175, 95);
             imgBosque.SizeMode = PictureBoxSizeMode.StretchImage;
             imgBosque.TabStop = false;
             imgLaboratorio.BackColor = Color.FromArgb(10, 3, 8);
             imgLaboratorio.BorderStyle = BorderStyle.FixedSingle;
-            imgLaboratorio.Location = new Point(385, 252);
+            imgLaboratorio.Location = new Point(175, 252);
             imgLaboratorio.Size = new Size(175, 95);
             imgLaboratorio.SizeMode = PictureBoxSizeMode.StretchImage;
             imgLaboratorio.TabStop = false;
             imgPortal.BackColor = Color.FromArgb(10, 3, 8);
             imgPortal.BorderStyle = BorderStyle.FixedSingle;
-            imgPortal.Location = new Point(385, 369);
+            imgPortal.Location = new Point(175, 369);
             imgPortal.Size = new Size(175, 95);
             imgPortal.SizeMode = PictureBoxSizeMode.StretchImage;
             imgPortal.TabStop = false;
-            panelLateral.Controls.AddRange(new Control[] { imgPueblo, imgBosque, imgLaboratorio, imgPortal, lblTituloMision, lblMision, lblTituloInventario, lblInventario, lblTituloControles, btnArriba, btnIzquierda, btnAbajo, btnDerecha, btnAnalizar, btnRecuperar, btnUsarCelula, btnPerfil, btnCambiarRealidad, btnVolver });
+            panelLateral.Controls.AddRange(new Control[] { imgPueblo, imgBosque, imgLaboratorio, imgPortal, lblTituloMision, lblMision, lblTituloInventario, lblInventario });
             lblMensaje.BackColor = Color.FromArgb(30, 5, 12);
             lblMensaje.Dock = DockStyle.Bottom;
             lblMensaje.Font = new Font("Consolas", 9F, FontStyle.Bold);
@@ -437,10 +444,48 @@ namespace NexusWindowsForm
             lblMensaje.Height = 32;
             lblMensaje.Text = "SISTEMA LISTO. REGISTRA AL CADETE PARA COMENZAR.";
             lblMensaje.TextAlign = ContentAlignment.MiddleLeft;
+            panelAcciones.BackColor = Color.FromArgb(20, 5, 12);
+            panelAcciones.Dock = DockStyle.Bottom;
+            panelAcciones.Height = 72;
+            ConfigurarBotonAccion(btnAnalizar, "ANALIZAR ANOMALÍA", 18, 16, 190);
+            ConfigurarBotonAccion(btnRecuperar, "RECUPERAR ENERGÍA", 220, 16, 190);
+            ConfigurarBotonAccion(btnUsarCelula, "USAR CÉLULA", 422, 16, 160);
+            ConfigurarBotonAccion(btnPerfil, "VER PERFIL", 594, 16, 150);
+            ConfigurarBotonAccion(btnCambiarRealidad, "CAMBIAR REALIDAD", 756, 16, 190);
+            ConfigurarBotonAccion(btnVolver, "VOLVER AL MENÚ", 958, 16, 190);
+            panelAcciones.Controls.AddRange(new Control[] { btnAnalizar, btnRecuperar, btnUsarCelula, btnPerfil, btnCambiarRealidad, btnVolver });
+
+            panelEncuentro.BackColor = Color.FromArgb(24, 3, 12);
+            panelEncuentro.BorderStyle = BorderStyle.FixedSingle;
+            panelEncuentro.Size = new Size(520, 360);
+            panelEncuentro.Location = new Point(320, 170);
+            panelEncuentro.Visible = false;
+            lblMonstruo.Text = "ENTIDAD DETECTADA";
+            lblMonstruo.Font = new Font("Consolas", 18F, FontStyle.Bold);
+            lblMonstruo.ForeColor = Color.FromArgb(255, 35, 55);
+            lblMonstruo.TextAlign = ContentAlignment.MiddleCenter;
+            lblMonstruo.Location = new Point(15, 10);
+            lblMonstruo.Size = new Size(490, 35);
+            imgMonstruo.Location = new Point(145, 55);
+            imgMonstruo.Size = new Size(230, 180);
+            imgMonstruo.SizeMode = PictureBoxSizeMode.Zoom;
+            imgMonstruo.BackColor = Color.Black;
+            lblDetalleMonstruo.Location = new Point(20, 240);
+            lblDetalleMonstruo.Size = new Size(480, 35);
+            lblDetalleMonstruo.Font = new Font("Consolas", 10F, FontStyle.Bold);
+            lblDetalleMonstruo.ForeColor = Color.White;
+            lblDetalleMonstruo.TextAlign = ContentAlignment.MiddleCenter;
+            ConfigurarBotonAccion(btnAtacar, "ATACAR", 85, 295, 150);
+            ConfigurarBotonAccion(btnEscapar, "ESCAPAR", 275, 295, 150);
+            panelEncuentro.Controls.AddRange(new Control[] { lblMonstruo, imgMonstruo, lblDetalleMonstruo, btnAtacar, btnEscapar });
+
             panelJuego.Controls.Add(panelMapaContenedor);
             panelJuego.Controls.Add(panelLateral);
             panelJuego.Controls.Add(panelHud);
+            panelJuego.Controls.Add(panelAcciones);
             panelJuego.Controls.Add(lblMensaje);
+            panelJuego.Controls.Add(panelEncuentro);
+            panelEncuentro.BringToFront();
             Controls.Add(panelJuego);
             Controls.Add(panelRegistro);
             Controls.Add(lblEncabezado);
@@ -454,6 +499,21 @@ namespace NexusWindowsForm
             panelMapaContenedor.ResumeLayout(false);
             panelLateral.ResumeLayout(false);
             ResumeLayout(false);
+        }
+
+        private void ConfigurarBotonAccion(Button boton, string texto, int x, int y, int ancho)
+        {
+            boton.BackColor = Color.FromArgb(190, 12, 35);
+            boton.FlatStyle = FlatStyle.Flat;
+            boton.FlatAppearance.BorderColor = Color.FromArgb(255, 50, 70);
+            boton.FlatAppearance.BorderSize = 1;
+            boton.Font = new Font("Consolas", 9F, FontStyle.Bold);
+            boton.ForeColor = Color.White;
+            boton.Location = new Point(x, y);
+            boton.Size = new Size(ancho, 40);
+            boton.Text = texto;
+            boton.UseVisualStyleBackColor = false;
+            boton.Cursor = Cursors.Hand;
         }
 
     }
