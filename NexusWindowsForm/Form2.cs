@@ -171,15 +171,12 @@ namespace NexusWindowsForm
                     Mensaje("ZONA DE ANOMALÍA DETECTADA. LOS SENSORES REGISTRAN ACTIVIDAD.");
                     break;
                 case "O":
-                    if (!nucleoEncontrado && MessageBox.Show("NÚCLEO ENERGÉTICO ENCONTRADO.
-¿Deseas registrarlo?", "NEXUS", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                    if (!nucleoEncontrado && MessageBox.Show("NÚCLEO ENERGÉTICO ENCONTRADO.\n¿Deseas registrarlo?", "NEXUS", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                     {
                         nucleoEncontrado = true;
                         mapa[y, x] = "E";
                         misionActiva = false;
-                        MessageBox.Show("NÚCLEO REGISTRADO.
-DATOS ENVIADOS A LA NAVE.
-MISIÓN COMPLETADA.", "NEXUS", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show("NÚCLEO REGISTRADO.\nDATOS ENVIADOS A LA NAVE.\nMISIÓN COMPLETADA.", "NEXUS", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                     else
                     {
@@ -192,11 +189,7 @@ MISIÓN COMPLETADA.", "NEXUS", MessageBoxButtons.OK, MessageBoxIcon.Information)
         private void EnfrentarBicho()
         {
             int vidaBicho = 30;
-            if (MessageBox.Show("BICHO DIMENSIONAL DETECTADO.
-VIDA: 30
-
-¿Quieres combatir?
-Sí = Atacar / No = Escapar", "ALERTA NEXUS", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
+            if (MessageBox.Show("BICHO DIMENSIONAL DETECTADO.\nVIDA: 30\n\n¿Quieres combatir?\nSí = Atacar / No = Escapar", "ALERTA NEXUS", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
             {
                 Mensaje("HAS ESCAPADO DE LA ENTIDAD.");
                 return;
@@ -216,8 +209,7 @@ Sí = Atacar / No = Escapar", "ALERTA NEXUS", MessageBoxButtons.YesNo, MessageBo
             else
             {
                 misionActiva = false;
-                MessageBox.Show("EL CADETE HA PERDIDO TODA SU VIDA.
-MISIÓN FALLIDA.", "NEXUS", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("EL CADETE HA PERDIDO TODA SU VIDA.\nMISIÓN FALLIDA.", "NEXUS", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -227,9 +219,7 @@ MISIÓN FALLIDA.", "NEXUS", MessageBoxButtons.OK, MessageBoxIcon.Error);
             energia -= 20;
             conexion = Math.Max(0, conexion - 5);
             ActualizarTodo();
-            MessageBox.Show("ESCANEO COMPLETADO.
-ANOMALÍA DIMENSIONAL DETECTADA.
-COSTO: 20 ENERGÍA.", "ANÁLISIS NEXUS", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show("ESCANEO COMPLETADO.\nANOMALÍA DIMENSIONAL DETECTADA.\nCOSTO: 20 ENERGÍA.", "ANÁLISIS NEXUS", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private void RecuperarEnergia()
@@ -251,8 +241,7 @@ COSTO: 20 ENERGÍA.", "ANÁLISIS NEXUS", MessageBoxButtons.OK, MessageBoxIcon.In
 
         private void CambiarRealidad()
         {
-            var opcion = MessageBox.Show("¿Cambiar a REALIDAD 999?
-Se consumirán 30 puntos de energía.", "SELECCIÓN DE REALIDAD", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+            var opcion = MessageBox.Show("¿Cambiar a REALIDAD 999?\nSe consumirán 30 puntos de energía.", "SELECCIÓN DE REALIDAD", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
             if (opcion == DialogResult.Cancel) return;
             if (energia < 30) { Mensaje("ENERGÍA INSUFICIENTE PARA VIAJAR."); return; }
             energia -= 30;
@@ -285,11 +274,7 @@ Se consumirán 30 puntos de energía.", "SELECCIÓN DE REALIDAD", MessageBoxButt
 
         private void MostrarPerfil()
         {
-            MessageBox.Show($"CADETE: {nombreExplorador}
-EDAD: {edad}
-VIDA: {vida}/100
-ENERGÍA: {energia}/100
-CONEXIÓN: {conexion}/100", "PERFIL DEL EXPLORADOR", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show($"CADETE: {nombreExplorador}\nEDAD: {edad}\nVIDA: {vida}/100\nENERGÍA: {energia}/100\nCONEXIÓN: {conexion}/100", "PERFIL DEL EXPLORADOR", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private void ActualizarTodo()
@@ -348,8 +333,7 @@ CONEXIÓN: {conexion}/100", "PERFIL DEL EXPLORADOR", MessageBoxButtons.OK, Messa
 
         private void ActualizarInventario()
         {
-            lblInventario.Text = $"CÉLULA DE ENERGÍA: {inventario["CELULA DE ENERGIA"]}
-RECURSOS: {inventario["RECURSO"]}";
+            lblInventario.Text = $"CÉLULA DE ENERGÍA: {inventario["CELULA DE ENERGIA"]}\nRECURSOS: {inventario["RECURSO"]}";
         }
 
         private void Mensaje(string mensaje)
