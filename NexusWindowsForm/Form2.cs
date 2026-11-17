@@ -21,6 +21,9 @@ namespace NexusWindowsForm
         private string realidad = "REALIDAD 102";
         private Entidad? entidadActual;
         private int fotograma;
+        private int ticksMovimiento;
+        private int celulasEnergia;
+        private readonly PointF nucleo = new(3400, 3400);
 
         private sealed class Entidad
         {
@@ -64,6 +67,39 @@ namespace NexusWindowsForm
             KeyPreview = true;
             KeyDown += Form2_KeyDown;
             KeyUp += Form2_KeyUp;
+            Resize += (_, _) => AjustarLayout();
+            Shown += (_, _) => AjustarLayout();
+        }
+
+
+        private void AjustarLayout()
+        {
+            if (panelJuego == null || panelMapaContenedor == null || panelLateral == null) return;
+            int margen = 18;
+            int lateral = Math.Clamp(ClientSize.Width / 5, 320, 390);
+            int superior = panelHud.Height + 12;
+            int inferior = panelAcciones.Height + lblMensaje.Height + 28;
+            int alto = Math.Max(300, panelJuego.ClientSize.Height - superior - inferior);
+            int anchoMapa = Math.Max(500, panelJuego.ClientSize.Width - lateral - margen * 3);
+            panelMapaContenedor.SetBounds(margen, superior, anchoMapa, alto);
+            panelLateral.SetBounds(margen * 2 + anchoMapa, superior, lateral, alto);
+            panelAcciones.SetBounds(0, panelJuego.ClientSize.Height - panelAcciones.Height - lblMensaje.Height, panelJuego.ClientSize.Width, panelAcciones.Height);
+            int[] anchos = { 190, 190, 160, 150, 190, 190 };
+            Button[] botones = { btnAnalizar, btnRecuperar, btnUsarCelula, btnPerfil, btnCambiarRealidad, btnVolver };
+            int espacio = 12;
+            int total = anchos.Sum() + espacio * (botones.Length - 1);
+            int x = Math.Max(12, (panelAcciones.ClientSize.Width - total) / 2);
+            for (int i = 0; i < botones.Length; i++)
+            {
+                botones[i].SetBounds(x, 16, anchos[i], 40);
+                x += anchos[i] + espacio;
+            }
+            panelEncuentro.Location = new Point(
+                Math.Max(20, (panelMapaContenedor.Width - panelEncuentro.Width) / 2),
+                Math.Max(50, (panelMapaContenedor.Height - panelEncuentro.Height) / 2));
+            camaraX = jugadorX - panelMapa.ClientSize.Width / 2f;
+            camaraY = jugadorY - panelMapa.ClientSize.Height / 2f;
+            panelMapa.Invalidate();
         }
 
         private void CrearEscenasPixelArt()
@@ -158,6 +194,7 @@ namespace NexusWindowsForm
             conexion = (int)numConexion.Value;
             vida = 100; iniciado = true; encuentroActivo = false; nucleoEncontrado = false;
             panelRegistro.Visible = false; panelJuego.Visible = true; panelJuego.BringToFront(); lblEncabezado.BringToFront();
+            AjustarLayout();
             relojMovimiento.Start();
             ActualizarHUD(); Mensaje("CADete REGISTRADO. EXPLORA EL MUNDO DESDE UNA VISTA AÉREA.");
             panelMapa.Focus();
@@ -191,11 +228,28 @@ namespace NexusWindowsForm
             float velocidad = energia > 0 ? 4.2f : 1.4f;
             jugadorX = Math.Clamp(jugadorX + dx * velocidad, 80, 4920);
             jugadorY = Math.Clamp(jugadorY + dy * velocidad, 80, 4920);
-            energia = Math.Max(0, energia - 1);
-            conexion = Math.Max(0, conexion - 1);
+            ticksMovimiento++;
+            if (ticksMovimiento % 30 == 0)
+            {
+                energia = Math.Max(0, energia - 1);
+                conexion = Math.Max(0, conexion - 1);
+            }
             camaraX = jugadorX - panelMapa.ClientSize.Width / 2f;
             camaraY = jugadorY - panelMapa.ClientSize.Height / 2f;
             DetectarEntidad();
+            if (Math.Abs(jugadorX - nucleo.X) < 45 && Math.Abs(jugadorY - nucleo.Y) < 45 && !nucleoEncontrado)
+            {
+                if (MessageBox.Show("HAS ENCONTRADO EL NÚCLEO ENERGÉTICO. ¿REGISTRARLO?", "MISIÓN NEXUS", MessageBoxButtons.YesNo) == DialogResult.Yes)
+                {
+                    nucleoEncontrado = true;
+                    Mensaje("NÚCLEO REGISTRADO. MISIÓN COMPLETADA.");
+                }
+            }
+            if ((int)jugadorX % 1100 < 8 && (int)jugadorY % 900 < 8)
+            {
+                celulasEnergia++;
+                Mensaje("CÉLULA DE ENERGÍA RECOLECTADA.");
+            }
             ActualizarHUD();
             panelMapa.Invalidate();
         }
@@ -300,6 +354,14 @@ namespace NexusWindowsForm
             using (SolidBrush mochila = new(Color.FromArgb(150, 15, 35))) g.FillRectangle(mochila, px - 11, py - 5, 4, 10);
             using (Pen p = new(Color.FromArgb(255, 60, 75), 2)) g.DrawRectangle(p, px - 13, py - 18, 26, 38);
 
+            if (!nucleoEncontrado)
+            {
+                float nx = nucleo.X - camaraX, ny = nucleo.Y - camaraY;
+                using SolidBrush nucleoBrush = new(Color.Gold);
+                g.FillRectangle(nucleoBrush, nx - 10, ny - 10, 20, 20);
+                using Pen nucleoPen = new(Color.OrangeRed, 3);
+                g.DrawRectangle(nucleoPen, nx - 14, ny - 14, 28, 28);
+            }
             using SolidBrush coords = new(Color.FromArgb(220, 255, 230, 230));
             g.DrawString($"X: {(int)jugadorX}   Y: {(int)jugadorY}   //   {realidad}", new Font("Consolas", 10, FontStyle.Bold), coords, 12, 12);
         }
@@ -341,7 +403,11 @@ namespace NexusWindowsForm
 
         private void UsarCelula()
         {
-            Mensaje("NO HAY CÉLULAS DISPONIBLES EN ESTA VERSIÓN DEL INVENTARIO.");
+            if (celulasEnergia <= 0) { Mensaje("NO TIENES CÉLULAS DE ENERGÍA."); return; }
+            celulasEnergia--;
+            energia = Math.Min(100, energia + 30);
+            ActualizarHUD();
+            Mensaje("CÉLULA UTILIZADA. +30 ENERGÍA.");
         }
 
         private void CambiarRealidad()
@@ -366,6 +432,7 @@ namespace NexusWindowsForm
             lblConexion.Text = $"CONEXIÓN: {conexion}/100";
             lblPosicion.Text = $"X: {(int)jugadorX}  Y: {(int)jugadorY}  //  {realidad}";
             lblTituloMapa.Text = "ZONA DE EXPLORACIÓN // " + realidad;
+            lblInventario.Text = $"CÉLULAS DE ENERGÍA: {celulasEnergia}\\nNÚCLEO: {(nucleoEncontrado ? "REGISTRADO" : "PENDIENTE")}";
             barraVida.Value = Math.Clamp(vida, 0, 100);
             barraEnergia.Value = Math.Clamp(energia, 0, 100);
             barraConexion.Value = Math.Clamp(conexion, 0, 100);
