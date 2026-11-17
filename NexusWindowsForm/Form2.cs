@@ -5,8 +5,8 @@ namespace NexusWindowsForm
 {
     public partial class Form2 : Form
     {
-        private readonly Color fondo = Color.FromArgb(7, 9, 14);
-        private readonly Color panel = Color.FromArgb(17, 20, 29);
+        private readonly Color fondo = Color.FromArgb(8, 3, 8);
+        private readonly Color panel = Color.FromArgb(22, 6, 12);
         private readonly Color rojo = Color.FromArgb(220, 35, 55);
         private readonly Color texto = Color.FromArgb(235, 238, 245);
         private readonly string[,] mapa =
@@ -50,7 +50,10 @@ namespace NexusWindowsForm
             panelJuego.Visible = enDisenador;
             panelRegistro.Visible = true;
             if (!enDisenador)
+            {
                 CrearCasillas();
+                CrearEscenasPixelArt();
+            }
 
             btnInicializar.Click += (_, _) => IniciarSistema();
             btnArriba.Click += (_, _) => Mover(0, -1);
@@ -67,6 +70,88 @@ namespace NexusWindowsForm
             KeyUp += Form2_KeyUp;
         }
 
+
+        private void CrearEscenasPixelArt()
+        {
+            imgPueblo.Image = CrearEscenaPixelArt(0);
+            imgBosque.Image = CrearEscenaPixelArt(1);
+            imgLaboratorio.Image = CrearEscenaPixelArt(2);
+            imgPortal.Image = CrearEscenaPixelArt(3);
+        }
+
+        // Ilustraciones originales de 8 bits: pueblo, bosque, laboratorio y portal.
+        private Bitmap CrearEscenaPixelArt(int escena)
+        {
+            const int ancho = 160, alto = 90;
+            Bitmap bmp = new Bitmap(ancho, alto);
+            using Graphics g = Graphics.FromImage(bmp);
+            g.Clear(Color.FromArgb(9, 3, 10));
+            void P(Color color, int px, int py, int w, int h)
+            {
+                using SolidBrush b = new SolidBrush(color);
+                g.FillRectangle(b, px, py, w, h);
+            }
+
+            Color rojoOscuro = Color.FromArgb(75, 5, 22);
+            Color rojo = Color.FromArgb(190, 12, 35);
+            Color rojoLuz = Color.FromArgb(255, 35, 55);
+            Color sombra = Color.FromArgb(18, 8, 22);
+            P(Color.FromArgb(35, 4, 25), 0, 0, ancho, 48);
+            P(Color.FromArgb(85, 5, 30), 0, 18, ancho, 22);
+
+            if (escena == 0) // Pueblo bajo el cielo rojo
+            {
+                P(rojoLuz, 112, 8, 22, 22);
+                P(rojoOscuro, 0, 56, 160, 34);
+                for (int i = 0; i < 5; i++)
+                {
+                    int bx = i * 34;
+                    P(sombra, bx, 42 + (i % 2) * 8, 29, 34);
+                    P(Color.FromArgb(45, 16, 24), bx + 5, 49 + (i % 2) * 8, 7, 7);
+                    P(rojoLuz, bx + 17, 54 + (i % 2) * 8, 5, 7);
+                }
+                P(Color.FromArgb(8, 4, 12), 0, 76, 160, 14);
+                for (int i = 0; i < 8; i++) P(rojo, i * 22, 78 + (i % 2) * 4, 9, 2);
+            }
+            else if (escena == 1) // Bosque invertido
+            {
+                P(Color.FromArgb(90, 3, 28), 0, 28, 160, 35);
+                for (int i = 0; i < 8; i++)
+                {
+                    int tx = i * 22;
+                    P(sombra, tx + 5, 12, 9, 78);
+                    P(sombra, tx - 5, 20, 18, 7);
+                    P(sombra, tx + 1, 34, 18, 6);
+                    P(rojoOscuro, tx - 2, 58, 23, 8);
+                }
+                for (int i = 0; i < 18; i++) P(rojoLuz, (i * 37) % 156, (i * 19) % 78, 2, 2);
+            }
+            else if (escena == 2) // Laboratorio secreto
+            {
+                P(Color.FromArgb(28, 22, 34), 8, 8, 144, 74);
+                P(Color.FromArgb(55, 10, 28), 18, 18, 124, 54);
+                for (int i = 0; i < 5; i++) P(Color.FromArgb(90, 20, 35), 22 + i * 25, 12, 4, 64);
+                P(rojoLuz, 64, 27, 32, 37);
+                P(Color.FromArgb(255, 85, 95), 70, 33, 20, 24);
+                P(sombra, 0, 76, 160, 14);
+                for (int i = 0; i < 6; i++) P(rojo, 12 + i * 25, 78, 12, 3);
+            }
+            else // Portal dimensional
+            {
+                P(Color.FromArgb(75, 4, 30), 0, 48, 160, 42);
+                P(rojoOscuro, 42, 10, 78, 70);
+                P(rojo, 52, 17, 58, 58);
+                P(rojoLuz, 62, 24, 38, 44);
+                P(Color.FromArgb(18, 4, 18), 70, 31, 22, 31);
+                for (int i = 0; i < 10; i++)
+                {
+                    P(sombra, (i * 17) % 160, (i * 29) % 80, 8, 5);
+                    P(rojoLuz, (i * 31) % 155, (i * 13) % 85, 3, 3);
+                }
+            }
+            return bmp;
+        }
+
         private void CrearCasillas()
         {
             panelMapa.Controls.Clear();
@@ -78,7 +163,7 @@ namespace NexusWindowsForm
                     int cx = col, cy = fila;
                     var b = new Button
                     {
-                        Size = new Size(lado, lado),
+                        Dock = DockStyle.Fill,
                         Margin = new Padding(2),
                         FlatStyle = FlatStyle.Flat,
                         Font = new Font("Consolas", 12F, FontStyle.Bold),
@@ -92,7 +177,7 @@ namespace NexusWindowsForm
                             Mover(dx, dy);
                     };
                     casillas[fila, col] = b;
-                    panelMapa.Controls.Add(b);
+                    panelMapa.Controls.Add(b, col, fila);
                 }
             }
             ActualizarMapa();
@@ -344,12 +429,12 @@ namespace NexusWindowsForm
                     };
                     b.BackColor = simbolo switch
                     {
-                        "C" => Color.FromArgb(20, 75, 45),
-                        "*" => Color.FromArgb(35, 45, 60),
-                        "+" or "#" => Color.FromArgb(65, 25, 32),
+                        "C" => Color.FromArgb(110, 12, 28),
+                        "*" => Color.FromArgb(45, 12, 24),
+                        "+" or "#" => Color.FromArgb(95, 8, 20),
                         "O" => Color.FromArgb(75, 60, 20),
                         "R" => Color.FromArgb(20, 55, 65),
-                        _ => Color.FromArgb(24, 29, 39)
+                        _ => Color.FromArgb(35, 8, 16)
                     };
                     b.Enabled = iniciado;
                 }
