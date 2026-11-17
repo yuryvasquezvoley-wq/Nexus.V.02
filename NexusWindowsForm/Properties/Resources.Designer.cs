@@ -104,6 +104,48 @@ namespace NexusWindowsForm.Properties {
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
+
+        internal static System.Drawing.Bitmap AmbienteHawkins {
+            get {
+                object obj = ResourceManager.GetObject("AmbienteHawkins", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+
+        internal static System.Drawing.Bitmap HawkinsPortalPreview {
+            get {
+                object obj = ResourceManager.GetObject("HawkinsPortalPreview", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+
+        internal static System.Drawing.Bitmap Realidad999Verde {
+            get {
+                object obj = ResourceManager.GetObject("Realidad999Verde", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+
+        internal static System.Drawing.Bitmap HistoriaNave {
+            get {
+                object obj = ResourceManager.GetObject("HistoriaNave", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+
+        internal static System.Drawing.Bitmap HistoriaReactor {
+            get {
+                object obj = ResourceManager.GetObject("HistoriaReactor", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+
+        internal static System.Drawing.Bitmap EncrucijadaNexus {
+            get {
+                object obj = ResourceManager.GetObject("EncrucijadaNexus", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
         
         /// <summary>
         ///   Busca un recurso adaptado de tipo System.Drawing.Bitmap.

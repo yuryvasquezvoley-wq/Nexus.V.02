@@ -13,8 +13,7 @@ namespace NexusWindowsForm
         {
             new("102-A", "REALIDAD 102", new PointF(2200, 2600)),
             new("102-B", "REALIDAD 102", new PointF(3400, 3328)),
-            new("999-A", "REALIDAD 999", new PointF(1152, 1024)),
-            new("999-B", "REALIDAD 999", new PointF(4352, 1664))
+            new("999-A", "REALIDAD 999", new PointF(1152, 1024))
         };
         private readonly HashSet<string> nucleosRecolectados = new(StringComparer.Ordinal);
         private readonly HashSet<Keys> teclas = new();
@@ -34,7 +33,7 @@ namespace NexusWindowsForm
         private int fotograma;
         private int ticksMovimiento;
         private int celulasEnergia;
-        private int direccionJugador = 2;
+        private int direccionJugador = 4;
         private bool jugadorCaminando;
 
         private sealed record NucleoDimensional(string Id, string Realidad, PointF Posicion);
@@ -123,7 +122,7 @@ namespace NexusWindowsForm
 
         private void CrearEscenasPixelArt()
         {
-            imgPueblo.Image = Properties.Resources.MapaHawkins;
+            imgPueblo.Image = Properties.Resources.AmbienteHawkins;
             imgBosque.Image = CrearEscenaPixelArt(1);
             imgLaboratorio.Image = CrearEscenaPixelArt(2);
             imgPortal.Image = CrearEscenaPixelArt(3);
@@ -255,6 +254,26 @@ namespace NexusWindowsForm
                 P(cyan, 10, 18, 2, 3); P(cyan, 16, 18, 2, 3); P(luz, 12, 17, 2, 2);
             }
             P(borde, 9, 25, 10, 2); P(Color.FromArgb(28, 38, 53), 11, 26, 6, 1);
+
+            // La linterna queda visible en la mano que apunta hacia delante.
+            Color carcasaLinterna = Color.FromArgb(27, 34, 45);
+            Color luzLinterna = Color.FromArgb(255, 211, 111);
+            if (direccion == 0)
+            {
+                P(borde, 21, 19, 6, 4); P(carcasaLinterna, 22, 20, 4, 2); P(luzLinterna, 25, 20, 2, 2);
+            }
+            else if (direccion == 1)
+            {
+                P(borde, 22, 19, 6, 4); P(carcasaLinterna, 23, 20, 4, 2); P(luzLinterna, 26, 20, 2, 2);
+            }
+            else if (direccion == 2)
+            {
+                P(borde, 20, 23, 7, 5); P(carcasaLinterna, 21, 24, 5, 3); P(luzLinterna, 25, 24, 2, 3);
+            }
+            else
+            {
+                P(borde, 0, 19, 6, 4); P(carcasaLinterna, 1, 20, 4, 2); P(luzLinterna, 1, 20, 2, 2);
+            }
             return bmp;
         }
 
@@ -265,14 +284,8 @@ namespace NexusWindowsForm
                 MessageBox.Show("Ingresa el nombre del cadete para iniciar NEXUS.", "NEXUS", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 txtNombre.Focus(); return;
             }
-            using Form3 selector = new(realidad);
+            using Form3 selector = new(txtNombre.Text.Trim(), realidad, true);
             if (selector.ShowDialog(this) != DialogResult.OK) return;
-
-            MessageBox.Show(this,
-                "Eres un viajero de realidades. Durante un salto dimensional, el reactor de tu nave se rompió y te dejó varado en Hawkins. " +
-                "Recupera tres núcleos estables en las realidades 102 y 999 para reemplazar el núcleo dañado y reparar la nave. " +
-                "La linterna es tu única guía: los acechadores se mueven entre las casas y solo verás lo que ilumine su haz.",
-                "NEXUS // DIRECTIVA DE MISIÓN", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
             nombreExplorador = txtNombre.Text.Trim();
             edad = (int)numEdad.Value;
@@ -312,6 +325,33 @@ namespace NexusWindowsForm
             }
         }
 
+        private static int DireccionDesdeMovimiento(float dx, float dy)
+        {
+            if (dx > 0 && dy < 0) return 1;
+            if (dx > 0 && dy > 0) return 3;
+            if (dx < 0 && dy > 0) return 5;
+            if (dx < 0 && dy < 0) return 7;
+            if (dx > 0) return 2;
+            if (dy > 0) return 4;
+            if (dx < 0) return 6;
+            return 0;
+        }
+
+        private static int DireccionSprite(int direccion) => direccion switch
+        {
+            0 or 7 => 0,
+            1 or 2 => 1,
+            3 or 4 => 2,
+            5 or 6 => 3,
+            _ => 2
+        };
+
+        private static PointF VectorDireccion(int direccion)
+        {
+            float radianes = (-90 + direccion * 45) * MathF.PI / 180;
+            return new PointF(MathF.Cos(radianes), MathF.Sin(radianes));
+        }
+
         private void ActualizarMovimiento()
         {
             if (!iniciado || !panelJuego.Visible) return;
@@ -338,9 +378,7 @@ namespace NexusWindowsForm
                 return;
             }
             jugadorCaminando = true;
-            direccionJugador = Math.Abs(dx) > Math.Abs(dy)
-                ? (dx > 0 ? 1 : 3)
-                : (dy > 0 ? 2 : 0);
+            direccionJugador = DireccionDesdeMovimiento(dx, dy);
             float magnitud = (float)Math.Sqrt(dx * dx + dy * dy);
             dx /= magnitud; dy /= magnitud;
             float velocidad = energia > 0 ? 4.2f : 1.4f;
@@ -434,14 +472,8 @@ namespace NexusWindowsForm
             float distancia = MathF.Sqrt(dx * dx + dy * dy);
             if (distancia < 18) return true;
             if (distancia > alcance) return false;
-            (float dirX, float dirY) = direccionJugador switch
-            {
-                0 => (0, -1),
-                1 => (1, 0),
-                2 => (0, 1),
-                _ => (-1, 0)
-            };
-            float producto = (dx * dirX + dy * dirY) / distancia;
+            PointF direccion = VectorDireccion(direccionJugador);
+            float producto = (dx * direccion.X + dy * direccion.Y) / distancia;
             return producto >= 0.76f;
         }
 
@@ -548,9 +580,9 @@ namespace NexusWindowsForm
                 int calleY = Math.Abs(ty % 13), calleX = Math.Abs(tx % 17);
                 bool carretera = calleY <= 1 || calleX <= 1;
                 bool acera = !carretera && (calleY == 2 || calleX == 2);
-                Color suelo = realidad == "REALIDAD 102" ? Color.FromArgb(50, 59, 42) : Color.FromArgb(31, 24, 39);
-                Color asfalto = realidad == "REALIDAD 102" ? Color.FromArgb(48, 47, 45) : Color.FromArgb(40, 27, 39);
-                Color pavimento = realidad == "REALIDAD 102" ? Color.FromArgb(86, 80, 66) : Color.FromArgb(61, 48, 62);
+                Color suelo = realidad == "REALIDAD 102" ? Color.FromArgb(43, 47, 39) : Color.FromArgb(31, 24, 39);
+                Color asfalto = realidad == "REALIDAD 102" ? Color.FromArgb(49, 44, 43) : Color.FromArgb(40, 27, 39);
+                Color pavimento = realidad == "REALIDAD 102" ? Color.FromArgb(79, 72, 65) : Color.FromArgb(61, 48, 62);
                 using (SolidBrush b = new(carretera ? asfalto : acera ? pavimento : suelo)) g.FillRectangle(b, sx, sy, tile, tile);
                 if (acera)
                 {
@@ -565,7 +597,11 @@ namespace NexusWindowsForm
                     if (calleY == 0 && tx % 3 == 0) g.FillRectangle(marca, sx + 25, sy + 30, 19, 3);
                     if (calleX == 0 && ty % 3 == 0) g.FillRectangle(marca, sx + 30, sy + 24, 3, 19);
                 }
-                else if (semilla % 7 == 0) DibujarArbol(g, sx + 8, sy + 8);
+                else if (semilla % 7 == 0)
+                {
+                    if (realidad == "REALIDAD 102") DibujarArbolHawkins(g, sx + 8, sy + 8);
+                    else DibujarArbol(g, sx + 8, sy + 8);
+                }
                 else if (semilla % 11 == 0)
                 {
                     using SolidBrush escombro = new(Color.FromArgb(104, 67, 57, 54));
@@ -579,6 +615,8 @@ namespace NexusWindowsForm
                     g.FillRectangle(mancha, sx + 20, sy + 22, 8, 8);
                     g.FillRectangle(mancha, sx + 37, sy + 39, 5, 5);
                 }
+                if (realidad == "REALIDAD 102" && semilla % 5 == 0)
+                    DibujarRaicesHawkins(g, sx, sy, semilla);
             }
 
             // Las casas ocupan varias casillas, así que se dibujan después del suelo
@@ -617,7 +655,11 @@ namespace NexusWindowsForm
             float px = jugadorX - camaraX, py = jugadorY - camaraY;
             using (SolidBrush sombra = new(Color.FromArgb(175, 0, 0, 0))) g.FillEllipse(sombra, px - 20, py + 15, 40, 12);
             int frameCadete = jugadorCaminando ? fotograma % 2 : 0;
-            g.DrawImage(spritesCadete[direccionJugador, frameCadete], px - 22, py - 38, 44, 58);
+            GraphicsState estadoCadete = g.Save();
+            g.TranslateTransform(px, py - 9);
+            if (direccionJugador % 2 == 1) g.RotateTransform(-45);
+            g.DrawImage(spritesCadete[DireccionSprite(direccionJugador), frameCadete], -22, -29, 44, 58);
+            g.Restore(estadoCadete);
 
             foreach (NucleoDimensional nucleo in nucleos.Where(n => n.Realidad == realidad &&
                 !nucleosRecolectados.Contains(n.Id)).Take(Math.Max(0, nucleosNecesarios - nucleosRecolectados.Count)))
@@ -640,7 +682,7 @@ namespace NexusWindowsForm
         private void DibujarLinterna(Graphics g, float centroX, float centroY)
         {
             if (!iniciado) return;
-            float anguloCentro = direccionJugador switch { 0 => 270, 1 => 0, 2 => 90, _ => 180 };
+            float anguloCentro = -90 + direccionJugador * 45;
             const float alcance = 360;
             const float apertura = 78;
             using GraphicsPath haz = new();
@@ -652,11 +694,46 @@ namespace NexusWindowsForm
             g.FillRegion(sombra, oscuridad);
             using SolidBrush luz = new(Color.FromArgb(24, 255, 235, 170));
             g.FillPath(luz, haz);
+        }
 
-            float radianes = anguloCentro * MathF.PI / 180;
-            using Pen rayo = new(Color.FromArgb(72, 255, 239, 184), 2);
-            g.DrawLine(rayo, centroX, centroY - 5,
-                centroX + MathF.Cos(radianes) * alcance, centroY + MathF.Sin(radianes) * alcance);
+        private static void DibujarRaicesHawkins(Graphics g, int x, int y, int semilla)
+        {
+            int px = 5 + semilla % 27;
+            int py = 5 + semilla / 17 % 27;
+            Point[] raiz =
+            {
+                new(x + px, y + py), new(x + px - 7, y + py - 5),
+                new(x + px - 12, y + py - 2), new(x + px - 18, y + py - 9),
+                new(x + px - 24, y + py - 7)
+            };
+            using Pen sombra = new(Color.FromArgb(190, 23, 8, 16), 5);
+            using Pen carne = new(Color.FromArgb(172, 104, 32, 39), 2);
+            using Pen brote = new(Color.FromArgb(165, 139, 44, 47), 1);
+            g.DrawLines(sombra, raiz);
+            g.DrawLines(carne, raiz);
+            g.DrawLine(brote, raiz[2], new Point(raiz[2].X - 3, raiz[2].Y + 6));
+            g.DrawLine(brote, raiz[3], new Point(raiz[3].X + 2, raiz[3].Y - 6));
+            using SolidBrush espora = new(Color.FromArgb(210, 164, 50, 54));
+            g.FillRectangle(espora, x + (semilla / 7 % 52), y + (semilla / 19 % 52), 2, 2);
+        }
+
+        private static void DibujarArbolHawkins(Graphics g, int x, int y)
+        {
+            using Pen ramaOscura = new(Color.FromArgb(35, 16, 20), 5);
+            using Pen rama = new(Color.FromArgb(91, 42, 39), 2);
+            Point centro = new(x + 27, y + 27);
+            Point[] tronco = { new(x + 28, y + 50), centro, new(x + 20, y + 12), new(x + 12, y + 4) };
+            g.DrawLines(ramaOscura, tronco);
+            g.DrawLines(rama, tronco);
+            g.DrawLine(ramaOscura, centro, new Point(x + 42, y + 14));
+            g.DrawLine(rama, centro, new Point(x + 42, y + 14));
+            g.DrawLine(ramaOscura, new Point(x + 21, y + 20), new Point(x + 7, y + 16));
+            g.DrawLine(rama, new Point(x + 21, y + 20), new Point(x + 7, y + 16));
+            using SolidBrush hojas = new(Color.FromArgb(95, 48, 25, 32));
+            using SolidBrush rojo = new(Color.FromArgb(112, 89, 35, 39));
+            g.FillEllipse(hojas, x + 2, y + 1, 16, 13);
+            g.FillEllipse(hojas, x + 32, y + 5, 16, 14);
+            g.FillEllipse(rojo, x + 10, y + 2, 8, 6);
         }
 
         private void DibujarArbol(Graphics g, int x, int y)
@@ -902,7 +979,7 @@ namespace NexusWindowsForm
 
         private void SeleccionarRealidad()
         {
-            using Form3 selector = new(realidad);
+            using Form3 selector = new(nombreExplorador, realidad, false);
             if (selector.ShowDialog(this) == DialogResult.OK)
                 CambiarRealidad(selector.RealidadSeleccionada);
         }
@@ -938,6 +1015,9 @@ namespace NexusWindowsForm
             lblConexion.Text = $"CONEXIÓN: {conexion}/100";
             lblPosicion.Text = $"X: {(int)jugadorX}  Y: {(int)jugadorY}  //  {realidad}";
             lblTituloMapa.Text = "ZONA DE EXPLORACIÓN // " + realidad;
+            imgPueblo.Image = realidad == "REALIDAD 102"
+                ? Properties.Resources.AmbienteHawkins
+                : Properties.Resources.Realidad999Verde;
             lblInventario.Text = $"CÉLULAS: {celulasEnergia}\r\nNÚCLEOS: {nucleosRecolectados.Count}/{nucleosNecesarios}";
             lblContadorNucleos.Text = naveReparada
                 ? $"NAVE\r\nREPARADA\r\n{nucleosRecolectados.Count}/{nucleosNecesarios}"
