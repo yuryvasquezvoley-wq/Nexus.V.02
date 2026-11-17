@@ -78,14 +78,37 @@ namespace NexusWindowsForm
 
             try
             {
-                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                string directorioProyecto = System.IO.Path.GetDirectoryName(proyecto)!;
+                string configuracion = System.IO.Path.GetFileName(
+                    System.IO.Directory.GetParent(AppContext.BaseDirectory.TrimEnd(System.IO.Path.DirectorySeparatorChar))!.FullName);
+                string framework = System.IO.Path.GetFileName(AppContext.BaseDirectory.TrimEnd(System.IO.Path.DirectorySeparatorChar));
+                string ejecutable = System.IO.Path.Combine(
+                    directorioProyecto, "bin", configuracion, framework, "Nexus.V.02.exe");
+
+                System.Diagnostics.ProcessStartInfo inicio;
+                if (System.IO.File.Exists(ejecutable))
                 {
-                    FileName = "dotnet",
-                    Arguments = $"run --project \"{proyecto}\" --no-launch-profile",
-                    WorkingDirectory = System.IO.Path.GetDirectoryName(proyecto)!,
-                    UseShellExecute = true
-                });
-                Hide();
+                    // Ejecuta la compilación existente para no reconstruir la aplicación
+                    // mientras este menú mantiene cargado NexusWindowsForm.exe.
+                    inicio = new System.Diagnostics.ProcessStartInfo(ejecutable)
+                    {
+                        WorkingDirectory = directorioProyecto,
+                        UseShellExecute = true
+                    };
+                }
+                else
+                {
+                    inicio = new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = "dotnet",
+                        Arguments = $"run --project \"{proyecto}\" --no-launch-profile",
+                        WorkingDirectory = directorioProyecto,
+                        UseShellExecute = true
+                    };
+                }
+
+                System.Diagnostics.Process.Start(inicio);
+                Application.Exit();
             }
             catch (System.ComponentModel.Win32Exception)
             {
