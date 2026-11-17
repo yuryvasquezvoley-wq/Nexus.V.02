@@ -421,11 +421,11 @@ namespace NexusWindowsForm
             panelJuego.Controls.Add(panelHud);
             panelJuego.Controls.Add(panelAcciones);
             panelJuego.Controls.Add(lblMensaje);
-            panelMapaContenedor.Controls.Add(panelEncuentro);
-            panelEncuentro.BringToFront();
             Controls.Add(panelJuego);
             Controls.Add(panelRegistro);
             Controls.Add(lblEncabezado);
+            Controls.Add(panelEncuentro);
+            panelEncuentro.BringToFront();
             ((System.ComponentModel.ISupportInitialize)numEdad).EndInit();
             ((System.ComponentModel.ISupportInitialize)numEnergia).EndInit();
             ((System.ComponentModel.ISupportInitialize)numConexion).EndInit();
@@ -440,3 +440,4 @@ namespace NexusWindowsForm
 
     }
 }
+

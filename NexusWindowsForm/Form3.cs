@@ -23,10 +23,9 @@ public sealed class Form3 : Form
         narracionActiva = mostrarHistoria;
         RealidadSeleccionada = realidadActual;
         Text = "NEXUS | Archivo de misión";
-        ClientSize = new Size(1280, 720);
-        StartPosition = FormStartPosition.CenterParent;
-        FormBorderStyle = FormBorderStyle.FixedDialog;
-        MaximizeBox = false;
+        StartPosition = FormStartPosition.CenterScreen;
+        FormBorderStyle = FormBorderStyle.None;
+        WindowState = FormWindowState.Maximized;
         MinimizeBox = false;
         KeyPreview = true;
         BackColor = Color.FromArgb(4, 7, 13);
@@ -34,6 +33,8 @@ public sealed class Form3 : Form
         Font = new Font("Consolas", 11, FontStyle.Bold);
         BackgroundImageLayout = ImageLayout.Zoom;
         KeyDown += Form3_KeyDown;
+        Resize += (_, _) => AjustarLayout();
+        Shown += (_, _) => AjustarLayout();
 
         panelDialogo.BackColor = Color.FromArgb(222, 5, 10, 20);
         panelDialogo.Location = new Point(28, 525);
@@ -89,6 +90,7 @@ public sealed class Form3 : Form
             selectorVisible = true;
             MostrarEscena();
         }
+        AjustarLayout();
     }
 
     private void Form3_KeyDown(object? sender, KeyEventArgs e)
@@ -96,11 +98,10 @@ public sealed class Form3 : Form
         if (selectorVisible || e.KeyCode != Keys.Space) return;
         if (paginaHistoria == 0)
             paginaHistoria = 1;
-        else
-        {
+        else if (paginaHistoria == 1)
             paginaHistoria = 2;
+        else
             selectorVisible = true;
-        }
         MostrarEscena();
         e.Handled = true;
         e.SuppressKeyPress = true;
@@ -121,17 +122,59 @@ public sealed class Form3 : Form
                 $"Cadete {nombreCadete}: la comandante Vega te ha asignado una misión. La nave Nexus quedó varada tras un salto entre realidades."),
             1 => ("NARRADOR // EL REACTOR",
                 "El núcleo principal y sus tres reservas están destruidos. Recupera los 3 núcleos abandonados: dos en la realidad 102 y uno en la 999."),
-            _ => ("NARRADOR // ENCRUCIJADA DEL NEXUS",
-                $"Y aquí comienza la misión del cadete {nombreCadete}. Elige una realidad, reúne los núcleos y repara la nave para volver a casa.")
+            _ => ("", "")
         };
         lblIndicacion.Text = selectorVisible
             ? "ELIGE UNA REALIDAD PARA INICIAR LA MISIÓN"
             : "PULSA ESPACIO PARA CONTINUAR";
-        panelDialogo.Visible = narracionActiva;
+        // En la tercera escena se deja visible únicamente la imagen. El siguiente
+        // Espacio abre el selector de realidades sobre esa misma ilustración.
+        panelDialogo.Visible = narracionActiva && paginaHistoria < 2;
         panelSelector.Visible = selectorVisible;
         panelDialogo.Controls.OfType<Button>().First().Visible = !selectorVisible;
         if (selectorVisible) CancelButton = panelSelector.Controls.OfType<Button>().Last();
         else CancelButton = panelDialogo.Controls.OfType<Button>().First();
+    }
+
+    private void AjustarLayout()
+    {
+        if (panelDialogo == null || panelSelector == null || ClientSize.Width <= 0 || ClientSize.Height <= 0)
+            return;
+
+        int ancho = ClientSize.Width;
+        int alto = ClientSize.Height;
+        int margen = Math.Clamp(ancho / 40, 24, 48);
+        int anchoDialogo = Math.Min(1224, ancho - margen * 2);
+        int altoDialogo = Math.Min(170, Math.Max(130, alto / 4));
+        panelDialogo.SetBounds((ancho - anchoDialogo) / 2, alto - altoDialogo - margen / 2, anchoDialogo, altoDialogo);
+        lblCapitulo.SetBounds(20, 10, anchoDialogo - 40, 30);
+        lblNarracion.SetBounds(35, 45, anchoDialogo - 70, altoDialogo - 95);
+        lblIndicacion.SetBounds(145, altoDialogo - 48, anchoDialogo - 165, 32);
+        Button? volverDialogo = panelDialogo.Controls.OfType<Button>().FirstOrDefault();
+        volverDialogo?.SetBounds(16, altoDialogo - 49, 118, 30);
+
+        int anchoSelector = Math.Min(1000, ancho - margen * 2);
+        int altoSelector = Math.Min(470, alto - margen * 2);
+        panelSelector.SetBounds((ancho - anchoSelector) / 2, (alto - altoSelector) / 2, anchoSelector, altoSelector);
+        if (panelSelector.Controls.Count == 0) return;
+
+        panelSelector.Controls[0].SetBounds(18, 8, anchoSelector - 36, 34);
+        int espacio = 18;
+        int tarjetaAncho = (anchoSelector - 3 * espacio) / 2;
+        int tarjetaAlto = altoSelector - 96;
+        for (int i = 1; i <= 2; i++)
+        {
+            if (panelSelector.Controls[i] is not Panel tarjeta) continue;
+            tarjeta.SetBounds(espacio + (i - 1) * (tarjetaAncho + espacio), 48, tarjetaAncho, tarjetaAlto);
+            if (tarjeta.Controls.Count < 4) continue;
+            int imagenAlto = Math.Max(120, (tarjetaAlto - 112) * 3 / 5);
+            tarjeta.Controls[0].SetBounds(12, 12, tarjetaAncho - 24, imagenAlto);
+            tarjeta.Controls[1].SetBounds(12, imagenAlto + 18, tarjetaAncho - 24, 28);
+            tarjeta.Controls[2].SetBounds(16, imagenAlto + 48, tarjetaAncho - 32, Math.Max(36, tarjetaAlto - imagenAlto - 94));
+            tarjeta.Controls[3].SetBounds(16, tarjetaAlto - 42, tarjetaAncho - 32, 34);
+        }
+        if (panelSelector.Controls.OfType<Button>().LastOrDefault() is Button volverSelector)
+            volverSelector.SetBounds((anchoSelector - 220) / 2, altoSelector - 40, 220, 30);
     }
 
     private void ConfigurarSelector()
@@ -241,3 +284,4 @@ public sealed class Form3 : Form
         return tarjeta;
     }
 }
+

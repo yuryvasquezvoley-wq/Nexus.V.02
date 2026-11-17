@@ -27,7 +27,7 @@ namespace NexusWindowsForm
         private int vida = 100, energia = 100, conexion = 100;
         private float jugadorX = 2500, jugadorY = 2500;
         private float camaraX, camaraY;
-        private bool iniciado, encuentroActivo, naveReparada;
+        private bool iniciado, encuentroActivo, naveReparada, recuperacionUsada;
         private string realidad = "REALIDAD 102";
         private Entidad? entidadActual;
         private int fotograma;
@@ -112,9 +112,7 @@ namespace NexusWindowsForm
                 x += anchos[i] + espacio;
             }
             panelRegistro.Location = new Point((ClientSize.Width - panelRegistro.Width) / 2, (ClientSize.Height - panelRegistro.Height) / 2);
-            panelEncuentro.Location = new Point(
-                Math.Max(8, (panelMapa.ClientSize.Width - panelEncuentro.Width) / 2),
-                lblTituloMapa.Height + Math.Max(0, (panelMapa.ClientSize.Height - panelEncuentro.Height) / 2));
+            AjustarPanelEncuentro();
             camaraX = jugadorX - panelMapa.ClientSize.Width / 2f;
             camaraY = jugadorY - panelMapa.ClientSize.Height / 2f;
             panelMapa.Invalidate();
@@ -291,7 +289,9 @@ namespace NexusWindowsForm
             edad = (int)numEdad.Value;
             energia = (int)numEnergia.Value;
             conexion = (int)numConexion.Value;
-            vida = 100; iniciado = true; encuentroActivo = false; naveReparada = false;
+            vida = 100; iniciado = true; encuentroActivo = false; naveReparada = false; recuperacionUsada = false;
+            btnRecuperar.Enabled = true;
+            btnRecuperar.Text = "RECUPERAR ENERGÍA";
             nucleosRecolectados.Clear();
             realidad = selector.RealidadSeleccionada;
             jugadorX = 2500; jugadorY = 2500;
@@ -964,8 +964,47 @@ namespace NexusWindowsForm
 
         private void RecuperarEnergia()
         {
+            if (recuperacionUsada)
+            {
+                Mensaje("LA RECUPERACIÓN DE ENERGÍA YA SE UTILIZÓ EN ESTA MISIÓN.");
+                return;
+            }
+            recuperacionUsada = true;
+            btnRecuperar.Enabled = false;
+            btnRecuperar.Text = "RECUPERACIÓN USADA";
             energia = Math.Min(100, energia + 20); conexion = Math.Min(100, conexion + 10);
             ActualizarHUD(); Mensaje("SE RECUPERARON 20 PUNTOS DE ENERGÍA.");
+        }
+
+        private void AjustarPanelEncuentro()
+        {
+            if (panelEncuentro == null || ClientSize.Width <= 0 || ClientSize.Height <= 0) return;
+
+            int ancho = ClientSize.Width;
+            int alto = ClientSize.Height;
+            int margen = Math.Clamp(Math.Min(ancho, alto) / 32, 18, 42);
+            panelEncuentro.SetBounds(0, 0, ancho, alto);
+            lblMonstruo.SetBounds(margen, 18, ancho - margen * 2, 48);
+            lblMonstruo.Font = new Font("Consolas", Math.Clamp(alto / 38f, 20f, 34f), FontStyle.Bold);
+
+            int yBotones = alto - margen - 58;
+            int anchoBarra = Math.Min(680, ancho - margen * 2);
+            int xBarra = (ancho - anchoBarra) / 2;
+            barraVidaCadeteCombate.SetBounds(xBarra, yBotones - 39, anchoBarra, 20);
+            lblVidaCadeteCombate.SetBounds(margen, yBotones - 68, ancho - margen * 2, 24);
+            barraVidaMonstruo.SetBounds(xBarra, yBotones - 104, anchoBarra, 20);
+            lblDetalleMonstruo.SetBounds(margen, yBotones - 133, ancho - margen * 2, 24);
+
+            int yImagen = 76;
+            int altoImagen = Math.Max(160, lblDetalleMonstruo.Top - yImagen - 8);
+            int anchoImagen = Math.Min(ancho - margen * 2, (int)(altoImagen * 1.83f));
+            imgMonstruo.SetBounds((ancho - anchoImagen) / 2, yImagen, anchoImagen, altoImagen);
+
+            int espacioBotones = 26;
+            int anchoBoton = Math.Min(260, (ancho - margen * 2 - espacioBotones) / 2);
+            int xPrimerBoton = (ancho - (anchoBoton * 2 + espacioBotones)) / 2;
+            btnAtacar.SetBounds(xPrimerBoton, yBotones, anchoBoton, 48);
+            btnEscapar.SetBounds(xPrimerBoton + anchoBoton + espacioBotones, yBotones, anchoBoton, 48);
         }
 
         private void UsarCelula()
@@ -1051,3 +1090,4 @@ namespace NexusWindowsForm
         }
     }
 }
+

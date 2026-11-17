@@ -5,8 +5,6 @@ namespace NexusWindowsForm
         public Form1()
         {
             InitializeComponent();
-            nave.Visible = false;
-            realidad.Visible = false;
             PrepararZonaClic(iniciar, "Iniciar juego");
             PrepararZonaClic(salir, "Salir");
             Resize += (_, _) => AjustarMenu();
@@ -55,3 +53,4 @@ namespace NexusWindowsForm
         }
     }
 }
+
