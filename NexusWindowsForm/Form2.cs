@@ -137,7 +137,7 @@ namespace NexusWindowsForm
             for (int i = 0; i < 5; i++)
                 tabla.RowStyles.Add(new RowStyle(SizeType.Percent, 20));
             panelRegistro.Controls.Add(tabla);
-            tabla.BringToFront();
+            titulo.BringToFront();
 
             txtNombre = new TextBox { Dock = DockStyle.Fill, Font = new Font("Segoe UI", 12F), BackColor = Color.FromArgb(30, 34, 44), ForeColor = texto, BorderStyle = BorderStyle.FixedSingle };
             numEdad = CrearNumero(18, 80);
@@ -247,7 +247,7 @@ namespace NexusWindowsForm
                 WrapContents = true
             };
             mapaPanel.Controls.Add(panelMapa);
-            panelMapa.BringToFront();
+            tituloMapa.BringToFront();
             CrearCasillas();
 
             var lateral = new FlowLayoutPanel
@@ -345,6 +345,7 @@ namespace NexusWindowsForm
             conexion = (int)numConexion.Value;
             vida = 100;
             iniciado = true;
+            misionActiva = true;
             panelRegistro.Visible = false;
             panelJuego.Visible = true;
             panelJuego.BringToFront();
