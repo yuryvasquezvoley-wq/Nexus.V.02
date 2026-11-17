@@ -331,7 +331,7 @@ namespace NexusWindowsForm
             lblMensaje.Text = "SISTEMA LISTO. REGISTRA AL CADETE PARA COMENZAR.";
             lblMensaje.TextAlign = ContentAlignment.MiddleLeft;
             panelAcciones.BackColor = Color.FromArgb(20, 5, 12);
-            panelAcciones.Dock = DockStyle.Bottom;
+            panelAcciones.Dock = DockStyle.None;
             panelAcciones.Height = 72;
             ConfigurarBotonAccion(btnAnalizar, "ANALIZAR ANOMALÍA", 18, 16, 190);
             ConfigurarBotonAccion(btnRecuperar, "RECUPERAR ENERGÍA", 220, 16, 190);
@@ -370,7 +370,7 @@ namespace NexusWindowsForm
             panelJuego.Controls.Add(panelHud);
             panelJuego.Controls.Add(panelAcciones);
             panelJuego.Controls.Add(lblMensaje);
-            panelJuego.Controls.Add(panelEncuentro);
+            panelMapaContenedor.Controls.Add(panelEncuentro);
             panelEncuentro.BringToFront();
             Controls.Add(panelJuego);
             Controls.Add(panelRegistro);
