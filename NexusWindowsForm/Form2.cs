@@ -9,17 +9,26 @@ namespace NexusWindowsForm
         private readonly Color rojo = Color.FromArgb(230, 20, 48);
         private readonly List<Entidad> entidades = new();
         private readonly List<PointF> celdasEnergia = new() { new(2700, 2500), new(2300, 2400), new(3100, 2850), new(1900, 3000) };
+        private readonly List<NucleoDimensional> nucleos = new()
+        {
+            new("102-A", "REALIDAD 102", new PointF(2200, 2600)),
+            new("102-B", "REALIDAD 102", new PointF(3400, 3328)),
+            new("999-A", "REALIDAD 999", new PointF(1152, 1024)),
+            new("999-B", "REALIDAD 999", new PointF(4352, 1664))
+        };
+        private readonly HashSet<string> nucleosRecolectados = new(StringComparer.Ordinal);
         private readonly HashSet<Keys> teclas = new();
         private readonly System.Windows.Forms.Timer relojMovimiento = new();
         private readonly System.Windows.Forms.Timer relojEscena = new();
         private readonly Bitmap[,] spritesCadete = new Bitmap[4, 2];
+        private const int nucleosNecesarios = 3;
 
         private string nombreExplorador = "";
         private int edad;
         private int vida = 100, energia = 100, conexion = 100;
         private float jugadorX = 2500, jugadorY = 2500;
         private float camaraX, camaraY;
-        private bool iniciado, encuentroActivo, nucleoEncontrado;
+        private bool iniciado, encuentroActivo, naveReparada;
         private string realidad = "REALIDAD 102";
         private Entidad? entidadActual;
         private int fotograma;
@@ -27,7 +36,8 @@ namespace NexusWindowsForm
         private int celulasEnergia;
         private int direccionJugador = 2;
         private bool jugadorCaminando;
-        private readonly PointF nucleo = new(3400, 3400);
+
+        private sealed record NucleoDimensional(string Id, string Realidad, PointF Posicion);
 
         private sealed class Entidad
         {
@@ -37,6 +47,8 @@ namespace NexusWindowsForm
             public int Vida { get; set; } = 60;
             public int VidaMaxima { get; init; } = 60;
             public Bitmap Sprite { get; init; } = null!;
+            public PointF DestinoMovimiento { get; set; }
+            public float Velocidad { get; init; } = 1.1f;
             public bool Derrotada { get; set; }
         }
 
@@ -152,41 +164,26 @@ namespace NexusWindowsForm
             return bmp;
         }
 
-        private Bitmap CrearSpriteMonstruo(int tipo)
-        {
-            Bitmap bmp = new Bitmap(96, 96);
-            using Graphics g = Graphics.FromImage(bmp);
-            g.Clear(Color.Transparent);
-            void P(Color c, int x, int y, int w, int h)
-            { using SolidBrush b = new(c); g.FillRectangle(b, x, y, w, h); }
-            Color carne = tipo == 0 ? Color.FromArgb(115, 8, 30) : Color.FromArgb(55, 8, 45);
-            Color luz = Color.FromArgb(255, 25, 55);
-            // Sprite original pixel-art, visto desde arriba.
-            P(Color.FromArgb(35, 2, 12), 25, 15, 46, 65);
-            P(carne, 30, 18, 36, 58); P(carne, 18, 30, 60, 30);
-            P(Color.FromArgb(25, 2, 10), 35, 30, 26, 30);
-            P(luz, 38, 34, 7, 7); P(luz, 53, 34, 7, 7);
-            P(Color.Black, 40, 36, 3, 3); P(Color.Black, 55, 36, 3, 3);
-            if (tipo == 0)
-            {
-                P(carne, 8, 12, 28, 10); P(carne, 60, 12, 28, 10);
-                P(carne, 5, 5, 12, 18); P(carne, 79, 5, 12, 18);
-                P(Color.FromArgb(230, 170, 175), 40, 57, 16, 5);
-            }
-            else
-            {
-                P(Color.FromArgb(100, 0, 70), 12, 20, 15, 45); P(Color.FromArgb(100, 0, 70), 69, 20, 15, 45);
-                P(luz, 42, 48, 12, 5);
-            }
-            return bmp;
-        }
+        private static Bitmap CrearSpriteMonstruo() => (Bitmap)Properties.Resources.MonstruoMapa.Clone();
 
         private void CrearEntidades()
         {
             foreach (Entidad anterior in entidades) anterior.Sprite.Dispose();
             entidades.Clear();
-            entidades.Add(new Entidad { Nombre = "ACECHADOR DEL REVÉS", Tipo = "Entidad orgánica", Posicion = new PointF(2850, 2580), Sprite = CrearSpriteMonstruo(0), Vida = 60 });
-            entidades.Add(new Entidad { Nombre = "SOMBRA DEL VACÍO", Tipo = "Entidad de sombra", Posicion = new PointF(2150, 2200), Sprite = CrearSpriteMonstruo(1), Vida = 45, VidaMaxima = 45 });
+            PointF primero = new(2850, 2580);
+            PointF segundo = new(2150, 2200);
+            entidades.Add(new Entidad
+            {
+                Nombre = "ACECHADOR DEL REVÉS", Tipo = "Entidad orgánica", Posicion = primero,
+                DestinoMovimiento = new PointF(primero.X + 170, primero.Y - 90), Velocidad = 1.15f,
+                Sprite = CrearSpriteMonstruo(), Vida = 60
+            });
+            entidades.Add(new Entidad
+            {
+                Nombre = "SOMBRA DEL VACÍO", Tipo = "Entidad de sombra", Posicion = segundo,
+                DestinoMovimiento = new PointF(segundo.X - 140, segundo.Y + 120), Velocidad = 0.95f,
+                Sprite = CrearSpriteMonstruo(), Vida = 45, VidaMaxima = 45
+            });
         }
 
         private void CrearSpritesCadete()
@@ -271,11 +268,18 @@ namespace NexusWindowsForm
             using Form3 selector = new(realidad);
             if (selector.ShowDialog(this) != DialogResult.OK) return;
 
+            MessageBox.Show(this,
+                "Eres un viajero de realidades. Durante un salto dimensional, el reactor de tu nave se rompió y te dejó varado en Hawkins. " +
+                "Recupera tres núcleos estables en las realidades 102 y 999 para reemplazar el núcleo dañado y reparar la nave. " +
+                "La linterna es tu única guía: los acechadores se mueven entre las casas y solo verás lo que ilumine su haz.",
+                "NEXUS // DIRECTIVA DE MISIÓN", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
             nombreExplorador = txtNombre.Text.Trim();
             edad = (int)numEdad.Value;
             energia = (int)numEnergia.Value;
             conexion = (int)numConexion.Value;
-            vida = 100; iniciado = true; encuentroActivo = false; nucleoEncontrado = false;
+            vida = 100; iniciado = true; encuentroActivo = false; naveReparada = false;
+            nucleosRecolectados.Clear();
             realidad = selector.RealidadSeleccionada;
             jugadorX = 2500; jugadorY = 2500;
             camaraX = jugadorX - panelMapa.ClientSize.Width / 2f;
@@ -283,7 +287,7 @@ namespace NexusWindowsForm
             panelRegistro.Visible = false; panelJuego.Visible = true; panelJuego.BringToFront(); lblEncabezado.BringToFront();
             AjustarLayout();
             relojMovimiento.Start();
-            ActualizarHUD(); Mensaje("CADete REGISTRADO. EXPLORA EL MUNDO DESDE UNA VISTA AÉREA.");
+            ActualizarHUD(); Mensaje("MISIÓN ACTIVA: RECUPERA 3 NÚCLEOS Y REPARA TU NAVE.");
             panelMapa.Focus();
         }
 
@@ -310,7 +314,14 @@ namespace NexusWindowsForm
 
         private void ActualizarMovimiento()
         {
-            if (!iniciado || encuentroActivo || !panelJuego.Visible) return;
+            if (!iniciado || !panelJuego.Visible) return;
+            bool monstruosEnMovimiento = ActualizarMonstruos();
+            if (encuentroActivo)
+            {
+                if (monstruosEnMovimiento) panelMapa.Invalidate();
+                return;
+            }
+
             float dx = 0, dy = 0;
             if (teclas.Contains(Keys.W) || teclas.Contains(Keys.Up)) dy--;
             if (teclas.Contains(Keys.S) || teclas.Contains(Keys.Down)) dy++;
@@ -319,6 +330,11 @@ namespace NexusWindowsForm
             if (dx == 0 && dy == 0)
             {
                 if (jugadorCaminando) { jugadorCaminando = false; panelMapa.Invalidate(); }
+                bool inventarioCambio = ActualizarNucleosCercanos();
+                inventarioCambio |= RecolectarCelulaCercana();
+                if (inventarioCambio) ActualizarHUD();
+                DetectarEntidad();
+                if (monstruosEnMovimiento) panelMapa.Invalidate();
                 return;
             }
             jugadorCaminando = true;
@@ -328,8 +344,10 @@ namespace NexusWindowsForm
             float magnitud = (float)Math.Sqrt(dx * dx + dy * dy);
             dx /= magnitud; dy /= magnitud;
             float velocidad = energia > 0 ? 4.2f : 1.4f;
-            jugadorX = Math.Clamp(jugadorX + dx * velocidad, 80, 4920);
-            jugadorY = Math.Clamp(jugadorY + dy * velocidad, 80, 4920);
+            float siguienteX = Math.Clamp(jugadorX + dx * velocidad, 80, 4920);
+            if (!EstaDentroDeUnaCasa(new PointF(siguienteX, jugadorY), 11)) jugadorX = siguienteX;
+            float siguienteY = Math.Clamp(jugadorY + dy * velocidad, 80, 4920);
+            if (!EstaDentroDeUnaCasa(new PointF(jugadorX, siguienteY), 11)) jugadorY = siguienteY;
             ticksMovimiento++;
             if (ticksMovimiento % 30 == 0)
             {
@@ -338,29 +356,127 @@ namespace NexusWindowsForm
             }
             camaraX = jugadorX - panelMapa.ClientSize.Width / 2f;
             camaraY = jugadorY - panelMapa.ClientSize.Height / 2f;
+            ActualizarNucleosCercanos();
+            RecolectarCelulaCercana();
             DetectarEntidad();
-            if (Math.Abs(jugadorX - nucleo.X) < 45 && Math.Abs(jugadorY - nucleo.Y) < 45 && !nucleoEncontrado)
-            {
-                if (MessageBox.Show("HAS ENCONTRADO EL NÚCLEO ENERGÉTICO. ¿REGISTRARLO?", "MISIÓN NEXUS", MessageBoxButtons.YesNo) == DialogResult.Yes)
-                {
-                    nucleoEncontrado = true;
-                    Mensaje("NÚCLEO REGISTRADO. MISIÓN COMPLETADA.");
-                }
-            }
-            PointF? celda = celdasEnergia.FirstOrDefault(p => Math.Abs(p.X - jugadorX) < 34 && Math.Abs(p.Y - jugadorY) < 34);
-            if (celda.HasValue && celdasEnergia.Remove(celda.Value))
-            {
-                celulasEnergia++;
-                Mensaje("CÉLULA DE ENERGÍA RECOLECTADA.");
-            }
             ActualizarHUD();
             panelMapa.Invalidate();
+        }
+
+        private bool ActualizarMonstruos()
+        {
+            bool seMovioAlguno = false;
+            foreach (Entidad entidad in entidades.Where(e => !e.Derrotada && e != entidadActual))
+            {
+                float dxJugador = jugadorX - entidad.Posicion.X;
+                float dyJugador = jugadorY - entidad.Posicion.Y;
+                float distanciaJugador = MathF.Sqrt(dxJugador * dxJugador + dyJugador * dyJugador);
+                if (distanciaJugador < 420)
+                    entidad.DestinoMovimiento = new PointF(jugadorX, jugadorY);
+                else
+                {
+                    float dxDestino = entidad.DestinoMovimiento.X - entidad.Posicion.X;
+                    float dyDestino = entidad.DestinoMovimiento.Y - entidad.Posicion.Y;
+                    if (dxDestino * dxDestino + dyDestino * dyDestino < 24 * 24)
+                    {
+                        entidad.DestinoMovimiento = new PointF(
+                            Math.Clamp(entidad.Posicion.X + Random.Shared.Next(-220, 221), 90, 4910),
+                            Math.Clamp(entidad.Posicion.Y + Random.Shared.Next(-220, 221), 90, 4910));
+                    }
+                }
+
+                float dx = entidad.DestinoMovimiento.X - entidad.Posicion.X;
+                float dy = entidad.DestinoMovimiento.Y - entidad.Posicion.Y;
+                float distancia = MathF.Sqrt(dx * dx + dy * dy);
+                if (distancia < 1) continue;
+                float paso = Math.Min(entidad.Velocidad, distancia);
+                dx = dx / distancia * paso;
+                dy = dy / distancia * paso;
+                PointF anterior = entidad.Posicion;
+                float x = Math.Clamp(anterior.X + dx, 80, 4920);
+                if (!EstaDentroDeUnaCasa(new PointF(x, anterior.Y), 10)) entidad.Posicion = new PointF(x, anterior.Y);
+                float y = Math.Clamp(anterior.Y + dy, 80, 4920);
+                if (!EstaDentroDeUnaCasa(new PointF(entidad.Posicion.X, y), 10)) entidad.Posicion = new PointF(entidad.Posicion.X, y);
+                if (Math.Abs(entidad.Posicion.X - anterior.X) > 0.01f || Math.Abs(entidad.Posicion.Y - anterior.Y) > 0.01f)
+                    seMovioAlguno = true;
+                else
+                    entidad.DestinoMovimiento = new PointF(
+                        Math.Clamp(anterior.X + Random.Shared.Next(-180, 181), 90, 4910),
+                        Math.Clamp(anterior.Y + Random.Shared.Next(-180, 181), 90, 4910));
+            }
+            return seMovioAlguno;
+        }
+
+        private static bool EstaDentroDeUnaCasa(PointF posicion, float radio)
+        {
+            const int tile = 64;
+            int inicioX = (int)MathF.Floor((posicion.X - radio - 166) / tile);
+            int finX = (int)MathF.Ceiling((posicion.X + radio + 166) / tile);
+            int inicioY = (int)MathF.Floor((posicion.Y - radio - 134) / tile);
+            int finY = (int)MathF.Ceiling((posicion.Y + radio + 134) / tile);
+            RectangleF cuerpo = new(posicion.X - radio, posicion.Y - radio, radio * 2, radio * 2);
+
+            for (int ty = inicioY; ty <= finY; ty++)
+            for (int tx = inicioX; tx <= finX; tx++)
+            {
+                int loteX = ModuloPositivo(tx, 17), loteY = ModuloPositivo(ty, 13);
+                if (!((loteX == 4 || loteX == 12) && (loteY == 4 || loteY == 9))) continue;
+                RectangleF paredes = new(tx * tile - 84, ty * tile - 66, 164, 116);
+                if (paredes.IntersectsWith(cuerpo)) return true;
+            }
+            return false;
+        }
+
+        private bool EstaEnHazDeLinterna(PointF objetivo, float alcance)
+        {
+            float dx = objetivo.X - jugadorX;
+            float dy = objetivo.Y - jugadorY;
+            float distancia = MathF.Sqrt(dx * dx + dy * dy);
+            if (distancia < 18) return true;
+            if (distancia > alcance) return false;
+            (float dirX, float dirY) = direccionJugador switch
+            {
+                0 => (0, -1),
+                1 => (1, 0),
+                2 => (0, 1),
+                _ => (-1, 0)
+            };
+            float producto = (dx * dirX + dy * dirY) / distancia;
+            return producto >= 0.76f;
+        }
+
+        private bool ActualizarNucleosCercanos()
+        {
+            if (naveReparada) return false;
+            NucleoDimensional? recogido = nucleos.FirstOrDefault(n => n.Realidad == realidad &&
+                !nucleosRecolectados.Contains(n.Id) &&
+                Math.Abs(n.Posicion.X - jugadorX) < 32 && Math.Abs(n.Posicion.Y - jugadorY) < 32 &&
+                EstaEnHazDeLinterna(n.Posicion, 360));
+            if (recogido == null || !nucleosRecolectados.Add(recogido.Id)) return false;
+
+            naveReparada = nucleosRecolectados.Count >= nucleosNecesarios;
+            string progreso = $"{nucleosRecolectados.Count}/{nucleosNecesarios}";
+            Mensaje(naveReparada
+                ? $"OBJETO RECOGIDO: NÚCLEO {progreso}. REACTOR REEMPLAZADO; NAVE REPARADA."
+                : $"OBJETO RECOGIDO: NÚCLEO {progreso}. BUSCA OTROS EN LAS DOS REALIDADES.");
+            return true;
+        }
+
+        private bool RecolectarCelulaCercana()
+        {
+            int indice = celdasEnergia.FindIndex(p => Math.Abs(p.X - jugadorX) < 34 && Math.Abs(p.Y - jugadorY) < 34);
+            if (indice < 0) return false;
+            celdasEnergia.RemoveAt(indice);
+            celulasEnergia++;
+            Mensaje("OBJETO RECOGIDO: CÉLULA DE ENERGÍA.");
+            return true;
         }
 
         private void DetectarEntidad()
         {
             Entidad? encontrada = entidades.FirstOrDefault(e => !e.Derrotada &&
-                Math.Abs(e.Posicion.X - jugadorX) < 62 && Math.Abs(e.Posicion.Y - jugadorY) < 62);
+                Math.Abs(e.Posicion.X - jugadorX) < 62 && Math.Abs(e.Posicion.Y - jugadorY) < 62 &&
+                EstaEnHazDeLinterna(e.Posicion, 360));
             if (encontrada == null) return;
             encuentroActivo = true; entidadActual = encontrada; teclas.Clear();
             lblMonstruo.Text = encontrada.Nombre;
@@ -494,7 +610,7 @@ namespace NexusWindowsForm
             {
                 float ex = entidad.Posicion.X - camaraX, ey = entidad.Posicion.Y - camaraY;
                 if (ex > -70 && ey > -70 && ex < panelMapa.Width + 70 && ey < panelMapa.Height + 70)
-                    g.DrawImage(entidad.Sprite, ex - 24, ey - 24, 48, 48);
+                    g.DrawImage(entidad.Sprite, ex - 35, ey - 33, 70, 66);
             }
 
             // Cadete astronauta, con dirección y paso animado en pixel art.
@@ -503,16 +619,44 @@ namespace NexusWindowsForm
             int frameCadete = jugadorCaminando ? fotograma % 2 : 0;
             g.DrawImage(spritesCadete[direccionJugador, frameCadete], px - 22, py - 38, 44, 58);
 
-            if (!nucleoEncontrado)
+            foreach (NucleoDimensional nucleo in nucleos.Where(n => n.Realidad == realidad &&
+                !nucleosRecolectados.Contains(n.Id)).Take(Math.Max(0, nucleosNecesarios - nucleosRecolectados.Count)))
             {
-                float nx = nucleo.X - camaraX, ny = nucleo.Y - camaraY;
-                using SolidBrush nucleoBrush = new(Color.Gold);
-                g.FillRectangle(nucleoBrush, nx - 10, ny - 10, 20, 20);
-                using Pen nucleoPen = new(Color.OrangeRed, 3);
-                g.DrawRectangle(nucleoPen, nx - 14, ny - 14, 28, 28);
+                float nx = nucleo.Posicion.X - camaraX, ny = nucleo.Posicion.Y - camaraY;
+                using SolidBrush resplandor = new(Color.FromArgb(95, 82, 222, 255));
+                g.FillEllipse(resplandor, nx - 21, ny - 21, 42, 42);
+                PointF[] cristal = { new(nx, ny - 15), new(nx + 11, ny), new(nx, ny + 15), new(nx - 11, ny) };
+                using SolidBrush cristalBrush = new(Color.FromArgb(95, 224, 245, 255));
+                using Pen bordeCristal = new(Color.FromArgb(90, 240, 250, 255), 2);
+                g.FillPolygon(cristalBrush, cristal);
+                g.DrawPolygon(bordeCristal, cristal);
             }
+
+            DibujarLinterna(g, px, py);
             using SolidBrush coords = new(Color.FromArgb(220, 255, 230, 230));
             g.DrawString($"X: {(int)jugadorX}   Y: {(int)jugadorY}   //   {realidad}", new Font("Consolas", 10, FontStyle.Bold), coords, 12, 12);
+        }
+
+        private void DibujarLinterna(Graphics g, float centroX, float centroY)
+        {
+            if (!iniciado) return;
+            float anguloCentro = direccionJugador switch { 0 => 270, 1 => 0, 2 => 90, _ => 180 };
+            const float alcance = 360;
+            const float apertura = 78;
+            using GraphicsPath haz = new();
+            haz.AddPie(centroX - alcance, centroY - alcance, alcance * 2, alcance * 2,
+                anguloCentro - apertura / 2, apertura);
+            using Region oscuridad = new(new Rectangle(0, 0, panelMapa.ClientSize.Width, panelMapa.ClientSize.Height));
+            oscuridad.Exclude(haz);
+            using SolidBrush sombra = new(Color.FromArgb(246, 2, 4, 10));
+            g.FillRegion(sombra, oscuridad);
+            using SolidBrush luz = new(Color.FromArgb(24, 255, 235, 170));
+            g.FillPath(luz, haz);
+
+            float radianes = anguloCentro * MathF.PI / 180;
+            using Pen rayo = new(Color.FromArgb(72, 255, 239, 184), 2);
+            g.DrawLine(rayo, centroX, centroY - 5,
+                centroX + MathF.Cos(radianes) * alcance, centroY + MathF.Sin(radianes) * alcance);
         }
 
         private void DibujarArbol(Graphics g, int x, int y)
@@ -794,7 +938,13 @@ namespace NexusWindowsForm
             lblConexion.Text = $"CONEXIÓN: {conexion}/100";
             lblPosicion.Text = $"X: {(int)jugadorX}  Y: {(int)jugadorY}  //  {realidad}";
             lblTituloMapa.Text = "ZONA DE EXPLORACIÓN // " + realidad;
-            lblInventario.Text = $"CÉLULAS DE ENERGÍA: {celulasEnergia}\\nNÚCLEO: {(nucleoEncontrado ? "REGISTRADO" : "PENDIENTE")}";
+            lblInventario.Text = $"CÉLULAS: {celulasEnergia}\r\nNÚCLEOS: {nucleosRecolectados.Count}/{nucleosNecesarios}";
+            lblContadorNucleos.Text = naveReparada
+                ? $"NAVE\r\nREPARADA\r\n{nucleosRecolectados.Count}/{nucleosNecesarios}"
+                : $"NÚCLEOS\r\n{nucleosRecolectados.Count} / {nucleosNecesarios}";
+            lblMision.Text = naveReparada
+                ? "Reactor reemplazado. Tu nave está lista para volver a viajar."
+                : "Tu nave quedó varada. Reúne 3 núcleos en las realidades 102 y 999 para reparar el reactor.";
             barraVida.Value = Math.Clamp(vida, 0, 100);
             barraEnergia.Value = Math.Clamp(energia, 0, 100);
             barraConexion.Value = Math.Clamp(conexion, 0, 100);
