@@ -130,10 +130,10 @@ namespace NexusWindowsForm
                 Dock = DockStyle.Fill,
                 ColumnCount = 2,
                 RowCount = 5,
-                Padding = new Padding(12, 20, 12, 5)
+                Padding = new Padding(12, 75, 12, 5)
             };
-            tabla.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 42));
-            tabla.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 58));
+            tabla.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 52));
+            tabla.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 48));
             for (int i = 0; i < 5; i++)
                 tabla.RowStyles.Add(new RowStyle(SizeType.Percent, 20));
             panelRegistro.Controls.Add(tabla);
