@@ -67,7 +67,7 @@ namespace NexusWindowsForm
                 panelMapa.Resize += (_, _) => panelMapa.Invalidate();
                 relojMovimiento.Interval = 16;
                 relojMovimiento.Tick += (_, _) => ActualizarMovimiento();
-                relojEscena.Interval = 180;
+                relojEscena.Interval = 90;
                 relojEscena.Tick += (_, _) => { fotograma++; panelMapa.Invalidate(); };
                 relojEscena.Start();
             }
@@ -253,25 +253,6 @@ namespace NexusWindowsForm
             }
             P(borde, 9, 25, 10, 2); P(Color.FromArgb(28, 38, 53), 11, 26, 6, 1);
 
-            // La linterna queda visible en la mano que apunta hacia delante.
-            Color carcasaLinterna = Color.FromArgb(27, 34, 45);
-            Color luzLinterna = Color.FromArgb(255, 211, 111);
-            if (direccion == 0)
-            {
-                P(borde, 21, 19, 6, 4); P(carcasaLinterna, 22, 20, 4, 2); P(luzLinterna, 25, 20, 2, 2);
-            }
-            else if (direccion == 1)
-            {
-                P(borde, 22, 19, 6, 4); P(carcasaLinterna, 23, 20, 4, 2); P(luzLinterna, 26, 20, 2, 2);
-            }
-            else if (direccion == 2)
-            {
-                P(borde, 20, 23, 7, 5); P(carcasaLinterna, 21, 24, 5, 3); P(luzLinterna, 25, 24, 2, 3);
-            }
-            else
-            {
-                P(borde, 0, 19, 6, 4); P(carcasaLinterna, 1, 20, 4, 2); P(luzLinterna, 1, 20, 2, 2);
-            }
             return bmp;
         }
 
@@ -345,12 +326,6 @@ namespace NexusWindowsForm
             5 or 6 => 3,
             _ => 2
         };
-
-        private static PointF VectorDireccion(int direccion)
-        {
-            float radianes = (-90 + direccion * 45) * MathF.PI / 180;
-            return new PointF(MathF.Cos(radianes), MathF.Sin(radianes));
-        }
 
         private void ActualizarMovimiento()
         {
@@ -465,16 +440,11 @@ namespace NexusWindowsForm
             return false;
         }
 
-        private bool EstaEnHazDeLinterna(PointF objetivo, float alcance)
+        private bool EstaEnRadioDeInteraccion(PointF objetivo, float radio)
         {
             float dx = objetivo.X - jugadorX;
             float dy = objetivo.Y - jugadorY;
-            float distancia = MathF.Sqrt(dx * dx + dy * dy);
-            if (distancia < 18) return true;
-            if (distancia > alcance) return false;
-            PointF direccion = VectorDireccion(direccionJugador);
-            float producto = (dx * direccion.X + dy * direccion.Y) / distancia;
-            return producto >= 0.76f;
+            return dx * dx + dy * dy <= radio * radio;
         }
 
         private bool ActualizarNucleosCercanos()
@@ -483,7 +453,7 @@ namespace NexusWindowsForm
             NucleoDimensional? recogido = nucleos.FirstOrDefault(n => n.Realidad == realidad &&
                 !nucleosRecolectados.Contains(n.Id) &&
                 Math.Abs(n.Posicion.X - jugadorX) < 32 && Math.Abs(n.Posicion.Y - jugadorY) < 32 &&
-                EstaEnHazDeLinterna(n.Posicion, 360));
+                EstaEnRadioDeInteraccion(n.Posicion, 48));
             if (recogido == null || !nucleosRecolectados.Add(recogido.Id)) return false;
 
             naveReparada = nucleosRecolectados.Count >= nucleosNecesarios;
@@ -507,8 +477,7 @@ namespace NexusWindowsForm
         private void DetectarEntidad()
         {
             Entidad? encontrada = entidades.FirstOrDefault(e => !e.Derrotada &&
-                Math.Abs(e.Posicion.X - jugadorX) < 62 && Math.Abs(e.Posicion.Y - jugadorY) < 62 &&
-                EstaEnHazDeLinterna(e.Posicion, 360));
+                EstaEnRadioDeInteraccion(e.Posicion, 88));
             if (encontrada == null) return;
             encuentroActivo = true; entidadActual = encontrada; teclas.Clear();
             lblMonstruo.Text = encontrada.Nombre;
@@ -580,9 +549,9 @@ namespace NexusWindowsForm
                 int calleY = Math.Abs(ty % 13), calleX = Math.Abs(tx % 17);
                 bool carretera = calleY <= 1 || calleX <= 1;
                 bool acera = !carretera && (calleY == 2 || calleX == 2);
-                Color suelo = realidad == "REALIDAD 102" ? Color.FromArgb(43, 47, 39) : Color.FromArgb(31, 24, 39);
-                Color asfalto = realidad == "REALIDAD 102" ? Color.FromArgb(49, 44, 43) : Color.FromArgb(40, 27, 39);
-                Color pavimento = realidad == "REALIDAD 102" ? Color.FromArgb(79, 72, 65) : Color.FromArgb(61, 48, 62);
+                Color suelo = realidad == "REALIDAD 102" ? Color.FromArgb(43, 47, 39) : Color.FromArgb(54, 27, 30);
+                Color asfalto = realidad == "REALIDAD 102" ? Color.FromArgb(49, 44, 43) : Color.FromArgb(48, 22, 28);
+                Color pavimento = realidad == "REALIDAD 102" ? Color.FromArgb(79, 72, 65) : Color.FromArgb(91, 44, 48);
                 using (SolidBrush b = new(carretera ? asfalto : acera ? pavimento : suelo)) g.FillRectangle(b, sx, sy, tile, tile);
                 if (acera)
                 {
@@ -674,26 +643,82 @@ namespace NexusWindowsForm
                 g.DrawPolygon(bordeCristal, cristal);
             }
 
-            DibujarLinterna(g, px, py);
+            if (realidad == "REALIDAD 999")
+            {
+                using SolidBrush ambienteRojo = new(Color.FromArgb(34, 103, 9, 22));
+                g.FillRectangle(ambienteRojo, 0, 0, panelMapa.ClientSize.Width, panelMapa.ClientSize.Height);
+            }
+            AplicarVisionDelCadete(g, px, py);
+            DibujarEsporas(g, px, py);
             using SolidBrush coords = new(Color.FromArgb(220, 255, 230, 230));
             g.DrawString($"X: {(int)jugadorX}   Y: {(int)jugadorY}   //   {realidad}", new Font("Consolas", 10, FontStyle.Bold), coords, 12, 12);
         }
 
-        private void DibujarLinterna(Graphics g, float centroX, float centroY)
+        private void AplicarVisionDelCadete(Graphics g, float centroX, float centroY)
         {
             if (!iniciado) return;
-            float anguloCentro = -90 + direccionJugador * 45;
-            const float alcance = 360;
-            const float apertura = 78;
-            using GraphicsPath haz = new();
-            haz.AddPie(centroX - alcance, centroY - alcance, alcance * 2, alcance * 2,
-                anguloCentro - apertura / 2, apertura);
+            const float radioVision = 190;
+            Color sombraAmbiente = realidad == "REALIDAD 999"
+                ? Color.FromArgb(158, 14, 1, 7)
+                : Color.FromArgb(150, 0, 0, 0);
+            using GraphicsPath zonaVision = new();
+            zonaVision.AddEllipse(centroX - radioVision, centroY - radioVision, radioVision * 2, radioVision * 2);
             using Region oscuridad = new(new Rectangle(0, 0, panelMapa.ClientSize.Width, panelMapa.ClientSize.Height));
-            oscuridad.Exclude(haz);
-            using SolidBrush sombra = new(Color.FromArgb(246, 2, 4, 10));
+            oscuridad.Exclude(zonaVision);
+            using SolidBrush sombra = new(sombraAmbiente);
             g.FillRegion(sombra, oscuridad);
-            using SolidBrush luz = new(Color.FromArgb(24, 255, 235, 170));
-            g.FillPath(luz, haz);
+
+            SmoothingMode suavizado = g.SmoothingMode;
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            using PathGradientBrush degradado = new(zonaVision)
+            {
+                CenterColor = Color.FromArgb(0, 0, 0, 0),
+                SurroundColors = new[] { sombraAmbiente },
+                Blend = new Blend
+                {
+                    Positions = new[] { 0f, 0.54f, 1f },
+                    Factors = new[] { 0f, 0f, 1f }
+                }
+            };
+            g.FillPath(degradado, zonaVision);
+            g.SmoothingMode = suavizado;
+        }
+
+        private void DibujarEsporas(Graphics g, float centroX, float centroY)
+        {
+            int ancho = Math.Max(1, panelMapa.ClientSize.Width);
+            int alto = Math.Max(1, panelMapa.ClientSize.Height);
+            bool realidadRojiza = realidad == "REALIDAD 999";
+
+            for (int i = 0; i < 62; i++)
+            {
+                int semilla = unchecked((i * 7919 + 104729) & int.MaxValue);
+                float profundidad = (semilla % 1000) / 999f;
+                int baseX = semilla % ancho;
+                int baseY = (semilla / 31) % alto;
+                float velocidad = 1.3f + profundidad * 2.8f;
+                float y = (baseY + fotograma * velocidad) % alto;
+                float balanceo = MathF.Sin((fotograma * 0.11f + i) * 0.7f) * (2 + profundidad * 8);
+                float x = (baseX + balanceo + ancho) % ancho;
+                float dx = x - centroX, dy = y - centroY;
+                float distancia = MathF.Sqrt(dx * dx + dy * dy);
+                float visibilidad = distancia <= 100
+                    ? 1f
+                    : 1f - 0.68f * Math.Clamp((distancia - 100) / 260f, 0f, 1f);
+                int alpha = Math.Clamp((int)((58 + profundidad * (realidadRojiza ? 165 : 125)) * visibilidad), 20, 220);
+                int tamano = 1 + (int)(profundidad * 3.2f);
+                int largo = 2 + (int)(profundidad * 6f);
+                Color esporaColor = realidadRojiza
+                    ? Color.FromArgb(alpha, 255, 61 + (i % 3) * 18, 50)
+                    : Color.FromArgb(alpha, 218, 35 + (i % 3) * 12, 47);
+                using Pen estela = new(esporaColor, tamano);
+                g.DrawLine(estela, x, y, x - balanceo * 0.08f, y + largo);
+                if (profundidad > 0.66f)
+                {
+                    using SolidBrush brillo = new(Color.FromArgb(Math.Min(235, alpha + 22), 255, 98, 78));
+                    g.FillEllipse(brillo, x - tamano, y - tamano, tamano * 2, tamano * 2);
+                }
+            }
         }
 
         private static void DibujarRaicesHawkins(Graphics g, int x, int y, int semilla)
@@ -739,8 +764,8 @@ namespace NexusWindowsForm
         private void DibujarArbol(Graphics g, int x, int y)
         {
             using SolidBrush tronco = new(Color.FromArgb(38, 15, 20));
-            using SolidBrush copa = new(realidad == "REALIDAD 102" ? Color.FromArgb(15, 43, 29) : Color.FromArgb(45, 13, 37));
-            using SolidBrush brillo = new(realidad == "REALIDAD 102" ? Color.FromArgb(67, 81, 44) : Color.FromArgb(132, 21, 54));
+            using SolidBrush copa = new(realidad == "REALIDAD 102" ? Color.FromArgb(15, 43, 29) : Color.FromArgb(63, 13, 24));
+            using SolidBrush brillo = new(realidad == "REALIDAD 102" ? Color.FromArgb(67, 81, 44) : Color.FromArgb(165, 35, 43));
             g.FillRectangle(tronco, x + 22, y + 28, 12, 22);
             g.FillRectangle(copa, x + 8, y + 5, 40, 35);
             g.FillRectangle(brillo, x + 16, y + 12, 8, 7);
@@ -762,11 +787,11 @@ namespace NexusWindowsForm
             }
 
             int variante = ModuloPositivo(semilla, 3);
-            Color lawn = realidad == "REALIDAD 102" ? Color.FromArgb(65 + variante * 5, 77, 48) : Color.FromArgb(42, 35, 48 + variante * 5);
+            Color lawn = realidad == "REALIDAD 102" ? Color.FromArgb(65 + variante * 5, 77, 48) : Color.FromArgb(58 + variante * 5, 30, 31);
             Color roof = realidad == "REALIDAD 102"
                 ? new[] { Color.FromArgb(69, 55, 48), Color.FromArgb(54, 61, 60), Color.FromArgb(77, 57, 48) }[variante]
-                : new[] { Color.FromArgb(43, 29, 46), Color.FromArgb(56, 27, 43), Color.FromArgb(37, 35, 52) }[variante];
-            Color window = realidad == "REALIDAD 102" ? Color.FromArgb(107, 171, 183) : Color.FromArgb(201, 67, 94);
+                : new[] { Color.FromArgb(59, 27, 31), Color.FromArgb(72, 28, 34), Color.FromArgb(48, 25, 32) }[variante];
+            Color window = realidad == "REALIDAD 102" ? Color.FromArgb(107, 171, 183) : Color.FromArgb(220, 77, 72);
 
             // Patio rectangular, cercas, césped y acceso desde la calle.
             R(Color.FromArgb(100, 0, 0, 0), 3, 7, 246, 158);
@@ -850,7 +875,7 @@ namespace NexusWindowsForm
 
             Point Pt(int px, int py) => new(x + px, y + py);
             int variante = ModuloPositivo(semilla, 3);
-            Color tierra = realidad == "REALIDAD 102" ? Color.FromArgb(76 + variante * 4, 76, 45) : Color.FromArgb(48, 43, 61 + variante * 5);
+            Color tierra = realidad == "REALIDAD 102" ? Color.FromArgb(76 + variante * 4, 76, 45) : Color.FromArgb(72 + variante * 5, 34, 38);
             Color tejadoA = variante switch
             {
                 0 => Color.FromArgb(24, 18, 24),
