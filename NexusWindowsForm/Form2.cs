@@ -1,6 +1,8 @@
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.IO;
 using System.Windows.Forms;
+using MediaPlayer = System.Windows.Media.MediaPlayer;
 
 namespace NexusWindowsForm
 {
@@ -27,7 +29,8 @@ namespace NexusWindowsForm
         private int vida = 100, energia = 100, conexion = 100;
         private float jugadorX = 2500, jugadorY = 2500;
         private float camaraX, camaraY;
-        private bool iniciado, encuentroActivo, naveReparada, recuperacionUsada;
+        private bool iniciado, encuentroActivo, naveReparada, recuperacionUsada, musicaActiva, misionTerminada;
+        private MediaPlayer? musicaFondo;
         private string realidad = "REALIDAD 102";
         private Entidad? entidadActual;
         private int fotograma;
@@ -60,6 +63,23 @@ namespace NexusWindowsForm
 
             if (!enDisenador)
             {
+                musicaFondo = new MediaPlayer { Volume = 0.42 };
+                musicaFondo.MediaOpened += (_, _) =>
+                {
+                    if (musicaActiva && iniciado) musicaFondo.Play();
+                };
+                musicaFondo.MediaEnded += (_, _) =>
+                {
+                    if (!musicaActiva || !iniciado) return;
+                    musicaFondo.Position = TimeSpan.Zero;
+                    musicaFondo.Play();
+                };
+                musicaFondo.MediaFailed += (_, _) =>
+                {
+                    musicaActiva = false;
+                    Mensaje("NO SE PUDO ABRIR EL AUDIO DE LA MISIÓN.");
+                };
+                FormClosing += (_, _) => DetenerMusica();
                 CrearEscenasPixelArt();
                 CrearEntidades();
                 CrearSpritesCadete();
@@ -270,7 +290,7 @@ namespace NexusWindowsForm
             edad = (int)numEdad.Value;
             energia = (int)numEnergia.Value;
             conexion = (int)numConexion.Value;
-            vida = 100; iniciado = true; encuentroActivo = false; naveReparada = false; recuperacionUsada = false;
+            vida = 100; iniciado = true; encuentroActivo = false; naveReparada = false; recuperacionUsada = false; misionTerminada = false;
             btnRecuperar.Enabled = true;
             btnRecuperar.Text = "RECUPERAR ENERGÍA";
             nucleosRecolectados.Clear();
@@ -280,7 +300,13 @@ namespace NexusWindowsForm
             camaraY = jugadorY - panelMapa.ClientSize.Height / 2f;
             panelRegistro.Visible = false; panelJuego.Visible = true; panelJuego.BringToFront(); lblEncabezado.BringToFront();
             AjustarLayout();
+            if (energia <= 0)
+            {
+                FinalizarMision("MISIÓN FALLIDA: EL CADETE SE QUEDÓ SIN ENERGÍA.", MessageBoxIcon.Error);
+                return;
+            }
             relojMovimiento.Start();
+            IniciarMusica();
             ActualizarHUD(); Mensaje("MISIÓN ACTIVA: RECUPERA 3 NÚCLEOS Y REPARA TU NAVE.");
             panelMapa.Focus();
         }
@@ -366,6 +392,11 @@ namespace NexusWindowsForm
             {
                 energia = Math.Max(0, energia - 1);
                 conexion = Math.Max(0, conexion - 1);
+                if (energia == 0)
+                {
+                    FinalizarMision("MISIÓN FALLIDA: EL CADETE SE QUEDÓ SIN ENERGÍA.", MessageBoxIcon.Error);
+                    return;
+                }
             }
             camaraX = jugadorX - panelMapa.ClientSize.Width / 2f;
             camaraY = jugadorY - panelMapa.ClientSize.Height / 2f;
@@ -502,6 +533,11 @@ namespace NexusWindowsForm
                 entidadActual.Derrotada = true;
                 encuentroActivo = false; panelEncuentro.Visible = false; entidadActual = null;
                 energia = Math.Max(0, energia - 5);
+                if (energia == 0)
+                {
+                    FinalizarMision("MISIÓN FALLIDA: EL CADETE SE QUEDÓ SIN ENERGÍA.", MessageBoxIcon.Error);
+                    return;
+                }
                 Mensaje("ENTIDAD ELIMINADA. SECTOR DESPEJADO.");
             }
             else
@@ -513,8 +549,8 @@ namespace NexusWindowsForm
                 lblVidaCadeteCombate.Text = $"VIDA DEL CADETE: {vida}/100  //  {entidadActual.Nombre} TE ATACÓ (-12)";
                 if (vida <= 0)
                 {
-                    encuentroActivo = false; panelEncuentro.Visible = false;
-                    MessageBox.Show("EL CADETE HA CAÍDO. MISIÓN FALLIDA.", "NEXUS", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    FinalizarMision("EL CADETE HA CAÍDO. MISIÓN FALLIDA.", MessageBoxIcon.Error);
+                    return;
                 }
             }
             ActualizarHUD(); panelMapa.Invalidate();
@@ -984,7 +1020,51 @@ namespace NexusWindowsForm
         {
             if (energia < 20) { Mensaje("ENERGÍA INSUFICIENTE. SE NECESITAN 20 PUNTOS."); return; }
             energia -= 20; conexion = Math.Max(0, conexion - 5); ActualizarHUD();
+            if (energia == 0)
+            {
+                FinalizarMision("MISIÓN FALLIDA: EL CADETE SE QUEDÓ SIN ENERGÍA.", MessageBoxIcon.Error);
+                return;
+            }
             Mensaje("ESCANEO COMPLETADO. ACTIVIDAD DIMENSIONAL DETECTADA.");
+        }
+
+        private void IniciarMusica()
+        {
+            if (musicaFondo == null) return;
+            string archivoAudio = Path.Combine(AppContext.BaseDirectory, "Resources", "AudioNexus.mp3");
+            if (!File.Exists(archivoAudio))
+            {
+                Mensaje("NO SE ENCONTRÓ EL AUDIO DE LA MISIÓN.");
+                return;
+            }
+
+            musicaActiva = true;
+            musicaFondo.Open(new Uri(archivoAudio, UriKind.Absolute));
+        }
+
+        private void DetenerMusica()
+        {
+            musicaActiva = false;
+            if (musicaFondo == null) return;
+            musicaFondo.Stop();
+            musicaFondo.Close();
+        }
+
+        private void FinalizarMision(string mensaje, MessageBoxIcon icono)
+        {
+            if (misionTerminada) return;
+            misionTerminada = true;
+            iniciado = false;
+            encuentroActivo = false;
+            entidadActual = null;
+            teclas.Clear();
+            relojMovimiento.Stop();
+            panelEncuentro.Visible = false;
+            DetenerMusica();
+            ActualizarHUD();
+            Mensaje(mensaje);
+            MessageBox.Show(this, mensaje, "NEXUS", MessageBoxButtons.OK, icono);
+            Close();
         }
 
         private void RecuperarEnergia()
@@ -1115,4 +1195,3 @@ namespace NexusWindowsForm
         }
     }
 }
-

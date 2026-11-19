@@ -119,7 +119,7 @@ public sealed class Form3 : Form
         (lblCapitulo.Text, lblNarracion.Text) = paginaHistoria switch
         {
             0 => ("NARRADOR // ASIGNACIÓN DE MISIÓN",
-                $"Cadete {nombreCadete}: la comandante Vega te ha asignado una misión. La nave Nexus quedó varada tras un salto entre realidades."),
+                $"Cadete {nombreCadete}: el comandante Pita Silva te ha asignado una misión. La nave Nexus quedó varada tras un salto entre realidades."),
             1 => ("NARRADOR // EL REACTOR",
                 "El núcleo principal y sus tres reservas están destruidos. Recupera los 3 núcleos abandonados: dos en la realidad 102 y uno en la 999."),
             _ => ("", "")
@@ -198,13 +198,13 @@ public sealed class Form3 : Form
             TextAlign = ContentAlignment.MiddleCenter
         });
         panelSelector.Controls.Add(CrearTarjeta(
-            "REALIDAD 102", "HAWKINS // MUNDO INFECTADO",
-            "Dos núcleos abandonados. Las raíces del Otro Lado invadieron las calles.",
-            Properties.Resources.HawkinsPortalPreview, Color.FromArgb(243, 69, 77), new Point(14, 48)));
+            "REALIDAD 102", "HAWKINS // REALIDAD VERDE",
+            "Dos núcleos abandonados esperan entre el bosque y las ruinas.",
+            Properties.Resources.Realidad999Verde, Color.FromArgb(69, 239, 111), new Point(14, 48)));
         panelSelector.Controls.Add(CrearTarjeta(
-            "REALIDAD 999", "HAWKINS // REALIDAD VERDE",
-            "Un núcleo abandonado aguarda entre el bosque y las ruinas.",
-            Properties.Resources.Realidad999Verde, Color.FromArgb(69, 239, 111), new Point(476, 48)));
+            "REALIDAD 999", "HAWKINS // MUNDO INFECTADO",
+            "Un núcleo abandonado. Las raíces del Otro Lado invadieron las calles.",
+            Properties.Resources.HawkinsPortalPreview, Color.FromArgb(243, 69, 77), new Point(476, 48)));
 
         var cancelar = new Button
         {
@@ -284,4 +284,3 @@ public sealed class Form3 : Form
         return tarjeta;
     }
 }
-
