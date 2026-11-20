@@ -1,10 +1,21 @@
+using System.IO;
+
 namespace NexusWindowsForm
 {
     public partial class Form1 : Form
     {
+        private ReproductorAudioBucle? audioMenu;
+
         public Form1()
         {
             InitializeComponent();
+            string rutaAudioMenu = Path.Combine(AppContext.BaseDirectory, "Resources", "SonidoMenu.mp3");
+            if (File.Exists(rutaAudioMenu))
+            {
+                audioMenu = new ReproductorAudioBucle(rutaAudioMenu, 0.45);
+                Shown += (_, _) => audioMenu.Iniciar();
+                FormClosing += (_, _) => audioMenu.Dispose();
+            }
             PrepararZonaClic(iniciar, "Iniciar juego");
             PrepararZonaClic(salir, "Salir");
             Resize += (_, _) => AjustarMenu();
@@ -40,11 +51,13 @@ namespace NexusWindowsForm
 
         private void iniciar_Click(object sender, EventArgs e)
         {
+            audioMenu?.Detener();
             using Form2 juego = new Form2();
             Hide();
             juego.ShowDialog(this);
             Show();
             Activate();
+            audioMenu?.Iniciar();
         }
 
         private void salir_Click(object sender, EventArgs e)
@@ -53,4 +66,3 @@ namespace NexusWindowsForm
         }
     }
 }
-

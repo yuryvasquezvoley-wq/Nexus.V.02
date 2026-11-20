@@ -1,4 +1,5 @@
 using System.Drawing;
+using System.IO;
 using System.Windows.Forms;
 
 namespace NexusWindowsForm;
@@ -12,6 +13,7 @@ public sealed class Form3 : Form
     private readonly Label lblCapitulo = new();
     private readonly Label lblNarracion = new();
     private readonly Label lblIndicacion = new();
+    private ReproductorAudioBucle? audioHistoria;
     private int paginaHistoria;
     private bool selectorVisible;
 
@@ -22,6 +24,9 @@ public sealed class Form3 : Form
         nombreCadete = string.IsNullOrWhiteSpace(cadete) ? "CADETE" : cadete.Trim();
         narracionActiva = mostrarHistoria;
         RealidadSeleccionada = realidadActual;
+        string rutaAudioMenu = Path.Combine(AppContext.BaseDirectory, "Resources", "SonidoMenu.mp3");
+        if (narracionActiva && File.Exists(rutaAudioMenu))
+            audioHistoria = new ReproductorAudioBucle(rutaAudioMenu, 0.45);
         Text = "NEXUS | Archivo de misión";
         StartPosition = FormStartPosition.CenterScreen;
         FormBorderStyle = FormBorderStyle.None;
@@ -35,6 +40,8 @@ public sealed class Form3 : Form
         KeyDown += Form3_KeyDown;
         Resize += (_, _) => AjustarLayout();
         Shown += (_, _) => AjustarLayout();
+        Shown += (_, _) => audioHistoria?.Iniciar();
+        FormClosing += (_, _) => audioHistoria?.Dispose();
 
         panelDialogo.BackColor = Color.FromArgb(222, 5, 10, 20);
         panelDialogo.Location = new Point(28, 525);

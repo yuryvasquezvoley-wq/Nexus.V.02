@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Update="Resources\AudioNexus.mp3">
+    <None Update="Resources\AudioNexus.mp3;Resources\SonidoMenu.mp3;Resources\Rasgunio.mp3;Resources\DemogorgonHerido.jpg;Resources\DemogorgonCritico.jpg;Resources\AtaqueCadete.jpg;Resources\AtaqueMonstruo.jpg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

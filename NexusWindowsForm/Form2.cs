@@ -21,6 +21,7 @@ namespace NexusWindowsForm
         private readonly HashSet<Keys> teclas = new();
         private readonly System.Windows.Forms.Timer relojMovimiento = new();
         private readonly System.Windows.Forms.Timer relojEscena = new();
+        private readonly System.Windows.Forms.Timer relojAnimacionCombate = new();
         private readonly Bitmap[,] spritesCadete = new Bitmap[4, 2];
         private const int nucleosNecesarios = 3;
 
@@ -31,6 +32,10 @@ namespace NexusWindowsForm
         private float camaraX, camaraY;
         private bool iniciado, encuentroActivo, naveReparada, recuperacionUsada, musicaActiva, misionTerminada;
         private MediaPlayer? musicaFondo;
+        private MediaPlayer? sonidoEfecto;
+        private Bitmap? imagenMonstruoHerido, imagenMonstruoCritico;
+        private Bitmap? imagenAtaqueCadete, imagenAtaqueMonstruo;
+        private AnimacionCombate animacionCombate;
         private string realidad = "REALIDAD 102";
         private Entidad? entidadActual;
         private int fotograma;
@@ -40,6 +45,13 @@ namespace NexusWindowsForm
         private bool jugadorCaminando;
 
         private sealed record NucleoDimensional(string Id, string Realidad, PointF Posicion);
+
+        private enum AnimacionCombate
+        {
+            Ninguna,
+            AtaqueCadete,
+            AtaqueMonstruo
+        }
 
         private sealed class Entidad
         {
@@ -79,7 +91,30 @@ namespace NexusWindowsForm
                     musicaActiva = false;
                     Mensaje("NO SE PUDO ABRIR EL AUDIO DE LA MISIÓN.");
                 };
-                FormClosing += (_, _) => DetenerMusica();
+                FormClosing += (_, _) =>
+                {
+                    DetenerMusica();
+                    sonidoEfecto?.Stop();
+                    sonidoEfecto?.Close();
+                    sonidoEfecto = null;
+                    relojMovimiento.Stop();
+                    relojEscena.Stop();
+                    relojAnimacionCombate.Stop();
+                };
+                FormClosed += (_, _) =>
+                {
+                    imgMonstruo.Image = null;
+                    imagenMonstruoHerido?.Dispose();
+                    imagenMonstruoCritico?.Dispose();
+                    imagenAtaqueCadete?.Dispose();
+                    imagenAtaqueMonstruo?.Dispose();
+                    relojMovimiento.Dispose();
+                    relojEscena.Dispose();
+                    relojAnimacionCombate.Dispose();
+                };
+                CargarImagenesCombate();
+                relojAnimacionCombate.Interval = 500;
+                relojAnimacionCombate.Tick += (_, _) => CompletarAnimacionCombate();
                 CrearEscenasPixelArt();
                 CrearEntidades();
                 CrearSpritesCadete();
@@ -144,6 +179,57 @@ namespace NexusWindowsForm
             imgBosque.Image = CrearEscenaPixelArt(1);
             imgLaboratorio.Image = CrearEscenaPixelArt(2);
             imgPortal.Image = CrearEscenaPixelArt(3);
+        }
+
+        private void CargarImagenesCombate()
+        {
+            imagenMonstruoHerido = CargarImagen("DemogorgonHerido.jpg");
+            imagenMonstruoCritico = CargarImagen("DemogorgonCritico.jpg");
+            imagenAtaqueCadete = CargarImagen("AtaqueCadete.jpg");
+            imagenAtaqueMonstruo = CargarImagen("AtaqueMonstruo.jpg");
+        }
+
+        private static Bitmap? CargarImagen(string nombre)
+        {
+            string ruta = Path.Combine(AppContext.BaseDirectory, "Resources", nombre);
+            if (!File.Exists(ruta)) return null;
+            using Bitmap temporal = new(ruta);
+            return new Bitmap(temporal);
+        }
+
+        private Image ObtenerImagenMonstruo(Entidad entidad)
+        {
+            if ((long)entidad.Vida * 100 < (long)entidad.VidaMaxima * 20 && imagenMonstruoCritico != null)
+                return imagenMonstruoCritico;
+            if ((long)entidad.Vida * 100 < (long)entidad.VidaMaxima * 50 && imagenMonstruoHerido != null)
+                return imagenMonstruoHerido;
+            return Properties.Resources.Demogorgon;
+        }
+
+        private void ActualizarImagenMonstruo(Entidad entidad)
+        {
+            imgMonstruo.Image = ObtenerImagenMonstruo(entidad);
+        }
+
+        private void ReproducirSonidoAtaqueMonstruo()
+        {
+            string ruta = Path.Combine(AppContext.BaseDirectory, "Resources", "Rasgunio.mp3");
+            if (!File.Exists(ruta)) return;
+
+            MediaPlayer efecto = new() { Volume = 0.8 };
+            sonidoEfecto = efecto;
+            efecto.MediaOpened += (_, _) => efecto.Play();
+            efecto.MediaEnded += (_, _) =>
+            {
+                if (ReferenceEquals(sonidoEfecto, efecto)) sonidoEfecto = null;
+                efecto.Close();
+            };
+            efecto.MediaFailed += (_, _) =>
+            {
+                if (ReferenceEquals(sonidoEfecto, efecto)) sonidoEfecto = null;
+                efecto.Close();
+            };
+            efecto.Open(new Uri(ruta, UriKind.Absolute));
         }
 
         private Bitmap CrearEscenaPixelArt(int escena)
@@ -513,55 +599,96 @@ namespace NexusWindowsForm
             encuentroActivo = true; entidadActual = encontrada; teclas.Clear();
             lblMonstruo.Text = encontrada.Nombre;
             lblDetalleMonstruo.Text = $"{encontrada.Tipo}  //  VIDA: {encontrada.Vida}/{encontrada.VidaMaxima}";
-            imgMonstruo.Image = Properties.Resources.Demogorgon;
+            ActualizarImagenMonstruo(encontrada);
             barraVidaMonstruo.Value = 0;
             barraVidaMonstruo.Maximum = encontrada.VidaMaxima;
             barraVidaMonstruo.Value = encontrada.Vida;
             barraVidaCadeteCombate.Value = Math.Clamp(vida, 0, 100);
             lblVidaCadeteCombate.Text = $"VIDA DEL CADETE: {vida}/100";
+            btnAtacar.Enabled = true;
+            btnEscapar.Enabled = true;
+            animacionCombate = AnimacionCombate.Ninguna;
             panelEncuentro.Visible = true; panelEncuentro.BringToFront();
             Mensaje("ALERTA: UNA ENTIDAD TE HA DETECTADO.");
         }
 
         private void AtacarEntidad()
         {
-            if (!encuentroActivo || entidadActual == null) return;
-            entidadActual.Vida -= 20;
+            if (!encuentroActivo || entidadActual == null || animacionCombate != AnimacionCombate.Ninguna) return;
+            entidadActual.Vida = Math.Max(0, entidadActual.Vida - 19);
             barraVidaMonstruo.Value = Math.Clamp(entidadActual.Vida, 0, barraVidaMonstruo.Maximum);
-            if (entidadActual.Vida <= 0)
+            lblDetalleMonstruo.Text = $"{entidadActual.Tipo}  //  VIDA: {entidadActual.Vida}/{entidadActual.VidaMaxima}";
+            imgMonstruo.Image = imagenAtaqueCadete ?? ObtenerImagenMonstruo(entidadActual);
+            animacionCombate = AnimacionCombate.AtaqueCadete;
+            btnAtacar.Enabled = false;
+            btnEscapar.Enabled = false;
+            relojAnimacionCombate.Stop();
+            relojAnimacionCombate.Start();
+        }
+
+        private void CompletarAnimacionCombate()
+        {
+            relojAnimacionCombate.Stop();
+            if (!encuentroActivo || entidadActual == null)
             {
-                entidadActual.Derrotada = true;
-                encuentroActivo = false; panelEncuentro.Visible = false; entidadActual = null;
-                energia = Math.Max(0, energia - 5);
-                if (energia == 0)
+                animacionCombate = AnimacionCombate.Ninguna;
+                return;
+            }
+
+            if (animacionCombate == AnimacionCombate.AtaqueCadete)
+            {
+                if (entidadActual.Vida <= 0)
                 {
-                    FinalizarMision("MISIÓN FALLIDA: EL CADETE SE QUEDÓ SIN ENERGÍA.", MessageBoxIcon.Error);
+                    entidadActual.Derrotada = true;
+                    encuentroActivo = false;
+                    panelEncuentro.Visible = false;
+                    entidadActual = null;
+                    animacionCombate = AnimacionCombate.Ninguna;
+                    energia = Math.Max(0, energia - 5);
+                    if (energia == 0)
+                    {
+                        FinalizarMision("MISIÓN FALLIDA: EL CADETE SE QUEDÓ SIN ENERGÍA.", MessageBoxIcon.Error);
+                        return;
+                    }
+                    Mensaje("ENTIDAD ELIMINADA. SECTOR DESPEJADO.");
+                    ActualizarHUD();
+                    panelMapa.Invalidate();
                     return;
                 }
-                Mensaje("ENTIDAD ELIMINADA. SECTOR DESPEJADO.");
-            }
-            else
-            {
+
                 vida = Math.Max(0, vida - 12);
                 lblDetalleMonstruo.Text = $"{entidadActual.Tipo}  //  VIDA: {entidadActual.Vida}/{entidadActual.VidaMaxima}";
-                barraVida.Value = vida;
                 barraVidaCadeteCombate.Value = vida;
                 lblVidaCadeteCombate.Text = $"VIDA DEL CADETE: {vida}/100  //  {entidadActual.Nombre} TE ATACÓ (-12)";
+                imgMonstruo.Image = imagenAtaqueMonstruo ?? ObtenerImagenMonstruo(entidadActual);
+                animacionCombate = AnimacionCombate.AtaqueMonstruo;
+                ReproducirSonidoAtaqueMonstruo();
+                ActualizarHUD();
+                relojAnimacionCombate.Start();
+                return;
+            }
+
+            if (animacionCombate == AnimacionCombate.AtaqueMonstruo)
+            {
+                animacionCombate = AnimacionCombate.Ninguna;
                 if (vida <= 0)
                 {
                     FinalizarMision("EL CADETE HA CAÍDO. MISIÓN FALLIDA.", MessageBoxIcon.Error);
                     return;
                 }
+                ActualizarImagenMonstruo(entidadActual);
+                btnAtacar.Enabled = true;
+                btnEscapar.Enabled = true;
             }
-            ActualizarHUD(); panelMapa.Invalidate();
+            panelMapa.Invalidate();
         }
 
         private void EscaparEntidad()
         {
+            relojAnimacionCombate.Stop();
+            animacionCombate = AnimacionCombate.Ninguna;
             if (entidadActual != null)
-            {
                 entidadActual.Posicion = new PointF(jugadorX + 220, jugadorY + 180);
-            }
             entidadActual = null; encuentroActivo = false; panelEncuentro.Visible = false;
             Mensaje("ESCAPASTE. LA ENTIDAD SIGUE EN EL SECTOR.");
             panelMapa.Focus();
@@ -1059,6 +1186,8 @@ namespace NexusWindowsForm
             entidadActual = null;
             teclas.Clear();
             relojMovimiento.Stop();
+            relojAnimacionCombate.Stop();
+            animacionCombate = AnimacionCombate.Ninguna;
             panelEncuentro.Visible = false;
             DetenerMusica();
             ActualizarHUD();
