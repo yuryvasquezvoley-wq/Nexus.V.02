@@ -25,6 +25,8 @@ namespace NexusWindowsForm
         private ProgressBar barraEnergia = null!;
         private Label lblConexion = null!;
         private ProgressBar barraConexion = null!;
+        private Label lblVelocidad = null!;
+        private ProgressBar barraVelocidad = null!;
         private Label lblPosicion = null!;
         private Panel panelMapaContenedor = null!;
         private Label lblTituloMapa = null!;
@@ -94,6 +96,8 @@ namespace NexusWindowsForm
             barraEnergia = new ProgressBar();
             lblConexion = new Label();
             barraConexion = new ProgressBar();
+            lblVelocidad = new Label();
+            barraVelocidad = new ProgressBar();
             lblPosicion = new Label();
             panelMapaContenedor = new Panel();
             lblTituloMapa = new Label();
@@ -276,12 +280,23 @@ namespace NexusWindowsForm
             barraConexion.Size = new Size(180, 16);
             barraConexion.Maximum = 100;
             barraConexion.ForeColor = Color.FromArgb(220, 20, 45);
+            lblVelocidad.Font = new Font("Consolas", 9F, FontStyle.Bold);
+            lblVelocidad.ForeColor = Color.FromArgb(119, 230, 255);
+            lblVelocidad.Location = new Point(1125, 25);
+            lblVelocidad.Size = new Size(180, 22);
+            lblVelocidad.Text = "VELOCIDAD: 100%";
+            barraVelocidad.Location = new Point(1125, 55);
+            barraVelocidad.Size = new Size(180, 16);
+            barraVelocidad.Minimum = 0;
+            barraVelocidad.Maximum = 100;
+            barraVelocidad.Value = 100;
+            barraVelocidad.ForeColor = Color.FromArgb(119, 230, 255);
             lblPosicion.Font = new Font("Consolas", 10F, FontStyle.Bold);
             lblPosicion.Location = new Point(760, 20);
             lblPosicion.Size = new Size(340, 55);
             lblPosicion.Text = "POSICIÓN: (0,0) // REALIDAD 102";
             lblPosicion.TextAlign = ContentAlignment.MiddleCenter;
-            panelHud.Controls.AddRange(new Control[] { lblNombre, lblVida, barraVida, lblEnergia, barraEnergia, lblConexion, barraConexion, lblPosicion });
+            panelHud.Controls.AddRange(new Control[] { lblNombre, lblVida, barraVida, lblEnergia, barraEnergia, lblConexion, barraConexion, lblVelocidad, barraVelocidad, lblPosicion });
             // Map container
             panelMapaContenedor.BackColor = Color.FromArgb(18, 5, 11);
             panelMapaContenedor.Location = new Point(16, 112);
@@ -329,11 +344,11 @@ namespace NexusWindowsForm
             imgContadorNucleos.Image = Properties.Resources.NucleoReactor;
             imgContadorNucleos.TabStop = false;
             lblContadorNucleos.BackColor = Color.FromArgb(218, 5, 9, 16);
-            lblContadorNucleos.Font = new Font("Consolas", 18F, FontStyle.Bold);
+            lblContadorNucleos.Font = new Font("Consolas", 13F, FontStyle.Bold);
             lblContadorNucleos.ForeColor = Color.FromArgb(119, 230, 255);
-            lblContadorNucleos.Location = new Point(14, 384);
-            lblContadorNucleos.Size = new Size(332, 84);
-            lblContadorNucleos.Text = "NÚCLEOS\r\n0 / 3";
+            lblContadorNucleos.Location = new Point(960, 45);
+            lblContadorNucleos.Size = new Size(190, 38);
+            lblContadorNucleos.Text = "NÚCLEOS: 0 / 3";
             lblContadorNucleos.TextAlign = ContentAlignment.MiddleCenter;
             imgPueblo.BackColor = Color.FromArgb(10, 3, 8);
             imgPueblo.BorderStyle = BorderStyle.FixedSingle;
@@ -359,7 +374,9 @@ namespace NexusWindowsForm
             imgPortal.Size = new Size(175, 95);
             imgPortal.SizeMode = PictureBoxSizeMode.StretchImage;
             imgPortal.TabStop = false;
-            panelLateral.Controls.AddRange(new Control[] { imgContadorNucleos, lblContadorNucleos });
+            imgContadorNucleos.Visible = false;
+            panelLateral.Visible = false;
+            panelMapaContenedor.Controls.Add(lblContadorNucleos);
             lblMensaje.BackColor = Color.FromArgb(30, 5, 12);
             lblMensaje.Dock = DockStyle.Bottom;
             lblMensaje.Font = new Font("Consolas", 9F, FontStyle.Bold);
@@ -415,7 +432,6 @@ namespace NexusWindowsForm
             panelEncuentro.Controls.AddRange(new Control[] { lblMonstruo, imgMonstruo, lblDetalleMonstruo, barraVidaMonstruo, lblVidaCadeteCombate, barraVidaCadeteCombate, btnAtacar, btnEscapar });
 
             panelJuego.Controls.Add(panelMapaContenedor);
-            panelJuego.Controls.Add(panelLateral);
             panelJuego.Controls.Add(panelHud);
             panelJuego.Controls.Add(panelAcciones);
             panelJuego.Controls.Add(lblMensaje);
@@ -438,3 +454,4 @@ namespace NexusWindowsForm
 
     }
 }
+

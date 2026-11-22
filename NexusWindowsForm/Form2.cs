@@ -48,6 +48,8 @@ namespace NexusWindowsForm
         private int ticksMovimiento;
         private int celulasEnergia;
         private int direccionJugador = 4;
+        private float resistencia = 100f;
+        private int resistenciaMostrada = -1;
         private bool jugadorCaminando;
 
         private sealed record NucleoDimensional(string Id, string Realidad, PointF Posicion);
@@ -121,7 +123,6 @@ namespace NexusWindowsForm
                     relojAnimacionCombate.Dispose();
                 };
                 CargarImagenesCombate();
-                panelLateral.Paint += DibujarFondoLateral;
                 relojAnimacionCombate.Interval = 500;
                 relojAnimacionCombate.Tick += (_, _) => CompletarAnimacionCombate();
                 CrearEscenasPixelArt();
@@ -155,15 +156,17 @@ namespace NexusWindowsForm
 
         private void AjustarLayout()
         {
-            if (panelJuego == null || panelMapaContenedor == null || panelLateral == null) return;
+            if (panelJuego == null || panelMapaContenedor == null) return;
             int margen = 18;
-            int lateral = Math.Clamp(ClientSize.Width / 5, 320, 390);
             int superior = panelHud.Height + 12;
             int inferior = panelAcciones.Height + lblMensaje.Height + 28;
             int alto = Math.Max(300, panelJuego.ClientSize.Height - superior - inferior);
-            int anchoMapa = Math.Max(500, panelJuego.ClientSize.Width - lateral - margen * 3);
+            int anchoMapa = Math.Max(500, panelJuego.ClientSize.Width - margen * 2);
             panelMapaContenedor.SetBounds(margen, superior, anchoMapa, alto);
-            panelLateral.SetBounds(margen * 2 + anchoMapa, superior, lateral, alto);
+            panelLateral.Visible = false;
+            imgContadorNucleos.Visible = false;
+            lblContadorNucleos.SetBounds(Math.Max(12, anchoMapa - 208), 45, 190, 38);
+            lblContadorNucleos.BringToFront();
             panelAcciones.SetBounds(0, panelJuego.ClientSize.Height - panelAcciones.Height - lblMensaje.Height, panelJuego.ClientSize.Width, panelAcciones.Height);
             int[] anchos = { 190, 190, 160, 150, 190 };
             Button[] botones = { btnAnalizar, btnRecuperar, btnUsarCelula, btnPerfil, btnVolver };
@@ -175,12 +178,6 @@ namespace NexusWindowsForm
                 botones[i].SetBounds(x, 16, anchos[i], 40);
                 x += anchos[i] + espacio;
             }
-            int anchoImagenNucleo = Math.Min(lateral - 44, 310);
-            int altoImagenNucleo = Math.Min(230, Math.Max(160, alto / 3));
-            int altoContador = altoImagenNucleo + 100;
-            int yContador = Math.Max(18, (alto - altoContador) / 2);
-            imgContadorNucleos.SetBounds((lateral - anchoImagenNucleo) / 2, yContador, anchoImagenNucleo, altoImagenNucleo);
-            lblContadorNucleos.SetBounds(14, yContador + altoImagenNucleo + 14, lateral - 28, 84);
             panelRegistro.Location = new Point((ClientSize.Width - panelRegistro.Width) / 2, (ClientSize.Height - panelRegistro.Height) / 2);
             AjustarPanelEncuentro();
             camaraX = jugadorX - panelMapa.ClientSize.Width / 2f;
@@ -191,24 +188,6 @@ namespace NexusWindowsForm
         private void CrearEscenasPixelArt()
         {
             imgPueblo.Image = Properties.Resources.AmbienteHawkins;
-        }
-
-        private void DibujarFondoLateral(object? sender, PaintEventArgs e)
-        {
-            Rectangle area = panelLateral.ClientRectangle;
-            if (area.Width <= 0 || area.Height <= 0) return;
-            Image imagen = realidad == "REALIDAD 102"
-                ? Properties.Resources.AmbienteHawkins
-                : Properties.Resources.Realidad999Verde;
-            float escala = Math.Max(area.Width / (float)imagen.Width, area.Height / (float)imagen.Height);
-            float ancho = imagen.Width * escala;
-            float alto = imagen.Height * escala;
-            RectangleF destino = new((area.Width - ancho) / 2, (area.Height - alto) / 2, ancho, alto);
-            e.Graphics.DrawImage(imagen, destino);
-            using SolidBrush sombra = new(Color.FromArgb(176, 4, 7, 13));
-            e.Graphics.FillRectangle(sombra, area);
-            using Pen borde = new(Color.FromArgb(150, 221, 42, 64), 2);
-            e.Graphics.DrawRectangle(borde, 1, 1, area.Width - 3, area.Height - 3);
         }
 
         private void CargarImagenesCombate()
@@ -412,6 +391,11 @@ namespace NexusWindowsForm
         {
             // En el registro las letras WASD se escriben normalmente en el nombre.
             if (!iniciado) return;
+            if (e.KeyCode is Keys.ShiftKey or Keys.LShiftKey or Keys.RShiftKey)
+            {
+                teclas.Add(e.KeyCode);
+                return;
+            }
             if (e.KeyCode == Keys.Escape && encuentroActivo) { EscaparEntidad(); e.Handled = true; return; }
             if (e.KeyCode == Keys.E && !encuentroActivo)
             {
@@ -463,6 +447,7 @@ namespace NexusWindowsForm
             bool monstruosEnMovimiento = ActualizarMonstruos();
             if (encuentroActivo)
             {
+                ActualizarResistencia(false);
                 if (monstruosEnMovimiento) panelMapa.Invalidate();
                 return;
             }
@@ -474,6 +459,7 @@ namespace NexusWindowsForm
             if (teclas.Contains(Keys.D) || teclas.Contains(Keys.Right)) dx++;
             if (dx == 0 && dy == 0)
             {
+                ActualizarResistencia(false);
                 if (jugadorCaminando) { jugadorCaminando = false; panelMapa.Invalidate(); }
                 ActualizarPortalCercano();
                 bool inventarioCambio = ActualizarNucleosCercanos();
@@ -485,9 +471,11 @@ namespace NexusWindowsForm
             }
             jugadorCaminando = true;
             direccionJugador = DireccionDesdeMovimiento(dx, dy);
+            bool correr = TeclaShiftPresionada() && resistencia > 0;
+            ActualizarResistencia(correr);
             float magnitud = (float)Math.Sqrt(dx * dx + dy * dy);
             dx /= magnitud; dy /= magnitud;
-            float velocidad = energia > 0 ? 4.2f : 1.4f;
+            float velocidad = energia > 0 ? (correr ? 7.2f : 4.2f) : 1.4f;
             float siguienteX = Math.Clamp(jugadorX + dx * velocidad, 80, 4920);
             if (!EstaDentroDeUnaCasa(new PointF(siguienteX, jugadorY), 11)) jugadorX = siguienteX;
             float siguienteY = Math.Clamp(jugadorY + dy * velocidad, 80, 4920);
@@ -511,6 +499,21 @@ namespace NexusWindowsForm
             DetectarEntidad();
             ActualizarHUD();
             panelMapa.Invalidate();
+        }
+
+        private bool TeclaShiftPresionada() =>
+            teclas.Contains(Keys.ShiftKey) || teclas.Contains(Keys.LShiftKey) || teclas.Contains(Keys.RShiftKey);
+
+        private void ActualizarResistencia(bool corriendo)
+        {
+            resistencia = corriendo
+                ? Math.Max(0, resistencia - 0.38f)
+                : Math.Min(100, resistencia + 0.20f);
+            int porcentaje = (int)MathF.Round(resistencia);
+            if (porcentaje == resistenciaMostrada) return;
+            resistenciaMostrada = porcentaje;
+            lblVelocidad.Text = $"VELOCIDAD: {porcentaje}%";
+            barraVelocidad.Value = porcentaje;
         }
 
         private bool ActualizarMonstruos()
@@ -1356,11 +1359,10 @@ namespace NexusWindowsForm
             lblConexion.Text = $"CONEXIÓN: {conexion}/100";
             lblPosicion.Text = $"X: {(int)jugadorX}  Y: {(int)jugadorY}  //  {realidad}";
             lblTituloMapa.Text = "ZONA DE EXPLORACIÓN // " + realidad;
-            panelLateral.Invalidate();
             lblInventario.Text = $"CÉLULAS: {celulasEnergia}\r\nNÚCLEOS: {nucleosRecolectados.Count}/{nucleosNecesarios}";
             lblContadorNucleos.Text = naveReparada
-                ? $"NAVE\r\nREPARADA\r\n{nucleosRecolectados.Count}/{nucleosNecesarios}"
-                : $"NÚCLEOS\r\n{nucleosRecolectados.Count} / {nucleosNecesarios}";
+                ? $"NAVE LISTA: {nucleosRecolectados.Count}/{nucleosNecesarios}"
+                : $"NÚCLEOS: {nucleosRecolectados.Count}/{nucleosNecesarios}";
             lblMision.Text = naveReparada
                 ? "Reactor reemplazado. Tu nave está lista para volver a viajar."
                 : "Tu nave quedó varada. Reúne 3 núcleos en las realidades 102 y 999 para reparar el reactor.";
@@ -1390,3 +1392,4 @@ namespace NexusWindowsForm
         }
     }
 }
+
