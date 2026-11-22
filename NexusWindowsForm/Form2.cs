@@ -17,6 +17,11 @@ namespace NexusWindowsForm
             new("102-B", "REALIDAD 102", new PointF(3400, 3328)),
             new("999-A", "REALIDAD 999", new PointF(1152, 1024))
         };
+        private readonly Dictionary<string, PointF> portales = new(StringComparer.Ordinal)
+        {
+            ["REALIDAD 102"] = new PointF(4750, 4500),
+            ["REALIDAD 999"] = new PointF(600, 4500)
+        };
         private readonly HashSet<string> nucleosRecolectados = new(StringComparer.Ordinal);
         private readonly HashSet<Keys> teclas = new();
         private readonly System.Windows.Forms.Timer relojMovimiento = new();
@@ -31,10 +36,11 @@ namespace NexusWindowsForm
         private float jugadorX = 2500, jugadorY = 2500;
         private float camaraX, camaraY;
         private bool iniciado, encuentroActivo, naveReparada, recuperacionUsada, musicaActiva, misionTerminada;
+        private bool portalAvisoMostrado;
         private MediaPlayer? musicaFondo;
-        private MediaPlayer? sonidoEfecto;
+        private ReproductorAudioBucle? musicaCinematica;
         private Bitmap? imagenMonstruoHerido, imagenMonstruoCritico;
-        private Bitmap? imagenAtaqueCadete, imagenAtaqueMonstruo;
+        private Bitmap? imagenAtaqueCadete, imagenAtaqueMonstruo, imagenPortal;
         private AnimacionCombate animacionCombate;
         private string realidad = "REALIDAD 102";
         private Entidad? entidadActual;
@@ -91,12 +97,13 @@ namespace NexusWindowsForm
                     musicaActiva = false;
                     Mensaje("NO SE PUDO ABRIR EL AUDIO DE LA MISIÓN.");
                 };
+                string rutaAudioCinematica = Path.Combine(AppContext.BaseDirectory, "Resources", "SonidoMenu.mp3");
+                if (File.Exists(rutaAudioCinematica))
+                    musicaCinematica = new ReproductorAudioBucle(rutaAudioCinematica, 0.45);
                 FormClosing += (_, _) =>
                 {
                     DetenerMusica();
-                    sonidoEfecto?.Stop();
-                    sonidoEfecto?.Close();
-                    sonidoEfecto = null;
+                    musicaCinematica?.Dispose();
                     relojMovimiento.Stop();
                     relojEscena.Stop();
                     relojAnimacionCombate.Stop();
@@ -108,11 +115,13 @@ namespace NexusWindowsForm
                     imagenMonstruoCritico?.Dispose();
                     imagenAtaqueCadete?.Dispose();
                     imagenAtaqueMonstruo?.Dispose();
+                    imagenPortal?.Dispose();
                     relojMovimiento.Dispose();
                     relojEscena.Dispose();
                     relojAnimacionCombate.Dispose();
                 };
                 CargarImagenesCombate();
+                panelLateral.Paint += DibujarFondoLateral;
                 relojAnimacionCombate.Interval = 500;
                 relojAnimacionCombate.Tick += (_, _) => CompletarAnimacionCombate();
                 CrearEscenasPixelArt();
@@ -132,7 +141,6 @@ namespace NexusWindowsForm
             btnRecuperar.Click += (_, _) => RecuperarEnergia();
             btnUsarCelula.Click += (_, _) => UsarCelula();
             btnPerfil.Click += (_, _) => MostrarPerfil();
-            btnCambiarRealidad.Click += (_, _) => SeleccionarRealidad();
             btnVolver.Click += (_, _) => Close();
             btnAtacar.Click += (_, _) => AtacarEntidad();
             btnEscapar.Click += (_, _) => EscaparEntidad();
@@ -141,6 +149,7 @@ namespace NexusWindowsForm
             KeyUp += Form2_KeyUp;
             Resize += (_, _) => AjustarLayout();
             Shown += (_, _) => AjustarLayout();
+            Shown += (_, _) => musicaCinematica?.Iniciar();
         }
 
 
@@ -156,8 +165,8 @@ namespace NexusWindowsForm
             panelMapaContenedor.SetBounds(margen, superior, anchoMapa, alto);
             panelLateral.SetBounds(margen * 2 + anchoMapa, superior, lateral, alto);
             panelAcciones.SetBounds(0, panelJuego.ClientSize.Height - panelAcciones.Height - lblMensaje.Height, panelJuego.ClientSize.Width, panelAcciones.Height);
-            int[] anchos = { 190, 190, 160, 150, 190, 190 };
-            Button[] botones = { btnAnalizar, btnRecuperar, btnUsarCelula, btnPerfil, btnCambiarRealidad, btnVolver };
+            int[] anchos = { 190, 190, 160, 150, 190 };
+            Button[] botones = { btnAnalizar, btnRecuperar, btnUsarCelula, btnPerfil, btnVolver };
             int espacio = 12;
             int total = anchos.Sum() + espacio * (botones.Length - 1);
             int x = Math.Max(12, (panelAcciones.ClientSize.Width - total) / 2);
@@ -166,6 +175,12 @@ namespace NexusWindowsForm
                 botones[i].SetBounds(x, 16, anchos[i], 40);
                 x += anchos[i] + espacio;
             }
+            int anchoImagenNucleo = Math.Min(lateral - 44, 310);
+            int altoImagenNucleo = Math.Min(230, Math.Max(160, alto / 3));
+            int altoContador = altoImagenNucleo + 100;
+            int yContador = Math.Max(18, (alto - altoContador) / 2);
+            imgContadorNucleos.SetBounds((lateral - anchoImagenNucleo) / 2, yContador, anchoImagenNucleo, altoImagenNucleo);
+            lblContadorNucleos.SetBounds(14, yContador + altoImagenNucleo + 14, lateral - 28, 84);
             panelRegistro.Location = new Point((ClientSize.Width - panelRegistro.Width) / 2, (ClientSize.Height - panelRegistro.Height) / 2);
             AjustarPanelEncuentro();
             camaraX = jugadorX - panelMapa.ClientSize.Width / 2f;
@@ -176,9 +191,24 @@ namespace NexusWindowsForm
         private void CrearEscenasPixelArt()
         {
             imgPueblo.Image = Properties.Resources.AmbienteHawkins;
-            imgBosque.Image = CrearEscenaPixelArt(1);
-            imgLaboratorio.Image = CrearEscenaPixelArt(2);
-            imgPortal.Image = CrearEscenaPixelArt(3);
+        }
+
+        private void DibujarFondoLateral(object? sender, PaintEventArgs e)
+        {
+            Rectangle area = panelLateral.ClientRectangle;
+            if (area.Width <= 0 || area.Height <= 0) return;
+            Image imagen = realidad == "REALIDAD 102"
+                ? Properties.Resources.AmbienteHawkins
+                : Properties.Resources.Realidad999Verde;
+            float escala = Math.Max(area.Width / (float)imagen.Width, area.Height / (float)imagen.Height);
+            float ancho = imagen.Width * escala;
+            float alto = imagen.Height * escala;
+            RectangleF destino = new((area.Width - ancho) / 2, (area.Height - alto) / 2, ancho, alto);
+            e.Graphics.DrawImage(imagen, destino);
+            using SolidBrush sombra = new(Color.FromArgb(176, 4, 7, 13));
+            e.Graphics.FillRectangle(sombra, area);
+            using Pen borde = new(Color.FromArgb(150, 221, 42, 64), 2);
+            e.Graphics.DrawRectangle(borde, 1, 1, area.Width - 3, area.Height - 3);
         }
 
         private void CargarImagenesCombate()
@@ -187,6 +217,7 @@ namespace NexusWindowsForm
             imagenMonstruoCritico = CargarImagen("DemogorgonCritico.jpg");
             imagenAtaqueCadete = CargarImagen("AtaqueCadete.jpg");
             imagenAtaqueMonstruo = CargarImagen("AtaqueMonstruo.jpg");
+            imagenPortal = CargarImagen("PortalDimensional.png");
         }
 
         private static Bitmap? CargarImagen(string nombre)
@@ -209,27 +240,6 @@ namespace NexusWindowsForm
         private void ActualizarImagenMonstruo(Entidad entidad)
         {
             imgMonstruo.Image = ObtenerImagenMonstruo(entidad);
-        }
-
-        private void ReproducirSonidoAtaqueMonstruo()
-        {
-            string ruta = Path.Combine(AppContext.BaseDirectory, "Resources", "Rasgunio.mp3");
-            if (!File.Exists(ruta)) return;
-
-            MediaPlayer efecto = new() { Volume = 0.8 };
-            sonidoEfecto = efecto;
-            efecto.MediaOpened += (_, _) => efecto.Play();
-            efecto.MediaEnded += (_, _) =>
-            {
-                if (ReferenceEquals(sonidoEfecto, efecto)) sonidoEfecto = null;
-                efecto.Close();
-            };
-            efecto.MediaFailed += (_, _) =>
-            {
-                if (ReferenceEquals(sonidoEfecto, efecto)) sonidoEfecto = null;
-                efecto.Close();
-            };
-            efecto.Open(new Uri(ruta, UriKind.Absolute));
         }
 
         private Bitmap CrearEscenaPixelArt(int escena)
@@ -371,6 +381,7 @@ namespace NexusWindowsForm
             }
             using Form3 selector = new(txtNombre.Text.Trim(), realidad, true);
             if (selector.ShowDialog(this) != DialogResult.OK) return;
+            musicaCinematica?.Detener();
 
             nombreExplorador = txtNombre.Text.Trim();
             edad = (int)numEdad.Value;
@@ -402,6 +413,13 @@ namespace NexusWindowsForm
             // En el registro las letras WASD se escriben normalmente en el nombre.
             if (!iniciado) return;
             if (e.KeyCode == Keys.Escape && encuentroActivo) { EscaparEntidad(); e.Handled = true; return; }
+            if (e.KeyCode == Keys.E && !encuentroActivo)
+            {
+                IntentarCruzarPortal();
+                e.Handled = true;
+                e.SuppressKeyPress = true;
+                return;
+            }
             if (e.KeyCode is Keys.W or Keys.A or Keys.S or Keys.D or Keys.Up or Keys.Down or Keys.Left or Keys.Right)
             {
                 teclas.Add(e.KeyCode); e.Handled = true; e.SuppressKeyPress = true;
@@ -457,6 +475,7 @@ namespace NexusWindowsForm
             if (dx == 0 && dy == 0)
             {
                 if (jugadorCaminando) { jugadorCaminando = false; panelMapa.Invalidate(); }
+                ActualizarPortalCercano();
                 bool inventarioCambio = ActualizarNucleosCercanos();
                 inventarioCambio |= RecolectarCelulaCercana();
                 if (inventarioCambio) ActualizarHUD();
@@ -486,6 +505,7 @@ namespace NexusWindowsForm
             }
             camaraX = jugadorX - panelMapa.ClientSize.Width / 2f;
             camaraY = jugadorY - panelMapa.ClientSize.Height / 2f;
+            ActualizarPortalCercano();
             ActualizarNucleosCercanos();
             RecolectarCelulaCercana();
             DetectarEntidad();
@@ -562,6 +582,59 @@ namespace NexusWindowsForm
             float dx = objetivo.X - jugadorX;
             float dy = objetivo.Y - jugadorY;
             return dx * dx + dy * dy <= radio * radio;
+        }
+
+        private void ActualizarPortalCercano()
+        {
+            if (!portales.TryGetValue(realidad, out PointF portal)) return;
+            bool cerca = EstaEnRadioDeInteraccion(portal, 105);
+            if (cerca && !portalAvisoMostrado)
+            {
+                Mensaje("PORTAL OCULTO DETECTADO. PRESIONA E PARA CRUZAR A LA OTRA REALIDAD.");
+                portalAvisoMostrado = true;
+            }
+            else if (!cerca)
+            {
+                portalAvisoMostrado = false;
+            }
+        }
+
+        private void IntentarCruzarPortal()
+        {
+            if (!portales.TryGetValue(realidad, out PointF portal) || !EstaEnRadioDeInteraccion(portal, 105))
+            {
+                Mensaje("NO HAY UN PORTAL ALCANZABLE. SIGUE EXPLORANDO.");
+                return;
+            }
+
+            string otraRealidad = realidad == "REALIDAD 102" ? "REALIDAD 999" : "REALIDAD 102";
+            CambiarRealidad(otraRealidad);
+        }
+
+        private void DibujarPortal(Graphics g)
+        {
+            if (imagenPortal == null || !portales.TryGetValue(realidad, out PointF portal) ||
+                !EstaEnRadioDeInteraccion(portal, 260)) return;
+
+            float x = portal.X - camaraX;
+            float y = portal.Y - camaraY;
+            float pulso = 1f + MathF.Sin(fotograma * 0.13f) * 0.035f;
+            float tamano = 142 * pulso;
+            using (SolidBrush aura = new(Color.FromArgb(75, 255, 56, 36)))
+                g.FillEllipse(aura, x - tamano * 0.63f, y - tamano * 0.57f, tamano * 1.26f, tamano * 1.14f);
+
+            GraphicsState estado = g.Save();
+            using (GraphicsPath recorte = new())
+            {
+                recorte.AddEllipse(x - tamano / 2, y - tamano / 2, tamano, tamano);
+                g.SetClip(recorte);
+                Rectangle destino = new((int)(x - tamano / 2), (int)(y - tamano / 2), (int)tamano, (int)tamano);
+                Rectangle origen = new(330, 82, 370, 390);
+                g.DrawImage(imagenPortal, destino, origen, GraphicsUnit.Pixel);
+            }
+            g.Restore(estado);
+            using Pen borde = new(Color.FromArgb(220, 255, 77, 50), 3);
+            g.DrawEllipse(borde, x - tamano / 2, y - tamano / 2, tamano, tamano);
         }
 
         private bool ActualizarNucleosCercanos()
@@ -662,7 +735,6 @@ namespace NexusWindowsForm
                 lblVidaCadeteCombate.Text = $"VIDA DEL CADETE: {vida}/100  //  {entidadActual.Nombre} TE ATACÓ (-12)";
                 imgMonstruo.Image = imagenAtaqueMonstruo ?? ObtenerImagenMonstruo(entidadActual);
                 animacionCombate = AnimacionCombate.AtaqueMonstruo;
-                ReproducirSonidoAtaqueMonstruo();
                 ActualizarHUD();
                 relojAnimacionCombate.Start();
                 return;
@@ -766,6 +838,8 @@ namespace NexusWindowsForm
                 int casaY = ty * tile - (int)camaraY - 84;
                 DibujarCasaBarrio(g, casaX, casaY, semillaCasa);
             }
+
+            DibujarPortal(g);
 
             foreach (PointF celda in celdasEnergia)
             {
@@ -1250,28 +1324,22 @@ namespace NexusWindowsForm
             Mensaje("CÉLULA UTILIZADA. +30 ENERGÍA.");
         }
 
-        private void SeleccionarRealidad()
-        {
-            using Form3 selector = new(nombreExplorador, realidad, false);
-            if (selector.ShowDialog(this) == DialogResult.OK)
-                CambiarRealidad(selector.RealidadSeleccionada);
-        }
-
         private void CambiarRealidad(string nuevaRealidad)
         {
-            if (nuevaRealidad == realidad) return;
+            if (nuevaRealidad == realidad || !portales.TryGetValue(nuevaRealidad, out PointF portalDestino)) return;
             encuentroActivo = false;
             entidadActual = null;
             panelEncuentro.Visible = false;
             teclas.Clear();
             jugadorCaminando = false;
             realidad = nuevaRealidad;
-            jugadorX = 2500; jugadorY = 2500; camaraX = jugadorX - panelMapa.Width / 2f; camaraY = jugadorY - panelMapa.Height / 2f;
+            jugadorX = Math.Clamp(portalDestino.X + (nuevaRealidad == "REALIDAD 999" ? 160 : -160), 80, 4920);
+            jugadorY = portalDestino.Y;
+            portalAvisoMostrado = false;
+            camaraX = jugadorX - panelMapa.Width / 2f; camaraY = jugadorY - panelMapa.Height / 2f;
             CrearEntidades();
-            celdasEnergia.Clear();
-            celdasEnergia.AddRange(new[] { new PointF(2700, 2500), new PointF(2300, 2400), new PointF(3100, 2850), new PointF(1900, 3000) });
             ActualizarHUD(); panelMapa.Invalidate();
-            Mensaje("CRUCE DIMENSIONAL COMPLETADO: " + realidad + ". USA W, A, S Y D PARA EXPLORAR.");
+            Mensaje("CRUCE POR PORTAL COMPLETADO: " + realidad + ". USA W, A, S Y D PARA EXPLORAR.");
         }
 
         private void MostrarPerfil()
@@ -1288,9 +1356,7 @@ namespace NexusWindowsForm
             lblConexion.Text = $"CONEXIÓN: {conexion}/100";
             lblPosicion.Text = $"X: {(int)jugadorX}  Y: {(int)jugadorY}  //  {realidad}";
             lblTituloMapa.Text = "ZONA DE EXPLORACIÓN // " + realidad;
-            imgPueblo.Image = realidad == "REALIDAD 102"
-                ? Properties.Resources.AmbienteHawkins
-                : Properties.Resources.Realidad999Verde;
+            panelLateral.Invalidate();
             lblInventario.Text = $"CÉLULAS: {celulasEnergia}\r\nNÚCLEOS: {nucleosRecolectados.Count}/{nucleosNecesarios}";
             lblContadorNucleos.Text = naveReparada
                 ? $"NAVE\r\nREPARADA\r\n{nucleosRecolectados.Count}/{nucleosNecesarios}"

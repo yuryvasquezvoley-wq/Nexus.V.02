@@ -50,7 +50,6 @@ namespace NexusWindowsForm
         private Button btnRecuperar = null!;
         private Button btnUsarCelula = null!;
         private Button btnPerfil = null!;
-        private Button btnCambiarRealidad = null!;
         private Button btnVolver = null!;
         private Label lblMensaje = null!;
         private PictureBox imgPueblo = null!;
@@ -110,7 +109,6 @@ namespace NexusWindowsForm
             btnRecuperar = new Button();
             btnUsarCelula = new Button();
             btnPerfil = new Button();
-            btnCambiarRealidad = new Button();
             btnVolver = new Button();
             lblMensaje = new Label();
             panelAcciones = new Panel();
@@ -325,15 +323,16 @@ namespace NexusWindowsForm
             lblTituloInventario.Text = "INVENTARIO";
             imgContadorNucleos.BackColor = Color.FromArgb(7, 10, 16);
             imgContadorNucleos.BorderStyle = BorderStyle.FixedSingle;
-            imgContadorNucleos.Location = new Point(15, 260);
-            imgContadorNucleos.Size = new Size(145, 96);
+            imgContadorNucleos.Location = new Point(25, 140);
+            imgContadorNucleos.Size = new Size(310, 230);
             imgContadorNucleos.SizeMode = PictureBoxSizeMode.Zoom;
             imgContadorNucleos.Image = Properties.Resources.NucleoReactor;
             imgContadorNucleos.TabStop = false;
-            lblContadorNucleos.Font = new Font("Consolas", 14F, FontStyle.Bold);
+            lblContadorNucleos.BackColor = Color.FromArgb(218, 5, 9, 16);
+            lblContadorNucleos.Font = new Font("Consolas", 18F, FontStyle.Bold);
             lblContadorNucleos.ForeColor = Color.FromArgb(119, 230, 255);
-            lblContadorNucleos.Location = new Point(15, 365);
-            lblContadorNucleos.Size = new Size(145, 54);
+            lblContadorNucleos.Location = new Point(14, 384);
+            lblContadorNucleos.Size = new Size(332, 84);
             lblContadorNucleos.Text = "NÚCLEOS\r\n0 / 3";
             lblContadorNucleos.TextAlign = ContentAlignment.MiddleCenter;
             imgPueblo.BackColor = Color.FromArgb(10, 3, 8);
@@ -360,7 +359,7 @@ namespace NexusWindowsForm
             imgPortal.Size = new Size(175, 95);
             imgPortal.SizeMode = PictureBoxSizeMode.StretchImage;
             imgPortal.TabStop = false;
-            panelLateral.Controls.AddRange(new Control[] { imgPueblo, imgBosque, imgLaboratorio, imgPortal, lblTituloMision, lblMision, lblTituloInventario, lblInventario, imgContadorNucleos, lblContadorNucleos });
+            panelLateral.Controls.AddRange(new Control[] { imgContadorNucleos, lblContadorNucleos });
             lblMensaje.BackColor = Color.FromArgb(30, 5, 12);
             lblMensaje.Dock = DockStyle.Bottom;
             lblMensaje.Font = new Font("Consolas", 9F, FontStyle.Bold);
@@ -375,9 +374,8 @@ namespace NexusWindowsForm
             ConfigurarBotonAccion(btnRecuperar, "RECUPERAR ENERGÍA", 220, 16, 190);
             ConfigurarBotonAccion(btnUsarCelula, "USAR CÉLULA", 422, 16, 160);
             ConfigurarBotonAccion(btnPerfil, "VER PERFIL", 594, 16, 150);
-            ConfigurarBotonAccion(btnCambiarRealidad, "CAMBIAR REALIDAD", 756, 16, 190);
-            ConfigurarBotonAccion(btnVolver, "VOLVER AL MENÚ", 958, 16, 190);
-            panelAcciones.Controls.AddRange(new Control[] { btnAnalizar, btnRecuperar, btnUsarCelula, btnPerfil, btnCambiarRealidad, btnVolver });
+            ConfigurarBotonAccion(btnVolver, "VOLVER AL MENÚ", 756, 16, 190);
+            panelAcciones.Controls.AddRange(new Control[] { btnAnalizar, btnRecuperar, btnUsarCelula, btnPerfil, btnVolver });
 
             panelEncuentro.BackColor = Color.FromArgb(24, 3, 12);
             panelEncuentro.BorderStyle = BorderStyle.FixedSingle;
@@ -440,4 +438,3 @@ namespace NexusWindowsForm
 
     }
 }
-

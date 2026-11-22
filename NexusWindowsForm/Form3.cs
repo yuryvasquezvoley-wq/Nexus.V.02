@@ -1,5 +1,4 @@
 using System.Drawing;
-using System.IO;
 using System.Windows.Forms;
 
 namespace NexusWindowsForm;
@@ -13,9 +12,7 @@ public sealed class Form3 : Form
     private readonly Label lblCapitulo = new();
     private readonly Label lblNarracion = new();
     private readonly Label lblIndicacion = new();
-    private ReproductorAudioBucle? audioHistoria;
     private int paginaHistoria;
-    private bool selectorVisible;
 
     public string RealidadSeleccionada { get; private set; }
 
@@ -23,10 +20,7 @@ public sealed class Form3 : Form
     {
         nombreCadete = string.IsNullOrWhiteSpace(cadete) ? "CADETE" : cadete.Trim();
         narracionActiva = mostrarHistoria;
-        RealidadSeleccionada = realidadActual;
-        string rutaAudioMenu = Path.Combine(AppContext.BaseDirectory, "Resources", "SonidoMenu.mp3");
-        if (narracionActiva && File.Exists(rutaAudioMenu))
-            audioHistoria = new ReproductorAudioBucle(rutaAudioMenu, 0.45);
+        RealidadSeleccionada = "REALIDAD 102";
         Text = "NEXUS | Archivo de misión";
         StartPosition = FormStartPosition.CenterScreen;
         FormBorderStyle = FormBorderStyle.None;
@@ -40,8 +34,6 @@ public sealed class Form3 : Form
         KeyDown += Form3_KeyDown;
         Resize += (_, _) => AjustarLayout();
         Shown += (_, _) => AjustarLayout();
-        Shown += (_, _) => audioHistoria?.Iniciar();
-        FormClosing += (_, _) => audioHistoria?.Dispose();
 
         panelDialogo.BackColor = Color.FromArgb(222, 5, 10, 20);
         panelDialogo.Location = new Point(28, 525);
@@ -94,7 +86,6 @@ public sealed class Form3 : Form
         else
         {
             paginaHistoria = 2;
-            selectorVisible = true;
             MostrarEscena();
         }
         AjustarLayout();
@@ -102,13 +93,20 @@ public sealed class Form3 : Form
 
     private void Form3_KeyDown(object? sender, KeyEventArgs e)
     {
-        if (selectorVisible || e.KeyCode != Keys.Space) return;
+        if (e.KeyCode != Keys.Space) return;
         if (paginaHistoria == 0)
             paginaHistoria = 1;
         else if (paginaHistoria == 1)
             paginaHistoria = 2;
         else
-            selectorVisible = true;
+        {
+            RealidadSeleccionada = "REALIDAD 102";
+            DialogResult = DialogResult.OK;
+            Close();
+            e.Handled = true;
+            e.SuppressKeyPress = true;
+            return;
+        }
         MostrarEscena();
         e.Handled = true;
         e.SuppressKeyPress = true;
@@ -131,16 +129,12 @@ public sealed class Form3 : Form
                 "El núcleo principal y sus tres reservas están destruidos. Recupera los 3 núcleos abandonados: dos en la realidad 102 y uno en la 999."),
             _ => ("", "")
         };
-        lblIndicacion.Text = selectorVisible
-            ? "ELIGE UNA REALIDAD PARA INICIAR LA MISIÓN"
-            : "PULSA ESPACIO PARA CONTINUAR";
-        // En la tercera escena se deja visible únicamente la imagen. El siguiente
-        // Espacio abre el selector de realidades sobre esa misma ilustración.
+        lblIndicacion.Text = "PULSA ESPACIO PARA CONTINUAR";
+        // La ilustración final permanece sola; Espacio inicia la misión en la realidad 102.
         panelDialogo.Visible = narracionActiva && paginaHistoria < 2;
-        panelSelector.Visible = selectorVisible;
-        panelDialogo.Controls.OfType<Button>().First().Visible = !selectorVisible;
-        if (selectorVisible) CancelButton = panelSelector.Controls.OfType<Button>().Last();
-        else CancelButton = panelDialogo.Controls.OfType<Button>().First();
+        panelSelector.Visible = false;
+        panelDialogo.Controls.OfType<Button>().First().Visible = narracionActiva && paginaHistoria < 2;
+        CancelButton = panelDialogo.Controls.OfType<Button>().First();
     }
 
     private void AjustarLayout()
