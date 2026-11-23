@@ -669,10 +669,6 @@ namespace NEXUS
                         break;
 
                     case "5":
-                        MostrarPerfil();
-                        break;
-
-                    case "6":
                         inventario.MostrarInventario();
                         Pausa();
                         break;
@@ -766,11 +762,7 @@ namespace NEXUS
             );
 
             Console.WriteLine(
-                "║ [5] > VER PERFIL                       ║"
-            );
-
-            Console.WriteLine(
-                "║ [6] > INVENTARIO                       ║"
+                "║ [5] > INVENTARIO                       ║"
             );
 
             Console.WriteLine(
@@ -1825,6 +1817,8 @@ namespace NEXUS
         private void Derrota()
         {
             Console.Clear();
+
+            NexusWindowsForm.BattleDialog.ShowGameOver();
 
             Console.ForegroundColor =
                 ConsoleColor.Red;
