@@ -74,6 +74,9 @@ public static class BattleDialog
         attack.FlatAppearance.BorderColor = Color.FromArgb(222, 74, 70);
         attack.Click += (_, _) =>
         {
+            // Efecto de impacto corto al golpear al monstruo.
+            System.Media.SystemSounds.Hand.Play();
+
             attack.Enabled = false;
             scratch.Visible = true;
             scratch.BringToFront();
@@ -128,5 +131,67 @@ public static class BattleDialog
     {
         int filled = Math.Clamp((health * 10 + max - 1) / max, 0, 10);
         return $"[{new string('█', filled)}{new string('░', 10 - filled)}]";
+    }
+
+    // Pantalla gráfica que aparece cuando el cadete pierde toda su vida.
+    public static void ShowGameOver()
+    {
+        using var derrota = new Form
+        {
+            Text = "NEXUS | Fin de la partida",
+            ClientSize = new Size(900, 520),
+            StartPosition = FormStartPosition.CenterScreen,
+            FormBorderStyle = FormBorderStyle.FixedDialog,
+            MaximizeBox = false,
+            MinimizeBox = false,
+            BackColor = Color.Black
+        };
+
+        var imagen = new Bitmap(900, 520);
+        using (Graphics g = Graphics.FromImage(imagen))
+        using (var titulo = new Font("Consolas", 64, FontStyle.Bold))
+        using (var subtitulo = new Font("Consolas", 19, FontStyle.Bold))
+        using (var detalle = new Font("Consolas", 12, FontStyle.Regular))
+        using (var borde = new Pen(Color.FromArgb(150, 28, 35), 4))
+        using (var rojo = new SolidBrush(Color.FromArgb(210, 35, 45)))
+        using (var blanco = new SolidBrush(Color.FromArgb(220, 220, 220)))
+        using (var gris = new SolidBrush(Color.FromArgb(125, 125, 125)))
+        {
+            g.Clear(Color.FromArgb(4, 5, 9));
+            g.DrawRectangle(borde, 18, 18, 864, 484);
+            g.DrawLine(borde, 90, 115, 810, 115);
+            g.DrawLine(borde, 90, 405, 810, 405);
+
+            for (int i = 0; i < 9; i++)
+            {
+                int x = 115 + i * 84;
+                g.FillRectangle(rojo, x, 70, 34, 5);
+                g.FillRectangle(rojo, x, 440, 34, 5);
+            }
+
+            var formato = new StringFormat
+            {
+                Alignment = StringAlignment.Center,
+                LineAlignment = StringAlignment.Center
+            };
+
+            g.DrawString("PERDISTE", titulo, rojo, new RectangleF(40, 150, 820, 110), formato);
+            g.DrawString("EL CADETE HA CAÍDO", subtitulo, blanco, new RectangleF(40, 275, 820, 45), formato);
+            g.DrawString("NEXUS SYSTEM  //  CONEXIÓN INTERRUMPIDA", detalle, gris, new RectangleF(40, 350, 820, 30), formato);
+            formato.Dispose();
+        }
+
+        var pantalla = new PictureBox
+        {
+            Dock = DockStyle.Fill,
+            Image = imagen,
+            SizeMode = PictureBoxSizeMode.StretchImage,
+            BackColor = Color.Black
+        };
+
+        derrota.Controls.Add(pantalla);
+        derrota.ShowDialog();
+        pantalla.Image = null;
+        imagen.Dispose();
     }
 }
