@@ -211,35 +211,43 @@ namespace NexusWindowsForm
 
         private void InicializarEfectosSonido()
         {
-            string carpeta = Path.Combine(Path.GetTempPath(), "NEXUS_V02_Audio");
-            Directory.CreateDirectory(carpeta);
-            string pasos = Path.Combine(carpeta, "pasos.wav");
-            string alerta = Path.Combine(carpeta, "alerta.wav");
+            try
+            {
+                string carpeta = Path.Combine(Path.GetTempPath(), "NEXUS_V02_Audio");
+                Directory.CreateDirectory(carpeta);
+                string pasos = Path.Combine(carpeta, "pasos.wav");
+                string alerta = Path.Combine(carpeta, "alerta.wav");
 
-            if (!File.Exists(pasos))
-                CrearWavEfecto(pasos, 0.12, t =>
-                {
-                    double envolvente = Math.Exp(-t * 24);
-                    double golpe = Math.Sin(2 * Math.PI * (95 - 25 * t) * t);
-                    double ruido = Random.Shared.NextDouble() * 2 - 1;
-                    return (golpe * 0.62 + ruido * 0.12) * envolvente;
-                });
+                if (!File.Exists(pasos))
+                    CrearWavEfecto(pasos, 0.12, t =>
+                    {
+                        double envolvente = Math.Exp(-t * 24);
+                        double golpe = Math.Sin(2 * Math.PI * (95 - 25 * t) * t);
+                        double ruido = Random.Shared.NextDouble() * 2 - 1;
+                        return (golpe * 0.62 + ruido * 0.12) * envolvente;
+                    });
 
-            if (!File.Exists(alerta))
-                CrearWavEfecto(alerta, 0.62, t =>
-                {
-                    bool pulso = (t < 0.16 || (t > 0.29 && t < 0.45));
-                    if (!pulso) return 0;
-                    double frecuencia = t < 0.16 ? 880 : 660;
-                    double local = t < 0.16 ? t : t - 0.29;
-                    double envolvente = Math.Min(1, local * 35) * Math.Max(0, 1 - local * 5);
-                    return Math.Sin(2 * Math.PI * frecuencia * local) * 0.42 * envolvente;
-                });
+                if (!File.Exists(alerta))
+                    CrearWavEfecto(alerta, 0.62, t =>
+                    {
+                        bool pulso = (t < 0.16 || (t > 0.29 && t < 0.45));
+                        if (!pulso) return 0;
+                        double frecuencia = t < 0.16 ? 880 : 660;
+                        double local = t < 0.16 ? t : t - 0.29;
+                        double envolvente = Math.Min(1, local * 35) * Math.Max(0, 1 - local * 5);
+                        return Math.Sin(2 * Math.PI * frecuencia * local) * 0.42 * envolvente;
+                    });
 
-            sonidoPasos = new MediaPlayer { Volume = 0.34 };
-            sonidoPasos.Open(new Uri(pasos, UriKind.Absolute));
-            sonidoAlerta = new MediaPlayer { Volume = 0.68 };
-            sonidoAlerta.Open(new Uri(alerta, UriKind.Absolute));
+                sonidoPasos = new MediaPlayer { Volume = 0.34 };
+                sonidoPasos.Open(new Uri(pasos, UriKind.Absolute));
+                sonidoAlerta = new MediaPlayer { Volume = 0.68 };
+                sonidoAlerta.Open(new Uri(alerta, UriKind.Absolute));
+            }
+            catch
+            {
+                sonidoPasos = null;
+                sonidoAlerta = null;
+            }
         }
 
         private static void CrearWavEfecto(string ruta, double duracion, Func<double, double> formaOnda)
