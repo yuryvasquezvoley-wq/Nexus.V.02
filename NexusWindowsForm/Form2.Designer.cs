@@ -324,7 +324,7 @@ namespace NexusWindowsForm
             lblMision.Font = new Font("Consolas", 8F);
             lblMision.Location = new Point(15, 42);
             lblMision.Size = new Size(155, 94);
-            lblMision.Text = "Tu nave quedó varada. Reúne 3 núcleos en las realidades 102 y 999 para reparar el reactor.";
+            lblMision.Text = "Tu nave quedó varada. Reúne 4 núcleos, dos en cada realidad, para reparar el reactor.";
             lblInventario.Font = new Font("Consolas", 9F);
             lblInventario.Location = new Point(15, 174);
             lblInventario.Size = new Size(155, 78);
@@ -346,7 +346,7 @@ namespace NexusWindowsForm
             lblContadorNucleos.ForeColor = Color.FromArgb(119, 230, 255);
             lblContadorNucleos.Location = new Point(960, 45);
             lblContadorNucleos.Size = new Size(190, 38);
-            lblContadorNucleos.Text = "NÚCLEOS: 0 / 3";
+            lblContadorNucleos.Text = "NÚCLEOS: 0 / 4";
             lblContadorNucleos.TextAlign = ContentAlignment.MiddleCenter;
             imgPueblo.BackColor = Color.FromArgb(10, 3, 8);
             imgPueblo.BorderStyle = BorderStyle.FixedSingle;

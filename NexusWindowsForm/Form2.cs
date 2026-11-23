@@ -24,7 +24,8 @@ namespace NexusWindowsForm
         {
             new("102-A", "REALIDAD 102", new PointF(2200, 2600)),
             new("102-B", "REALIDAD 102", new PointF(3400, 3328)),
-            new("999-A", "REALIDAD 999", new PointF(1152, 1024))
+            new("999-A", "REALIDAD 999", new PointF(1152, 1024)),
+            new("999-B", "REALIDAD 999", new PointF(3456, 2496))
         };
         private readonly Dictionary<string, PointF> portales = new(StringComparer.Ordinal)
         {
@@ -37,7 +38,7 @@ namespace NexusWindowsForm
         private readonly System.Windows.Forms.Timer relojEscena = new();
         private readonly System.Windows.Forms.Timer relojAnimacionCombate = new();
         private readonly Bitmap[,] spritesCadete = new Bitmap[4, 2];
-        private const int nucleosNecesarios = 3;
+        private const int nucleosNecesarios = 4;
 
         private string nombreExplorador = "";
         private int edad;
@@ -545,6 +546,7 @@ namespace NexusWindowsForm
             btnRecuperar.Text = "RECUPERAR ENERGÍA";
             nucleosRecolectados.Clear();
             realidad = selector.RealidadSeleccionada;
+            ColocarPortalesAleatorios();
             jugadorX = 2500; jugadorY = 2500;
 
             iniciado = true;
@@ -552,14 +554,9 @@ namespace NexusWindowsForm
             camaraY = jugadorY - panelMapa.ClientSize.Height / 2f;
             panelRegistro.Visible = false; panelJuego.Visible = true; panelJuego.BringToFront(); lblEncabezado.BringToFront();
             AjustarLayout();
-            if (energia <= 0)
-            {
-                FinalizarMision("MISIÓN FALLIDA: EL CADETE SE QUEDÓ SIN ENERGÍA.", MessageBoxIcon.Error);
-                return;
-            }
             relojMovimiento.Start();
             IniciarMusica();
-            ActualizarHUD(); Mensaje("MISIÓN ACTIVA: RECUPERA 3 NÚCLEOS Y REPARA TU NAVE.");
+            ActualizarHUD(); Mensaje("MISIÓN ACTIVA: RECUPERA 4 NÚCLEOS Y REPARA TU NAVE.");
             panelMapa.Focus();
         }
 
@@ -648,7 +645,7 @@ namespace NexusWindowsForm
             }
             jugadorCaminando = true;
             direccionJugador = DireccionDesdeMovimiento(dx, dy);
-            bool correr = TeclaShiftPresionada() && resistencia > 0;
+            bool correr = TeclaShiftPresionada() && resistencia > 0 && energia > 0;
             ActualizarResistencia(correr);
             float magnitud = (float)Math.Sqrt(dx * dx + dy * dy);
             dx /= magnitud; dy /= magnitud;
@@ -668,11 +665,6 @@ namespace NexusWindowsForm
             {
                 energia = Math.Max(0, energia - 1);
                 conexion = Math.Max(0, conexion - 1);
-                if (energia == 0)
-                {
-                    FinalizarMision("MISIÓN FALLIDA: EL CADETE SE QUEDÓ SIN ENERGÍA.", MessageBoxIcon.Error);
-                    return;
-                }
             }
             camaraX = jugadorX - panelMapa.ClientSize.Width / 2f;
             camaraY = jugadorY - panelMapa.ClientSize.Height / 2f;
@@ -787,6 +779,61 @@ namespace NexusWindowsForm
             return false;
         }
 
+        private void ColocarPortalesAleatorios()
+        {
+            PointF[] portalesElegidos = new PointF[portales.Count];
+            int indicePortal = 0;
+            foreach (string realidadPortal in portales.Keys.ToArray())
+            {
+                PointF candidato = default;
+                bool valido = false;
+                for (int intento = 0; intento < 500 && !valido; intento++)
+                {
+                    candidato = new PointF(Random.Shared.Next(320, 4680), Random.Shared.Next(320, 4680));
+                    float dxInicio = candidato.X - 2500, dyInicio = candidato.Y - 2500;
+                    if (dxInicio * dxInicio + dyInicio * dyInicio < 850 * 850) continue;
+                    if (portalesElegidos.Take(indicePortal).Any(p =>
+                    {
+                        float dx = p.X - candidato.X, dy = p.Y - candidato.Y;
+                        return dx * dx + dy * dy < 1500 * 1500;
+                    })) continue;
+                    if (nucleos.Where(n => n.Realidad == realidadPortal).Any(n =>
+                    {
+                        float dx = n.Posicion.X - candidato.X, dy = n.Posicion.Y - candidato.Y;
+                        return dx * dx + dy * dy < 240 * 240;
+                    })) continue;
+                    if (EstaDentroDeObstaculo(candidato, 28) || !TieneSalidaLibreDelPortal(candidato)) continue;
+                    valido = true;
+                }
+
+                if (!valido) candidato = new PointF(4300 - indicePortal * 2100, 4300 - indicePortal * 1300);
+                portales[realidadPortal] = candidato;
+                portalesElegidos[indicePortal++] = candidato;
+            }
+        }
+
+        private static bool TieneSalidaLibreDelPortal(PointF portal)
+        {
+            PointF[] salidas =
+            {
+                new(portal.X + 180, portal.Y), new(portal.X - 180, portal.Y),
+                new(portal.X, portal.Y + 180), new(portal.X, portal.Y - 180)
+            };
+            return salidas.Any(p => p.X >= 80 && p.X <= 4920 && p.Y >= 80 && p.Y <= 4920 &&
+                !EstaDentroDeObstaculo(p, 12));
+        }
+
+        private static PointF PosicionEntradaDelPortal(PointF portal)
+        {
+            PointF[] salidas =
+            {
+                new(portal.X + 180, portal.Y), new(portal.X - 180, portal.Y),
+                new(portal.X, portal.Y + 180), new(portal.X, portal.Y - 180)
+            };
+            return salidas.FirstOrDefault(p => p.X >= 80 && p.X <= 4920 && p.Y >= 80 && p.Y <= 4920 &&
+                !EstaDentroDeObstaculo(p, 12), portal);
+        }
+
         private bool EstaEnRadioDeInteraccion(PointF objetivo, float radio)
         {
             float dx = objetivo.X - jugadorX;
@@ -800,7 +847,7 @@ namespace NexusWindowsForm
             bool cerca = EstaEnRadioDeInteraccion(portal, 105);
             if (cerca && !portalAvisoMostrado)
             {
-                Mensaje("PORTAL OCULTO DETECTADO. PRESIONA E PARA CRUZAR A LA OTRA REALIDAD.");
+                Mensaje("PORTAL A LA VISTA. PRESIONA E PARA CRUZAR A LA OTRA REALIDAD.");
                 portalAvisoMostrado = true;
             }
             else if (!cerca)
@@ -823,13 +870,14 @@ namespace NexusWindowsForm
 
         private void DibujarPortal(Graphics g)
         {
-            if (imagenPortal == null || !portales.TryGetValue(realidad, out PointF portal) ||
-                !EstaEnRadioDeInteraccion(portal, 260)) return;
+            if (imagenPortal == null || !portales.TryGetValue(realidad, out PointF portal)) return;
 
             float x = portal.X - camaraX;
             float y = portal.Y - camaraY;
             float pulso = 1f + MathF.Sin(fotograma * 0.13f) * 0.035f;
             float tamano = 142 * pulso;
+            if (x < -tamano || y < -tamano || x > panelMapa.ClientSize.Width + tamano ||
+                y > panelMapa.ClientSize.Height + tamano) return;
             using (SolidBrush aura = new(Color.FromArgb(75, 255, 56, 36)))
                 g.FillEllipse(aura, x - tamano * 0.63f, y - tamano * 0.57f, tamano * 1.26f, tamano * 1.14f);
 
@@ -969,11 +1017,6 @@ namespace NexusWindowsForm
                     entidadActual = null;
                     animacionCombate = AnimacionCombate.Ninguna;
                     energia = Math.Max(0, energia - 5);
-                    if (energia == 0)
-                    {
-                        FinalizarMision("MISIÓN FALLIDA: EL CADETE SE QUEDÓ SIN ENERGÍA.", MessageBoxIcon.Error);
-                        return;
-                    }
                     Mensaje("ENTIDAD ELIMINADA. SECTOR DESPEJADO.");
                     ActualizarHUD();
                     panelMapa.Invalidate();
@@ -1016,11 +1059,6 @@ namespace NexusWindowsForm
             energia = Math.Max(0, energia - 10);
             entidadActual = null; encuentroActivo = false; panelEncuentro.Visible = false;
             ActualizarHUD();
-            if (energia == 0)
-            {
-                FinalizarMision("MISIÓN FALLIDA: EL CADETE SE QUEDÓ SIN ENERGÍA.", MessageBoxIcon.Error);
-                return;
-            }
             Mensaje("ESCAPASTE. PERDISTE 10 PUNTOS DE ENERGÍA. LA ENTIDAD SIGUE EN EL SECTOR.");
             panelMapa.Focus();
         }
@@ -1155,8 +1193,6 @@ namespace NexusWindowsForm
                 DibujarCasaBarrio(g, casaX, casaY, semillaCasa);
             }
 
-            DibujarPortal(g);
-
             if (garrafasEnergia.TryGetValue(realidad, out List<PointF>? garrafas))
             foreach (PointF garrafa in garrafas)
             {
@@ -1236,6 +1272,8 @@ namespace NexusWindowsForm
                 g.FillRectangle(ambienteRojo, 0, 0, panelMapa.ClientSize.Width, panelMapa.ClientSize.Height);
             }
             AplicarVisionDelCadete(g, px, py);
+            // El portal conserva su brillo y se distingue incluso fuera del radio claro.
+            DibujarPortal(g);
             DibujarFaroles(g, inicioX, inicioY, finX, finY);
             DibujarEsporas(g, px, py);
             using SolidBrush coords = new(Color.FromArgb(220, 255, 230, 230));
@@ -1638,11 +1676,6 @@ namespace NexusWindowsForm
         {
             if (energia < 20) { Mensaje("ENERGÍA INSUFICIENTE. SE NECESITAN 20 PUNTOS."); return; }
             energia -= 20; conexion = Math.Max(0, conexion - 5); ActualizarHUD();
-            if (energia == 0)
-            {
-                FinalizarMision("MISIÓN FALLIDA: EL CADETE SE QUEDÓ SIN ENERGÍA.", MessageBoxIcon.Error);
-                return;
-            }
             Mensaje("ESCANEO COMPLETADO. ACTIVIDAD DIMENSIONAL DETECTADA.");
         }
 
@@ -1794,8 +1827,9 @@ namespace NexusWindowsForm
             teclas.Clear();
             jugadorCaminando = false;
             realidad = nuevaRealidad;
-            jugadorX = Math.Clamp(portalDestino.X + (nuevaRealidad == "REALIDAD 999" ? 160 : -160), 80, 4920);
-            jugadorY = portalDestino.Y;
+            PointF puntoEntrada = PosicionEntradaDelPortal(portalDestino);
+            jugadorX = puntoEntrada.X;
+            jugadorY = puntoEntrada.Y;
             portalAvisoMostrado = false;
             camaraX = jugadorX - panelMapa.Width / 2f; camaraY = jugadorY - panelMapa.Height / 2f;
             CrearEntidades();
@@ -1817,7 +1851,7 @@ namespace NexusWindowsForm
                 : $"NÚCLEOS: {nucleosRecolectados.Count}/{nucleosNecesarios}";
             lblMision.Text = naveReparada
                 ? "Reactor reemplazado. Tu nave está lista para volver a viajar."
-                : "Tu nave quedó varada. Reúne 3 núcleos en las realidades 102 y 999 para reparar el reactor.";
+                : "Tu nave quedó varada. Reúne 4 núcleos, dos en cada realidad, para reparar el reactor.";
             barraVida.Value = Math.Clamp(vida, 0, 100);
             barraEnergia.Value = Math.Clamp(energia, 0, 100);
             barraConexion.Value = Math.Clamp(conexion, 0, 100);
