@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Update="Resources\AudioNexus.mp3;Resources\SonidoMenu.mp3;Resources\DemogorgonHerido.jpg;Resources\DemogorgonCritico.jpg;Resources\AtaqueCadete.jpg;Resources\AtaqueMonstruo.jpg;Resources\PortalDimensional.png;Resources\Zombie102_Normal.png;Resources\Zombie102_Transformado.png;Resources\HistoriaViaje*.jpg">
+    <None Update="Resources\AudioNexus.mp3;Resources\SonidoMenu.mp3;Resources\DemogorgonHerido.jpg;Resources\DemogorgonCritico.jpg;Resources\AtaqueCadete.jpg;Resources\AtaqueMonstruo.jpg;Resources\PortalDimensional.png;Resources\Zombie102_Normal.png;Resources\Zombie102_Transformado.png;Resources\HistoriaViaje*.jpg;Resources\FondoEspacial.jpg;Resources\NaveVuelo.png;Resources\DisparoNexus.png;Resources\MeteoritoPequeno.png;Resources\MeteoritoGrande.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

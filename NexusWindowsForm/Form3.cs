@@ -116,6 +116,20 @@ public sealed class Form3 : Form
     private void Form3_KeyDown(object? sender, KeyEventArgs e)
     {
         if (e.KeyCode != Keys.Space) return;
+        if (paginaHistoria == 0)
+        {
+            using (var secuenciaMeteoritos = new Form4())
+                secuenciaMeteoritos.ShowDialog(this);
+
+            // La escena siguiente es la lluvia de meteoritos; continúa tanto si
+            // el cadete sobrevive como si la nave recibe un impacto.
+            paginaHistoria++;
+            MostrarEscena();
+            e.Handled = true;
+            e.SuppressKeyPress = true;
+            return;
+        }
+
         if (paginaHistoria < Escenas.Length - 1)
         {
             paginaHistoria++;
