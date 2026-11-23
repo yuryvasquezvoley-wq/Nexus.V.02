@@ -52,6 +52,7 @@ namespace NexusWindowsForm
         private float resistencia = 100f;
         private int resistenciaMostrada = -1;
         private bool jugadorCaminando;
+        private bool mostrarRasgunio;
 
         private sealed record NucleoDimensional(string Id, string Realidad, PointF Posicion);
 
@@ -133,6 +134,7 @@ namespace NexusWindowsForm
                 CrearEntidades();
                 CrearSpritesCadete();
                 panelMapa.Paint += DibujarMundo;
+                imgMonstruo.Paint += DibujarRasgunio;
                 panelMapa.Resize += (_, _) => panelMapa.Invalidate();
                 relojMovimiento.Interval = 16;
                 relojMovimiento.Tick += (_, _) => ActualizarMovimiento();
@@ -788,6 +790,8 @@ namespace NexusWindowsForm
         {
             if (!encuentroActivo || entidadActual == null || animacionCombate != AnimacionCombate.Ninguna) return;
             entidadActual.Vida = Math.Max(0, entidadActual.Vida - 19);
+            mostrarRasgunio = entidadActual.EsZombie;
+            imgMonstruo.Invalidate();
             barraVidaMonstruo.Value = Math.Clamp(entidadActual.Vida, 0, barraVidaMonstruo.Maximum);
             lblDetalleMonstruo.Text = $"{entidadActual.Tipo}  //  VIDA: {entidadActual.Vida}/{entidadActual.VidaMaxima}";
             imgMonstruo.Image = imagenAtaqueCadete ?? ObtenerImagenMonstruo(entidadActual);
@@ -798,9 +802,30 @@ namespace NexusWindowsForm
             relojAnimacionCombate.Start();
         }
 
+        private void DibujarRasgunio(object? sender, PaintEventArgs e)
+        {
+            if (!mostrarRasgunio || entidadActual?.EsZombie != true) return;
+
+            Graphics g = e.Graphics;
+            g.SmoothingMode = SmoothingMode.None;
+            using Pen sombra = new(Color.FromArgb(190, 45, 10, 15), 10);
+            using Pen rasgunio = new(Color.FromArgb(235, 220, 42, 48), 5);
+            using Pen brillo = new(Color.FromArgb(230, 255, 145, 135), 2);
+            Point[] a = { new(imgMonstruo.Width / 2 - 65, imgMonstruo.Height / 2 - 42),
+                          new(imgMonstruo.Width / 2 - 25, imgMonstruo.Height / 2 - 4),
+                          new(imgMonstruo.Width / 2 - 5, imgMonstruo.Height / 2 - 27) };
+            Point[] b = { new(imgMonstruo.Width / 2 - 35, imgMonstruo.Height / 2 - 48),
+                          new(imgMonstruo.Width / 2 + 5, imgMonstruo.Height / 2 - 10),
+                          new(imgMonstruo.Width / 2 + 25, imgMonstruo.Height / 2 - 33) };
+            g.DrawLines(sombra, a); g.DrawLines(rasgunio, a); g.DrawLines(brillo, a);
+            g.DrawLines(sombra, b); g.DrawLines(rasgunio, b); g.DrawLines(brillo, b);
+        }
+
         private void CompletarAnimacionCombate()
         {
             relojAnimacionCombate.Stop();
+            mostrarRasgunio = false;
+            imgMonstruo.Invalidate();
             if (!encuentroActivo || entidadActual == null)
             {
                 animacionCombate = AnimacionCombate.Ninguna;
@@ -1198,13 +1223,20 @@ namespace NexusWindowsForm
 
         private void DibujarArbol(Graphics g, int x, int y)
         {
-            using SolidBrush tronco = new(Color.FromArgb(38, 15, 20));
-            using SolidBrush copa = new(realidad == "REALIDAD 102" ? Color.FromArgb(15, 43, 29) : Color.FromArgb(63, 13, 24));
-            using SolidBrush brillo = new(realidad == "REALIDAD 102" ? Color.FromArgb(67, 81, 44) : Color.FromArgb(165, 35, 43));
-            g.FillRectangle(tronco, x + 22, y + 28, 12, 22);
-            g.FillRectangle(copa, x + 8, y + 5, 40, 35);
-            g.FillRectangle(brillo, x + 16, y + 12, 8, 7);
-            g.FillRectangle(brillo, x + 34, y + 24, 7, 6);
+            using SolidBrush sombra = new(Color.FromArgb(125, 0, 0, 0));
+            using SolidBrush tronco = new(Color.FromArgb(48, 35, 26));
+            using SolidBrush copa = new(realidad == "REALIDAD 102" ? Color.FromArgb(24, 67, 36) : Color.FromArgb(63, 13, 24));
+            using SolidBrush copaMedia = new(realidad == "REALIDAD 102" ? Color.FromArgb(42, 91, 43) : Color.FromArgb(115, 25, 36));
+            using SolidBrush brillo = new(realidad == "REALIDAD 102" ? Color.FromArgb(91, 119, 54) : Color.FromArgb(165, 35, 43));
+            g.FillEllipse(sombra, x + 3, y + 37, 54, 15);
+            g.FillRectangle(tronco, x + 23, y + 27, 13, 27);
+            g.FillEllipse(copa, x + 2, y + 1, 58, 46);
+            g.FillEllipse(copaMedia, x + 8, y - 2, 26, 29);
+            g.FillEllipse(copaMedia, x + 30, y + 3, 27, 27);
+            g.FillEllipse(brillo, x + 13, y + 6, 13, 10);
+            g.FillEllipse(brillo, x + 37, y + 17, 11, 9);
+            using Pen contorno = new(Color.FromArgb(170, 12, 30, 20), 2);
+            g.DrawEllipse(contorno, x + 2, y + 1, 58, 46);
         }
 
         private static int ModuloPositivo(int valor, int modulo) => (valor % modulo + modulo) % modulo;
