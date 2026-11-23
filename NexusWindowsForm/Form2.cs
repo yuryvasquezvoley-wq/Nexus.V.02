@@ -40,6 +40,7 @@ namespace NexusWindowsForm
         private const int nucleosNecesarios = 3;
 
         private string nombreExplorador = "";
+        private SesionJugador? sesionActual;
         private int edad;
         private int vida = 100, energia = 100, conexion = 100;
         private float jugadorX = 2500, jugadorY = 2500;
@@ -120,6 +121,7 @@ namespace NexusWindowsForm
                     musicaCinematica = new ReproductorAudioBucle(rutaAudioCinematica, 0.45);
                 FormClosing += (_, _) =>
                 {
+                    GuardarProgresoEnBaseDeDatos();
                     DetenerMusica();
                     sonidoPasos?.Stop();
                     sonidoAlerta?.Stop();
@@ -536,7 +538,7 @@ namespace NexusWindowsForm
             edad = (int)numEdad.Value;
             energia = (int)numEnergia.Value;
             conexion = (int)numConexion.Value;
-            vida = 100; iniciado = true; encuentroActivo = false; naveReparada = false; recuperacionUsada = false; misionTerminada = false;
+            vida = 100; iniciado = false; encuentroActivo = false; naveReparada = false; recuperacionUsada = false; misionTerminada = false;
             celulasVida = 0;
             alertaEnergiaActiva = false;
             alertaVidaActiva = false;
@@ -546,6 +548,24 @@ namespace NexusWindowsForm
             nucleosRecolectados.Clear();
             realidad = selector.RealidadSeleccionada;
             jugadorX = 2500; jugadorY = 2500;
+
+            try
+            {
+                sesionActual = BaseDatosNexus.RegistrarIngreso(nombreExplorador, edad, energia, vida, conexion, realidad);
+            }
+            catch (Exception ex)
+            {
+                sesionActual = null;
+                MessageBox.Show(
+                    "No se pudo registrar al cadete en la base de datos NEXUS_DB.\n\n" +
+                    "Verifica que SQL Server LocalDB esté instalado y disponible.\n\nDetalle: " + ex.Message,
+                    "ERROR DE BASE DE DATOS",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+                return;
+            }
+
+            iniciado = true;
             camaraX = jugadorX - panelMapa.ClientSize.Width / 2f;
             camaraY = jugadorY - panelMapa.ClientSize.Height / 2f;
             panelRegistro.Visible = false; panelJuego.Visible = true; panelJuego.BringToFront(); lblEncabezado.BringToFront();
@@ -559,6 +579,29 @@ namespace NexusWindowsForm
             IniciarMusica();
             ActualizarHUD(); Mensaje("MISIÓN ACTIVA: RECUPERA 3 NÚCLEOS Y REPARA TU NAVE.");
             panelMapa.Focus();
+        }
+
+        private void GuardarProgresoEnBaseDeDatos()
+        {
+            if (sesionActual == null || !iniciado) return;
+
+            try
+            {
+                BaseDatosNexus.ActualizarEstado(
+                    sesionActual,
+                    energia,
+                    vida,
+                    conexion,
+                    realidad);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    "La partida terminó, pero no se pudo guardar el estado final del cadete.\n\nDetalle: " + ex.Message,
+                    "NEXUS | AVISO DE BASE DE DATOS",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+            }
         }
 
         private void Form2_KeyDown(object? sender, KeyEventArgs e)
