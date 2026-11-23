@@ -262,20 +262,65 @@ namespace NexusWindowsForm
         {
             foreach (Entidad anterior in entidades) anterior.Sprite.Dispose();
             entidades.Clear();
-            PointF primero = new(2850, 2580);
-            PointF segundo = new(2150, 2200);
-            entidades.Add(new Entidad
+
+            string[] nombres =
             {
-                Nombre = "ACECHADOR DEL REVÉS", Tipo = "Entidad orgánica", Posicion = primero,
-                DestinoMovimiento = new PointF(primero.X + 170, primero.Y - 90), Velocidad = 1.15f,
-                Sprite = CrearSpriteMonstruo(), Vida = 60
-            });
-            entidades.Add(new Entidad
+                "ACECHADOR DEL REVÉS", "SOMBRA DEL VACÍO",
+                "RASTREADOR DE HAWKINS", "DEVORADOR DE CARNE",
+                "ACECHANTE NOCTURNO", "ENGENDRO DIMENSIONAL",
+                "COSA DEL BOSQUE", "PERSEGUIDOR DEL VACÍO"
+            };
+            string[] tipos =
             {
-                Nombre = "SOMBRA DEL VACÍO", Tipo = "Entidad de sombra", Posicion = segundo,
-                DestinoMovimiento = new PointF(segundo.X - 140, segundo.Y + 120), Velocidad = 0.95f,
-                Sprite = CrearSpriteMonstruo(), Vida = 45, VidaMaxima = 45
-            });
+                "Entidad orgánica", "Entidad de sombra",
+                "Mutación infectada", "Depredador dimensional"
+            };
+
+            // Ocho monstruos activos por cada realidad.
+            for (int i = 0; i < 8; i++)
+            {
+                PointF posicion = ObtenerPosicionSegura(520);
+                int vidaMonstruo = 42 + (i % 4) * 7;
+                entidades.Add(new Entidad
+                {
+                    Nombre = nombres[i], Tipo = tipos[i % tipos.Length],
+                    Posicion = posicion,
+                    DestinoMovimiento = new PointF(posicion.X + Random.Shared.Next(-240, 241),
+                                                   posicion.Y + Random.Shared.Next(-240, 241)),
+                    Velocidad = 1.0f + (i % 3) * 0.22f,
+                    Sprite = CrearSpriteMonstruo(), Vida = vidaMonstruo,
+                    VidaMaxima = vidaMonstruo
+                });
+            }
+        }
+
+        private PointF ObtenerPosicionSegura(float distanciaMinimaJugador)
+        {
+            for (int intento = 0; intento < 2500; intento++)
+            {
+                PointF candidato = new(Random.Shared.Next(100, 4900), Random.Shared.Next(100, 4900));
+                float dxJugador = candidato.X - jugadorX, dyJugador = candidato.Y - jugadorY;
+                if (dxJugador * dxJugador + dyJugador * dyJugador < distanciaMinimaJugador * distanciaMinimaJugador) continue;
+                if (EstaDentroDeObstaculo(candidato, 28)) continue;
+
+                bool demasiadoCerca = entidades.Any(e =>
+                {
+                    float dx = candidato.X - e.Posicion.X, dy = candidato.Y - e.Posicion.Y;
+                    return dx * dx + dy * dy < 230 * 230;
+                });
+                if (!demasiadoCerca) return candidato;
+            }
+            return new PointF(Math.Clamp(jugadorX + Random.Shared.Next(-900, 901), 100, 4900),
+                              Math.Clamp(jugadorY + Random.Shared.Next(-900, 901), 100, 4900));
+        }
+
+        private void ReaparecerEntidad(Entidad entidad)
+        {
+            entidad.Posicion = ObtenerPosicionSegura(720);
+            entidad.DestinoMovimiento = new PointF(entidad.Posicion.X + Random.Shared.Next(-260, 261),
+                                                   entidad.Posicion.Y + Random.Shared.Next(-260, 261));
+            entidad.Vida = entidad.VidaMaxima;
+            entidad.Derrotada = false;
         }
 
         private void CrearSpritesCadete()
@@ -477,9 +522,9 @@ namespace NexusWindowsForm
             dx /= magnitud; dy /= magnitud;
             float velocidad = energia > 0 ? (correr ? 7.2f : 4.2f) : 1.4f;
             float siguienteX = Math.Clamp(jugadorX + dx * velocidad, 80, 4920);
-            if (!EstaDentroDeUnaCasa(new PointF(siguienteX, jugadorY), 11)) jugadorX = siguienteX;
+            if (!EstaDentroDeObstaculo(new PointF(siguienteX, jugadorY), 13)) jugadorX = siguienteX;
             float siguienteY = Math.Clamp(jugadorY + dy * velocidad, 80, 4920);
-            if (!EstaDentroDeUnaCasa(new PointF(jugadorX, siguienteY), 11)) jugadorY = siguienteY;
+            if (!EstaDentroDeObstaculo(new PointF(jugadorX, siguienteY), 13)) jugadorY = siguienteY;
             ticksMovimiento++;
             if (ticksMovimiento % 30 == 0)
             {
@@ -524,7 +569,7 @@ namespace NexusWindowsForm
                 float dxJugador = jugadorX - entidad.Posicion.X;
                 float dyJugador = jugadorY - entidad.Posicion.Y;
                 float distanciaJugador = MathF.Sqrt(dxJugador * dxJugador + dyJugador * dyJugador);
-                if (distanciaJugador < 420)
+                if (distanciaJugador < 1650)
                     entidad.DestinoMovimiento = new PointF(jugadorX, jugadorY);
                 else
                 {
@@ -547,9 +592,9 @@ namespace NexusWindowsForm
                 dy = dy / distancia * paso;
                 PointF anterior = entidad.Posicion;
                 float x = Math.Clamp(anterior.X + dx, 80, 4920);
-                if (!EstaDentroDeUnaCasa(new PointF(x, anterior.Y), 10)) entidad.Posicion = new PointF(x, anterior.Y);
+                if (!EstaDentroDeObstaculo(new PointF(x, anterior.Y), 12)) entidad.Posicion = new PointF(x, anterior.Y);
                 float y = Math.Clamp(anterior.Y + dy, 80, 4920);
-                if (!EstaDentroDeUnaCasa(new PointF(entidad.Posicion.X, y), 10)) entidad.Posicion = new PointF(entidad.Posicion.X, y);
+                if (!EstaDentroDeObstaculo(new PointF(entidad.Posicion.X, y), 12)) entidad.Posicion = new PointF(entidad.Posicion.X, y);
                 if (Math.Abs(entidad.Posicion.X - anterior.X) > 0.01f || Math.Abs(entidad.Posicion.Y - anterior.Y) > 0.01f)
                     seMovioAlguno = true;
                 else
@@ -576,6 +621,29 @@ namespace NexusWindowsForm
                 if (!((loteX == 4 || loteX == 12) && (loteY == 4 || loteY == 9))) continue;
                 RectangleF paredes = new(tx * tile - 84, ty * tile - 66, 164, 116);
                 if (paredes.IntersectsWith(cuerpo)) return true;
+            }
+            return false;
+        }
+
+        private static bool EstaDentroDeObstaculo(PointF posicion, float radio)
+        {
+            if (EstaDentroDeUnaCasa(posicion, radio)) return true;
+            const int tile = 64;
+            int centroX = (int)MathF.Floor(posicion.X / tile);
+            int centroY = (int)MathF.Floor(posicion.Y / tile);
+            for (int ty = centroY - 1; ty <= centroY + 1; ty++)
+            for (int tx = centroX - 1; tx <= centroX + 1; tx++)
+            {
+                int calleY = ModuloPositivo(ty, 13), calleX = ModuloPositivo(tx, 17);
+                bool carretera = calleY <= 1 || calleX <= 1;
+                bool acera = !carretera && (calleY == 2 || calleX == 2);
+                if (carretera || acera) continue;
+                int semilla = unchecked((tx * 73856093) ^ (ty * 19349663)) & int.MaxValue;
+                if (semilla % 4 != 0) continue;
+                float troncoX = tx * tile + 30, troncoY = ty * tile + 39;
+                float dx = posicion.X - troncoX, dy = posicion.Y - troncoY;
+                float radioArbol = radio + 23;
+                if (dx * dx + dy * dy < radioArbol * radioArbol) return true;
             }
             return false;
         }
@@ -715,9 +783,11 @@ namespace NexusWindowsForm
             {
                 if (entidadActual.Vida <= 0)
                 {
-                    entidadActual.Derrotada = true;
+                    Entidad monstruoDerrotado = entidadActual;
+                    monstruoDerrotado.Derrotada = true;
                     encuentroActivo = false;
                     panelEncuentro.Visible = false;
+                    ReaparecerEntidad(monstruoDerrotado);
                     entidadActual = null;
                     animacionCombate = AnimacionCombate.Ninguna;
                     energia = Math.Max(0, energia - 5);
@@ -800,11 +870,34 @@ namespace NexusWindowsForm
                 int semilla = unchecked((tx * 73856093) ^ (ty * 19349663)) & int.MaxValue;
                 if (carretera)
                 {
-                    using SolidBrush marca = new(Color.FromArgb(140, 174, 151, 104));
-                    if (calleY == 0 && tx % 3 == 0) g.FillRectangle(marca, sx + 25, sy + 30, 19, 3);
-                    if (calleX == 0 && ty % 3 == 0) g.FillRectangle(marca, sx + 30, sy + 24, 3, 19);
+                    using Pen bordeAsfalto = new(Color.FromArgb(48, 12, 13, 16), 2);
+                    using Pen grieta = new(Color.FromArgb(105, 12, 13, 15), 1);
+                    using SolidBrush grava = new(Color.FromArgb(45, 165, 157, 145));
+                    if (calleY <= 1)
+                    {
+                        g.DrawLine(bordeAsfalto, sx, sy + 3, sx + tile, sy + 3);
+                        if (calleY == 0 && ModuloPositivo(tx, 4) == 0)
+                            g.FillRectangle(new SolidBrush(Color.FromArgb(115, 181, 157, 111)), sx + 12, sy + 31, 23, 3);
+                        if (semilla % 5 == 0)
+                        {
+                            g.DrawLine(grieta, sx + 8, sy + 17, sx + 19, sy + 23);
+                            g.DrawLine(grieta, sx + 19, sy + 23, sx + 16, sy + 37);
+                        }
+                    }
+                    if (calleX <= 1)
+                    {
+                        g.DrawLine(bordeAsfalto, sx + 3, sy, sx + 3, sy + tile);
+                        if (calleX == 0 && ModuloPositivo(ty, 4) == 0)
+                            g.FillRectangle(new SolidBrush(Color.FromArgb(115, 181, 157, 111)), sx + 31, sy + 12, 3, 23);
+                        if (semilla % 6 == 0)
+                        {
+                            g.DrawLine(grieta, sx + 18, sy + 9, sx + 26, sy + 20);
+                            g.DrawLine(grieta, sx + 26, sy + 20, sx + 39, sy + 17);
+                        }
+                    }
+                    if (semilla % 9 == 0) g.FillRectangle(grava, sx + 17, sy + 43, 3, 2);
                 }
-                else if (semilla % 7 == 0)
+                else if (semilla % 4 == 0)
                 {
                     if (realidad == "REALIDAD 102") DibujarArbolHawkins(g, sx + 8, sy + 8);
                     else DibujarArbol(g, sx + 8, sy + 8);
@@ -824,6 +917,8 @@ namespace NexusWindowsForm
                 }
                 if (realidad == "REALIDAD 102" && semilla % 5 == 0)
                     DibujarRaicesHawkins(g, sx, sy, semilla);
+                if (realidad == "REALIDAD 102" && !carretera && !acera && semilla % 23 == 0)
+                    DibujarCadaver(g, sx, sy, semilla);
             }
 
             // Las casas ocupan varias casillas, así que se dibujan después del suelo
@@ -889,6 +984,7 @@ namespace NexusWindowsForm
                 g.FillRectangle(ambienteRojo, 0, 0, panelMapa.ClientSize.Width, panelMapa.ClientSize.Height);
             }
             AplicarVisionDelCadete(g, px, py);
+            DibujarFaroles(g, inicioX, inicioY, finX, finY);
             DibujarEsporas(g, px, py);
             using SolidBrush coords = new(Color.FromArgb(220, 255, 230, 230));
             g.DrawString($"X: {(int)jugadorX}   Y: {(int)jugadorY}   //   {realidad}", new Font("Consolas", 10, FontStyle.Bold), coords, 12, 12);
@@ -899,8 +995,8 @@ namespace NexusWindowsForm
             if (!iniciado) return;
             const float radioVision = 190;
             Color sombraAmbiente = realidad == "REALIDAD 999"
-                ? Color.FromArgb(158, 14, 1, 7)
-                : Color.FromArgb(150, 0, 0, 0);
+                ? Color.FromArgb(188, 10, 0, 7)
+                : Color.FromArgb(184, 0, 0, 0);
             using GraphicsPath zonaVision = new();
             zonaVision.AddEllipse(centroX - radioVision, centroY - radioVision, radioVision * 2, radioVision * 2);
             using Region oscuridad = new(new Rectangle(0, 0, panelMapa.ClientSize.Width, panelMapa.ClientSize.Height));
@@ -930,7 +1026,7 @@ namespace NexusWindowsForm
             int alto = Math.Max(1, panelMapa.ClientSize.Height);
             bool realidadRojiza = realidad == "REALIDAD 999";
 
-            for (int i = 0; i < 62; i++)
+            for (int i = 0; i < 190; i++)
             {
                 int semilla = unchecked((i * 7919 + 104729) & int.MaxValue);
                 float profundidad = (semilla % 1000) / 999f;
@@ -945,19 +1041,73 @@ namespace NexusWindowsForm
                 float visibilidad = distancia <= 100
                     ? 1f
                     : 1f - 0.68f * Math.Clamp((distancia - 100) / 260f, 0f, 1f);
-                int alpha = Math.Clamp((int)((58 + profundidad * (realidadRojiza ? 165 : 125)) * visibilidad), 20, 220);
-                int tamano = 1 + (int)(profundidad * 3.2f);
-                int largo = 2 + (int)(profundidad * 6f);
+                int alpha = Math.Clamp((int)((88 + profundidad * (realidadRojiza ? 165 : 150)) * visibilidad), 28, 238);
+                int tamano = 1 + (int)(profundidad * 4.5f);
+                int largo = 3 + (int)(profundidad * 9f);
                 Color esporaColor = realidadRojiza
-                    ? Color.FromArgb(alpha, 255, 61 + (i % 3) * 18, 50)
-                    : Color.FromArgb(alpha, 218, 35 + (i % 3) * 12, 47);
+                    ? Color.FromArgb(alpha, 255, 38 + (i % 3) * 15, 42)
+                    : Color.FromArgb(alpha, 55 + (i % 3) * 12, 205, 82 + (i % 3) * 18);
                 using Pen estela = new(esporaColor, tamano);
                 g.DrawLine(estela, x, y, x - balanceo * 0.08f, y + largo);
                 if (profundidad > 0.66f)
                 {
-                    using SolidBrush brillo = new(Color.FromArgb(Math.Min(235, alpha + 22), 255, 98, 78));
+                    using SolidBrush brillo = new(realidadRojiza
+                        ? Color.FromArgb(Math.Min(245, alpha + 28), 255, 92, 76)
+                        : Color.FromArgb(Math.Min(245, alpha + 28), 116, 255, 135));
                     g.FillEllipse(brillo, x - tamano, y - tamano, tamano * 2, tamano * 2);
                 }
+            }
+        }
+
+        private static void DibujarCadaver(Graphics g, int x, int y, int semilla)
+        {
+            int giro = semilla % 4;
+            using SolidBrush sombra = new(Color.FromArgb(155, 0, 0, 0));
+            using SolidBrush ropa = new(Color.FromArgb(220, 28 + giro * 5, 31, 34));
+            using SolidBrush piel = new(Color.FromArgb(210, 105, 87, 69));
+            using SolidBrush sangre = new(Color.FromArgb(155, 76, 9, 17));
+            g.FillEllipse(sombra, x + 12, y + 34, 38, 13);
+            g.FillRectangle(ropa, x + 21, y + 17, 23, 25);
+            g.FillRectangle(piel, x + 29, y + 8, 12, 11);
+            g.FillRectangle(ropa, x + 13, y + 20, 10, 17);
+            g.FillRectangle(ropa, x + 41, y + 20, 9, 16);
+            g.FillRectangle(ropa, x + 23, y + 39, 8, 12);
+            g.FillRectangle(ropa, x + 36, y + 39, 8, 12);
+            g.FillRectangle(sangre, x + 15 + giro * 3, y + 29, 8, 5);
+            g.FillRectangle(sangre, x + 38, y + 13 + giro, 9, 4);
+            using Pen detalle = new(Color.FromArgb(115, 8, 9, 12), 2);
+            g.DrawLine(detalle, x + 27, y + 20, x + 39, y + 36);
+        }
+
+        private void DibujarFaroles(Graphics g, int inicioX, int inicioY, int finX, int finY)
+        {
+            bool roja = realidad == "REALIDAD 999";
+            for (int ty = inicioY; ty <= finY; ty++)
+            for (int tx = inicioX; tx <= finX; tx++)
+            {
+                int cy = ModuloPositivo(ty, 13), cx = ModuloPositivo(tx, 17);
+                bool horizontal = cy == 2 && ModuloPositivo(tx, 6) == 3;
+                bool vertical = cx == 2 && ModuloPositivo(ty, 6) == 3;
+                if (!horizontal && !vertical) continue;
+                float sx = tx * 64 - camaraX + (vertical ? 44 : 18);
+                float sy = ty * 64 - camaraY + (horizontal ? 17 : 44);
+                float pulso = 0.35f + 0.65f * (0.5f + 0.5f * MathF.Sin(fotograma * 0.31f + tx * 1.7f + ty));
+                if ((fotograma + tx * 7 + ty * 11) % 97 < 4) pulso *= 0.16f;
+                Color luz = roja ? Color.FromArgb(255, 74, 40) : Color.FromArgb(166, 218, 133);
+                int a = (int)(48 + pulso * 92);
+                using SolidBrush haloGrande = new(Color.FromArgb(a / 3, luz));
+                using SolidBrush haloMedio = new(Color.FromArgb(a / 2, luz));
+                using SolidBrush haloCentro = new(Color.FromArgb(a, luz));
+                using SolidBrush poste = new(Color.FromArgb(205, 20, 19, 22));
+                using SolidBrush foco = new(Color.FromArgb((int)(160 + pulso * 95), 255, 225, 165));
+                g.FillEllipse(haloGrande, sx - 43, sy - 36, 86, 72);
+                g.FillEllipse(haloMedio, sx - 27, sy - 23, 54, 46);
+                g.FillEllipse(haloCentro, sx - 13, sy - 12, 26, 24);
+                g.FillRectangle(poste, sx - 2, sy + 3, 4, 17);
+                g.FillRectangle(poste, sx - 7, sy - 4, 14, 5);
+                g.FillRectangle(foco, sx - 3, sy - 5, 6, 3);
+                using Pen reflejo = new(Color.FromArgb((int)(35 + pulso * 70), luz), 2);
+                g.DrawLine(reflejo, sx, sy + 18, sx + 10, sy + 35);
             }
         }
 
