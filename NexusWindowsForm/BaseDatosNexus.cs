@@ -154,7 +154,8 @@ internal static class BaseDatosNexus
         string realidad)
     {
         comando.Parameters.Add("@Nombre", SqlDbType.NVarChar, 120).Value = nombre;
-        comando.Parameters.Add("@Normalizado", SqlDbType.NVarChar, 120).Value = Normalizar(nombre);
+        if (comando.CommandText.Contains("@Normalizado", StringComparison.Ordinal))
+            comando.Parameters.Add("@Normalizado", SqlDbType.NVarChar, 120).Value = Normalizar(nombre);
         comando.Parameters.Add("@Edad", SqlDbType.Int).Value = edad;
         comando.Parameters.Add("@Energia", SqlDbType.Int).Value = energia;
         comando.Parameters.Add("@Vida", SqlDbType.Int).Value = vida;
@@ -169,8 +170,7 @@ internal static class BaseDatosNexus
         lock (BloqueoInicializacion)
         {
             var constructor = new SqlConnectionStringBuilder(CadenaConexion);
-            string baseDatosOriginal = constructor.InitialCatalog;
-            constructor.InitialCatalog = "master";
+                constructor.InitialCatalog = "master";
 
             using (SqlConnection master = new(constructor.ConnectionString))
             {
