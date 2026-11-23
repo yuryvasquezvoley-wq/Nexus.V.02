@@ -40,7 +40,7 @@ public static class BattleDialog
             Font = new Font("Consolas", 58, FontStyle.Bold),
             Visible = false
         };
-        dialog.Controls.Add(scratch);
+        monsterImage.Controls.Add(scratch);
 
         dialog.Controls.Add(new Label
         {
