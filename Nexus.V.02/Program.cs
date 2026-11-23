@@ -111,11 +111,11 @@ namespace NEXUS
             Console.WriteLine("╔══════════════════════════════════════╗");
             Console.WriteLine("║          PERFIL DEL EXPLORADOR       ║");
             Console.WriteLine("╠══════════════════════════════════════╣");
-            Console.WriteLine($"║ Nombre       : {Nombre,-20} ║");
-            Console.WriteLine($"║ Edad         : {Edad,-20} ║");
-            Console.WriteLine($"║ Vida         : {Vida,-20} ║");
-            Console.WriteLine($"║ Energía      : {Energia,-20} ║");
-            Console.WriteLine($"║ Conexión     : {Conexion,-20} ║");
+            Console.WriteLine($"║ Nombre       : {Nombre,-20}         ║");
+            Console.WriteLine($"║ Edad         : {Edad,-20}           ║");
+            Console.WriteLine($"║ Vida         : {Vida,-20}           ║");
+            Console.WriteLine($"║ Energía      : {Energia,-20}        ║");
+            Console.WriteLine($"║ Conexión     : {Conexion,-20}       ║");
             Console.WriteLine("╚══════════════════════════════════════╝");
 
             Console.ResetColor();
