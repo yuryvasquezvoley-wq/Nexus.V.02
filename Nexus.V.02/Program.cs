@@ -436,7 +436,9 @@ namespace NEXUS
                 portalY = Random.Shared.Next(0, 10);
             }
             while ((portalX == 0 && portalY == 0) ||
-                   mapa[portalY, portalX] != ".");
+                   mapa[portalY, portalX] != "." ||
+                   (nombre == "REALIDAD 102" &&
+                    portalX == zombieX && portalY == zombieY));
 
             mapa[portalY, portalX] = "E";
         }
