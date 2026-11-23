@@ -873,11 +873,12 @@ namespace NexusWindowsForm
                     using Pen bordeAsfalto = new(Color.FromArgb(48, 12, 13, 16), 2);
                     using Pen grieta = new(Color.FromArgb(105, 12, 13, 15), 1);
                     using SolidBrush grava = new(Color.FromArgb(45, 165, 157, 145));
+                    using SolidBrush marcaVial = new(Color.FromArgb(115, 181, 157, 111));
                     if (calleY <= 1)
                     {
                         g.DrawLine(bordeAsfalto, sx, sy + 3, sx + tile, sy + 3);
                         if (calleY == 0 && ModuloPositivo(tx, 4) == 0)
-                            g.FillRectangle(new SolidBrush(Color.FromArgb(115, 181, 157, 111)), sx + 12, sy + 31, 23, 3);
+                            g.FillRectangle(marcaVial, sx + 12, sy + 31, 23, 3);
                         if (semilla % 5 == 0)
                         {
                             g.DrawLine(grieta, sx + 8, sy + 17, sx + 19, sy + 23);
@@ -888,7 +889,7 @@ namespace NexusWindowsForm
                     {
                         g.DrawLine(bordeAsfalto, sx + 3, sy, sx + 3, sy + tile);
                         if (calleX == 0 && ModuloPositivo(ty, 4) == 0)
-                            g.FillRectangle(new SolidBrush(Color.FromArgb(115, 181, 157, 111)), sx + 31, sy + 12, 3, 23);
+                            g.FillRectangle(marcaVial, sx + 31, sy + 12, 3, 23);
                         if (semilla % 6 == 0)
                         {
                             g.DrawLine(grieta, sx + 18, sy + 9, sx + 26, sy + 20);
