@@ -1362,10 +1362,6 @@ namespace NEXUS
                 Thread.Sleep(800);
             }
 
-            if (explorador.Vida <= 0)
-            {
-                Derrota();
-            }
         }
 
 
