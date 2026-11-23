@@ -3,7 +3,7 @@ namespace NexusWindowsForm;
 public static class BattleDialog
 {
     // Retry means attack; Abort means escape.
-    public static DialogResult Show(int playerHealth, int monsterHealth)
+    public static DialogResult Show(int playerHealth, int monsterHealth, bool zombie = false)
     {
         using var dialog = new Form
         {
@@ -18,18 +18,33 @@ public static class BattleDialog
             Font = new Font("Consolas", 12, FontStyle.Bold)
         };
 
-        dialog.Controls.Add(new PictureBox
+        var monsterImage = new PictureBox
         {
-            Image = Properties.Resources.Demogorgon,
+            Image = zombie ? LoadZombieImage(monsterHealth) : Properties.Resources.Demogorgon,
             SizeMode = PictureBoxSizeMode.Zoom,
             Location = new Point(18, 18),
             Size = new Size(864, 430),
             BackColor = Color.Black
-        });
+        };
+        dialog.Controls.Add(monsterImage);
+
+        // Efecto visual breve del rasguño cuando el cadete pulsa ATACAR.
+        var scratch = new Label
+        {
+            Text = "╱╲╱",
+            Location = new Point(270, 145),
+            Size = new Size(360, 110),
+            ForeColor = Color.FromArgb(245, 55, 55),
+            BackColor = Color.Transparent,
+            TextAlign = ContentAlignment.MiddleCenter,
+            Font = new Font("Consolas", 58, FontStyle.Bold),
+            Visible = false
+        };
+        dialog.Controls.Add(scratch);
 
         dialog.Controls.Add(new Label
         {
-            Text = "¡UNA CRIATURA DEL OTRO LADO!",
+            Text = zombie ? "¡ZOMBIE DE LA REALIDAD 102!" : "¡UNA CRIATURA DEL OTRO LADO!",
             Location = new Point(30, 462),
             Size = new Size(840, 34),
             ForeColor = Color.FromArgb(226, 63, 70),
@@ -39,7 +54,7 @@ public static class BattleDialog
 
         dialog.Controls.Add(new Label
         {
-            Text = $"CADETE   {HealthBar(playerHealth, 100)}  {playerHealth}/100     DEMOGORGON   {HealthBar(monsterHealth, 30)}  {monsterHealth}/30",
+            Text = $"CADETE   {HealthBar(playerHealth, 100)}  {playerHealth}/100     {(zombie ? "ZOMBIE" : "DEMOGORGON")}   {HealthBar(monsterHealth, 30)}  {monsterHealth}/30",
             Location = new Point(32, 507),
             Size = new Size(836, 36),
             ForeColor = Color.FromArgb(164, 220, 156),
@@ -50,7 +65,6 @@ public static class BattleDialog
         var attack = new Button
         {
             Text = "ATACAR",
-            DialogResult = DialogResult.Retry,
             Location = new Point(235, 566),
             Size = new Size(190, 52),
             BackColor = Color.FromArgb(119, 36, 43),
@@ -58,6 +72,21 @@ public static class BattleDialog
             FlatStyle = FlatStyle.Flat
         };
         attack.FlatAppearance.BorderColor = Color.FromArgb(222, 74, 70);
+        attack.Click += (_, _) =>
+        {
+            attack.Enabled = false;
+            scratch.Visible = true;
+            scratch.BringToFront();
+
+            var animation = new System.Windows.Forms.Timer { Interval = 450 };
+            animation.Tick += (_, _) =>
+            {
+                animation.Stop();
+                animation.Dispose();
+                dialog.DialogResult = DialogResult.Retry;
+            };
+            animation.Start();
+        };
         dialog.Controls.Add(attack);
 
         var flee = new Button
@@ -75,6 +104,24 @@ public static class BattleDialog
         dialog.AcceptButton = attack;
         dialog.CancelButton = flee;
         return dialog.ShowDialog();
+    }
+
+    private static Image LoadZombieImage(int monsterHealth)
+    {
+        string nombreArchivo = monsterHealth * 100 < 30 * 60
+            ? "Zombie102_Transformado.png"
+            : "Zombie102_Normal.png";
+
+        string ruta = Path.Combine(
+            AppContext.BaseDirectory,
+            "Resources",
+            nombreArchivo
+        );
+
+        // Si todavía no se copiaron las imágenes al proyecto, evita que el juego falle.
+        return File.Exists(ruta)
+            ? Image.FromFile(ruta)
+            : Properties.Resources.Demogorgon;
     }
 
     private static string HealthBar(int health, int max)
