@@ -950,6 +950,37 @@ namespace NexusWindowsForm
                         }
                     }
                     if (semilla % 9 == 0) g.FillRectangle(grava, sx + 17, sy + 43, 3, 2);
+
+                    // Señalización más clara y visible para las calles de Hawkins (102).
+                    if (realidad == "REALIDAD 102")
+                    {
+                        using Pen lineaVial = new(Color.FromArgb(190, 205, 184, 126), 2);
+                        using Pen bordeAcera = new(Color.FromArgb(170, 122, 111, 91), 3);
+                        if (calleY <= 1)
+                        {
+                            g.DrawLine(bordeAcera, sx, sy + 5, sx + tile, sy + 5);
+                            g.DrawLine(bordeAcera, sx, sy + 58, sx + tile, sy + 58);
+                            if (calleY == 0)
+                            {
+                                g.DrawLine(lineaVial, sx + 4, sy + 27, sx + 22, sy + 27);
+                                g.DrawLine(lineaVial, sx + 40, sy + 27, sx + 58, sy + 27);
+                                g.DrawLine(lineaVial, sx + 4, sy + 37, sx + 22, sy + 37);
+                                g.DrawLine(lineaVial, sx + 40, sy + 37, sx + 58, sy + 37);
+                            }
+                        }
+                        if (calleX <= 1)
+                        {
+                            g.DrawLine(bordeAcera, sx + 5, sy, sx + 5, sy + tile);
+                            g.DrawLine(bordeAcera, sx + 58, sy, sx + 58, sy + tile);
+                            if (calleX == 0)
+                            {
+                                g.DrawLine(lineaVial, sx + 27, sy + 4, sx + 27, sy + 22);
+                                g.DrawLine(lineaVial, sx + 27, sy + 40, sx + 27, sy + 58);
+                                g.DrawLine(lineaVial, sx + 37, sy + 4, sx + 37, sy + 22);
+                                g.DrawLine(lineaVial, sx + 37, sy + 40, sx + 37, sy + 58);
+                            }
+                        }
+                    }
                 }
                 else if (semilla % 4 == 0)
                 {
