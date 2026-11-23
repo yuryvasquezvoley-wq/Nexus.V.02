@@ -387,7 +387,7 @@ namespace NEXUS
             // MAPA 10 X 10
             mapa = new string[,]
             {
-                { "E", ".", ".", ".", ".", ".", ".", ".", ".", "." },
+                { ".", ".", ".", ".", ".", ".", ".", ".", ".", "." },
                 { ".", ".", "*", ".", ".", ".", ".", "+", ".", "." },
                 { ".", "#", ".", ".", "*", ".", ".", ".", ".", "." },
                 { ".", ".", ".", "+", ".", ".", "#", ".", ".", "." },
@@ -398,6 +398,21 @@ namespace NEXUS
                 { ".", "#", ".", ".", "+", ".", "*", ".", ".", "." },
                 { ".", ".", ".", ".", ".", ".", ".", ".", "O", "." }
             };
+
+            // Coloca el portal de extracción en una casilla libre aleatoria.
+            // Nunca aparece debajo del cadete ni sobre otro elemento del mapa.
+            int portalX;
+            int portalY;
+
+            do
+            {
+                portalX = Random.Shared.Next(0, 10);
+                portalY = Random.Shared.Next(0, 10);
+            }
+            while ((portalX == 0 && portalY == 0) ||
+                   mapa[portalY, portalX] != ".");
+
+            mapa[portalY, portalX] = "E";
         }
 
         public string ObtenerElemento(int x, int y)
@@ -466,6 +481,10 @@ namespace NEXUS
                         Console.ForegroundColor =
                             ConsoleColor.Cyan;
 
+                    else if (elemento == "E")
+                        Console.ForegroundColor =
+                            ConsoleColor.Green;
+
                     else
                         Console.ForegroundColor =
                             ConsoleColor.DarkGray;
@@ -493,6 +512,7 @@ namespace NEXUS
             Console.WriteLine("# = PELIGRO");
             Console.WriteLine("R = ZONA DE ANOMALÍA");
             Console.WriteLine("O = NÚCLEO ENERGÉTICO");
+            Console.WriteLine("E = PORTAL DE EXTRACCIÓN");
         }
     }
 
@@ -915,6 +935,18 @@ namespace NEXUS
                     ConsoleKey.Escape)
                 {
                     explorando = false;
+                    continue;
+                }
+
+                // Con energía en cero, el cadete queda sin fuerzas para moverse.
+                // Puede salir con ESC y recargar desde el menú principal.
+                if (explorador.Energia <= 0)
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine();
+                    Console.WriteLine(">> ENERGÍA AGOTADA. NO PUEDES CORRER NI DESPLAZARTE.");
+                    Console.WriteLine(">> PRESIONA ESC PARA SALIR Y RECARGAR EN EL MENÚ.");
+                    Thread.Sleep(900);
                     continue;
                 }
 
@@ -1515,12 +1547,8 @@ namespace NEXUS
         {
             nucleoEncontrado = true;
 
-            realidadActual.CambiarElemento(
-                posicionX,
-                posicionY,
-                "E"
-            );
-
+            // El portal conserva su ubicación aleatoria; no se mueve
+            // a la casilla del núcleo ni queda oculto bajo el cadete.
             Console.Clear();
 
             Console.ForegroundColor =
