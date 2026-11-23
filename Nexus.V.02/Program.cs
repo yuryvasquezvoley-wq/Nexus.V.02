@@ -588,10 +588,6 @@ namespace NEXUS
                         break;
 
                     case "5":
-                        MostrarPerfil();
-                        break;
-
-                    case "6":
                         inventario.MostrarInventario();
                         Pausa();
                         break;
@@ -685,11 +681,7 @@ namespace NEXUS
             );
 
             Console.WriteLine(
-                "║ [5] > VER PERFIL                       ║"
-            );
-
-            Console.WriteLine(
-                "║ [6] > INVENTARIO                       ║"
+                "║ [5] > INVENTARIO                       ║"
             );
 
             Console.WriteLine(
@@ -1847,17 +1839,6 @@ namespace NEXUS
 
             Pausa();
         }
-
-
-        private void MostrarPerfil()
-        {
-            Console.Clear();
-
-            explorador.MostrarDatos();
-
-            Pausa();
-        }
-
 
 
         private void Derrota()
