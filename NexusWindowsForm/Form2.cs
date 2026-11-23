@@ -165,7 +165,6 @@ namespace NexusWindowsForm
             btnAnalizar.Click += (_, _) => AnalizarAnomalia();
             btnRecuperar.Click += (_, _) => RecuperarEnergia();
             btnUsarCelula.Click += (_, _) => UsarCelula();
-            btnPerfil.Click += (_, _) => MostrarPerfil();
             btnVolver.Click += (_, _) => Close();
             btnAtacar.Click += (_, _) => AtacarEntidad();
             btnEscapar.Click += (_, _) => EscaparEntidad();
@@ -193,7 +192,7 @@ namespace NexusWindowsForm
             lblContadorNucleos.BringToFront();
             panelAcciones.SetBounds(0, panelJuego.ClientSize.Height - panelAcciones.Height - lblMensaje.Height, panelJuego.ClientSize.Width, panelAcciones.Height);
             int[] anchos = { 190, 190, 160, 150, 190 };
-            Button[] botones = { btnAnalizar, btnRecuperar, btnUsarCelula, btnPerfil, btnVolver };
+            Button[] botones = { btnAnalizar, btnRecuperar, btnUsarCelula, btnVolver };
             int espacio = 12;
             int total = anchos.Sum() + espacio * (botones.Length - 1);
             int x = Math.Max(12, (panelAcciones.ClientSize.Width - total) / 2);
@@ -912,6 +911,7 @@ namespace NexusWindowsForm
         private void AtacarEntidad()
         {
             if (!encuentroActivo || entidadActual == null || animacionCombate != AnimacionCombate.Ninguna) return;
+            try { System.Media.SystemSounds.Hand.Play(); } catch { /* El juego continúa aunque el audio no esté disponible. */ }
             entidadActual.Vida = Math.Max(0, entidadActual.Vida - 19);
             mostrarRasgunio = entidadActual.EsZombie;
             imgMonstruo.Invalidate();
@@ -1681,8 +1681,50 @@ namespace NexusWindowsForm
             DetenerMusica();
             ActualizarHUD();
             Mensaje(mensaje);
-            MessageBox.Show(this, mensaje, "NEXUS", MessageBoxButtons.OK, icono);
+            if (vida <= 0)
+                MostrarPantallaPerdiste();
+            else
+                MessageBox.Show(this, mensaje, "NEXUS", MessageBoxButtons.OK, icono);
             Close();
+        }
+
+        private void MostrarPantallaPerdiste()
+        {
+            using Form pantalla = new Form
+            {
+                Text = "NEXUS // MISIÓN FALLIDA",
+                StartPosition = FormStartPosition.CenterScreen,
+                FormBorderStyle = FormBorderStyle.FixedSingle,
+                MaximizeBox = false,
+                MinimizeBox = false,
+                ClientSize = new Size(900, 500),
+                BackColor = Color.Black
+            };
+            using Bitmap imagen = new Bitmap(900, 500);
+            using (Graphics g = Graphics.FromImage(imagen))
+            {
+                g.Clear(Color.FromArgb(5, 0, 5));
+                using Pen borde = new Pen(Color.FromArgb(150, 15, 35), 3);
+                g.DrawRectangle(borde, 18, 18, 864, 464);
+                using Font titulo = new Font("Consolas", 66, FontStyle.Bold);
+                using Font subtitulo = new Font("Consolas", 22, FontStyle.Bold);
+                using Font detalle = new Font("Consolas", 13, FontStyle.Regular);
+                using SolidBrush rojo = new SolidBrush(Color.FromArgb(235, 25, 55));
+                using SolidBrush blanco = new SolidBrush(Color.Gainsboro);
+                using StringFormat centrado = new StringFormat { Alignment = StringAlignment.Center };
+                g.DrawString("PERDISTE", titulo, rojo, new RectangleF(30, 145, 840, 100), centrado);
+                g.DrawString("EL CADETE HA CAÍDO", subtitulo, blanco, new RectangleF(30, 260, 840, 45), centrado);
+                g.DrawString("NEXUS SYSTEM  //  CONEXIÓN INTERRUMPIDA", detalle, rojo, new RectangleF(30, 330, 840, 35), centrado);
+            }
+            PictureBox imagenFinal = new PictureBox
+            {
+                Dock = DockStyle.Fill,
+                Image = (Bitmap)imagen.Clone(),
+                SizeMode = PictureBoxSizeMode.StretchImage
+            };
+            pantalla.Controls.Add(imagenFinal);
+            pantalla.ShowDialog(this);
+            imagenFinal.Image?.Dispose();
         }
 
         private void RecuperarEnergia()
@@ -1757,12 +1799,6 @@ namespace NexusWindowsForm
             CrearEntidades();
             ActualizarHUD(); panelMapa.Invalidate();
             Mensaje("CRUCE POR PORTAL COMPLETADO: " + realidad + ". USA W, A, S Y D PARA EXPLORAR.");
-        }
-
-        private void MostrarPerfil()
-        {
-            MessageBox.Show($"CADETE: {nombreExplorador}\nEDAD: {edad}\nVIDA: {vida}/100\nENERGÍA: {energia}/100\nCONEXIÓN: {conexion}/100\nCOORDENADAS: X {jugadorX:0}, Y {jugadorY:0}",
-                "PERFIL DEL CADETE", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private void ActualizarHUD()
