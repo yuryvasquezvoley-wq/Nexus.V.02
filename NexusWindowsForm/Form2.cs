@@ -536,7 +536,7 @@ namespace NexusWindowsForm
             edad = (int)numEdad.Value;
             energia = (int)numEnergia.Value;
             conexion = (int)numConexion.Value;
-            vida = 100; iniciado = false; encuentroActivo = false; naveReparada = false; recuperacionUsada = false; misionTerminada = false;
+            vida = 100; iniciado = true; encuentroActivo = false; naveReparada = false; recuperacionUsada = false; misionTerminada = false;
             celulasVida = 0;
             alertaEnergiaActiva = false;
             alertaVidaActiva = false;
