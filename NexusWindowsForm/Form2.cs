@@ -40,6 +40,7 @@ namespace NexusWindowsForm
         private MediaPlayer? musicaFondo;
         private ReproductorAudioBucle? musicaCinematica;
         private Bitmap? imagenMonstruoHerido, imagenMonstruoCritico;
+        private Bitmap? imagenZombieNormal, imagenZombieTransformado;
         private Bitmap? imagenAtaqueCadete, imagenAtaqueMonstruo, imagenPortal;
         private AnimacionCombate animacionCombate;
         private string realidad = "REALIDAD 102";
@@ -72,6 +73,7 @@ namespace NexusWindowsForm
             public PointF DestinoMovimiento { get; set; }
             public float Velocidad { get; init; } = 1.1f;
             public bool Derrotada { get; set; }
+            public bool EsZombie { get; init; }
         }
 
         public Form2()
@@ -115,6 +117,8 @@ namespace NexusWindowsForm
                     imgMonstruo.Image = null;
                     imagenMonstruoHerido?.Dispose();
                     imagenMonstruoCritico?.Dispose();
+                    imagenZombieNormal?.Dispose();
+                    imagenZombieTransformado?.Dispose();
                     imagenAtaqueCadete?.Dispose();
                     imagenAtaqueMonstruo?.Dispose();
                     imagenPortal?.Dispose();
@@ -194,6 +198,8 @@ namespace NexusWindowsForm
         {
             imagenMonstruoHerido = CargarImagen("DemogorgonHerido.jpg");
             imagenMonstruoCritico = CargarImagen("DemogorgonCritico.jpg");
+            imagenZombieNormal = CargarImagen("Zombie102_Normal.png");
+            imagenZombieTransformado = CargarImagen("Zombie102_Transformado.png");
             imagenAtaqueCadete = CargarImagen("AtaqueCadete.jpg");
             imagenAtaqueMonstruo = CargarImagen("AtaqueMonstruo.jpg");
             imagenPortal = CargarImagen("PortalDimensional.png");
@@ -209,6 +215,17 @@ namespace NexusWindowsForm
 
         private Image ObtenerImagenMonstruo(Entidad entidad)
         {
+            // El zombie y sus dos estados visuales pertenecen solamente a la Realidad 102.
+            if (entidad.EsZombie)
+            {
+                if ((long)entidad.Vida * 100 < (long)entidad.VidaMaxima * 60 &&
+                    imagenZombieTransformado != null)
+                    return imagenZombieTransformado;
+
+                return imagenZombieNormal ?? Properties.Resources.MonstruoMapa;
+            }
+
+            // La Realidad 999 conserva las imágenes originales del monstruo.
             if ((long)entidad.Vida * 100 < (long)entidad.VidaMaxima * 20 && imagenMonstruoCritico != null)
                 return imagenMonstruoCritico;
             if ((long)entidad.Vida * 100 < (long)entidad.VidaMaxima * 50 && imagenMonstruoHerido != null)
@@ -256,7 +273,13 @@ namespace NexusWindowsForm
             return bmp;
         }
 
-        private static Bitmap CrearSpriteMonstruo() => (Bitmap)Properties.Resources.MonstruoMapa.Clone();
+        private Bitmap CrearSpriteMonstruo(bool esZombie)
+        {
+            Image imagen = esZombie && imagenZombieNormal != null
+                ? imagenZombieNormal
+                : Properties.Resources.MonstruoMapa;
+            return new Bitmap(imagen);
+        }
 
         private void CrearEntidades()
         {
@@ -276,19 +299,24 @@ namespace NexusWindowsForm
                 "Mutación infectada", "Depredador dimensional"
             };
 
-            // Ocho monstruos activos por cada realidad.
+            // Ocho entidades móviles por realidad. En 102 son zombies;
+            // en 999 se mantiene el monstruo dimensional original.
+            bool esZombie = realidad == "REALIDAD 102";
             for (int i = 0; i < 8; i++)
             {
                 PointF posicion = ObtenerPosicionSegura(520);
                 int vidaMonstruo = 42 + (i % 4) * 7;
                 entidades.Add(new Entidad
                 {
-                    Nombre = nombres[i], Tipo = tipos[i % tipos.Length],
+                    Nombre = esZombie ? "ZOMBIE ERRANTE" : nombres[i],
+                    Tipo = esZombie ? "Infectado" : tipos[i % tipos.Length],
                     Posicion = posicion,
                     DestinoMovimiento = new PointF(posicion.X + Random.Shared.Next(-240, 241),
                                                    posicion.Y + Random.Shared.Next(-240, 241)),
                     Velocidad = 1.0f + (i % 3) * 0.22f,
-                    Sprite = CrearSpriteMonstruo(), Vida = vidaMonstruo,
+                    Sprite = CrearSpriteMonstruo(esZombie),
+                    EsZombie = esZombie,
+                    Vida = vidaMonstruo,
                     VidaMaxima = vidaMonstruo
                 });
             }
@@ -953,7 +981,18 @@ namespace NexusWindowsForm
             {
                 float ex = entidad.Posicion.X - camaraX, ey = entidad.Posicion.Y - camaraY;
                 if (ex > -70 && ey > -70 && ex < panelMapa.Width + 70 && ey < panelMapa.Height + 70)
-                    g.DrawImage(entidad.Sprite, ex - 35, ey - 33, 70, 66);
+                {
+                    if (entidad.EsZombie)
+                    {
+                        // Pequeño vaivén de pasos para dar sensación de caminata.
+                        float pasoZombie = MathF.Sin(fotograma * 0.24f + entidad.Posicion.X * 0.01f) * 3f;
+                        g.DrawImage(entidad.Sprite, ex - 31, ey - 35 + pasoZombie, 62, 70);
+                    }
+                    else
+                    {
+                        g.DrawImage(entidad.Sprite, ex - 35, ey - 33, 70, 66);
+                    }
+                }
             }
 
             // Cadete astronauta, con dirección y paso animado en pixel art.
@@ -1135,21 +1174,26 @@ namespace NexusWindowsForm
 
         private static void DibujarArbolHawkins(Graphics g, int x, int y)
         {
-            using Pen ramaOscura = new(Color.FromArgb(35, 16, 20), 5);
-            using Pen rama = new(Color.FromArgb(91, 42, 39), 2);
-            Point centro = new(x + 27, y + 27);
-            Point[] tronco = { new(x + 28, y + 50), centro, new(x + 20, y + 12), new(x + 12, y + 4) };
-            g.DrawLines(ramaOscura, tronco);
-            g.DrawLines(rama, tronco);
-            g.DrawLine(ramaOscura, centro, new Point(x + 42, y + 14));
-            g.DrawLine(rama, centro, new Point(x + 42, y + 14));
-            g.DrawLine(ramaOscura, new Point(x + 21, y + 20), new Point(x + 7, y + 16));
-            g.DrawLine(rama, new Point(x + 21, y + 20), new Point(x + 7, y + 16));
-            using SolidBrush hojas = new(Color.FromArgb(95, 48, 25, 32));
-            using SolidBrush rojo = new(Color.FromArgb(112, 89, 35, 39));
-            g.FillEllipse(hojas, x + 2, y + 1, 16, 13);
-            g.FillEllipse(hojas, x + 32, y + 5, 16, 14);
-            g.FillEllipse(rojo, x + 10, y + 2, 8, 6);
+            // Árboles más notorios: tronco grueso, ramas y una copa amplia
+            // para que no parezcan solamente ramas sobre el terreno.
+            using SolidBrush sombra = new(Color.FromArgb(125, 8, 15, 10));
+            using SolidBrush tronco = new(Color.FromArgb(68, 43, 31));
+            using SolidBrush copaOscura = new(Color.FromArgb(25, 53, 34));
+            using SolidBrush copaMedia = new(Color.FromArgb(43, 82, 43));
+            using SolidBrush copaLuz = new(Color.FromArgb(76, 105, 51));
+            using Pen rama = new(Color.FromArgb(55, 37, 28), 4);
+            g.FillEllipse(sombra, x + 3, y + 39, 55, 16);
+            g.FillRectangle(tronco, x + 24, y + 29, 13, 25);
+            g.DrawLine(rama, x + 30, y + 38, x + 13, y + 18);
+            g.DrawLine(rama, x + 30, y + 37, x + 48, y + 15);
+            g.FillEllipse(copaOscura, x + 2, y + 2, 58, 43);
+            g.FillEllipse(copaMedia, x + 7, y - 2, 24, 27);
+            g.FillEllipse(copaMedia, x + 29, y + 1, 27, 26);
+            g.FillEllipse(copaMedia, x + 13, y + 18, 37, 25);
+            g.FillEllipse(copaLuz, x + 12, y + 5, 14, 10);
+            g.FillEllipse(copaLuz, x + 36, y + 12, 12, 9);
+            using Pen borde = new(Color.FromArgb(150, 16, 37, 25), 2);
+            g.DrawEllipse(borde, x + 2, y + 2, 58, 43);
         }
 
         private void DibujarArbol(Graphics g, int x, int y)
