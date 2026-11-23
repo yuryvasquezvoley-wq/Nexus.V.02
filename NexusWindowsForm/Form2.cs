@@ -10,7 +10,16 @@ namespace NexusWindowsForm
     {
         private readonly Color rojo = Color.FromArgb(230, 20, 48);
         private readonly List<Entidad> entidades = new();
-        private readonly List<PointF> celdasEnergia = new() { new(2700, 2500), new(2300, 2400), new(3100, 2850), new(1900, 3000) };
+        private readonly Dictionary<string, List<PointF>> garrafasEnergia = new(StringComparer.Ordinal)
+        {
+            ["REALIDAD 102"] = new() { new(1700, 1200), new(3900, 1700), new(4200, 3600), new(1100, 4100) },
+            ["REALIDAD 999"] = new() { new(900, 1200), new(1900, 2800), new(3300, 3900), new(4500, 1500) }
+        };
+        private readonly Dictionary<string, List<PointF>> celulasMedicas = new(StringComparer.Ordinal)
+        {
+            ["REALIDAD 102"] = new() { new(2600, 2850), new(3600, 3000), new(1250, 1650) },
+            ["REALIDAD 999"] = new() { new(700, 3200), new(2450, 900), new(4200, 4150) }
+        };
         private readonly List<NucleoDimensional> nucleos = new()
         {
             new("102-A", "REALIDAD 102", new PointF(2200, 2600)),
@@ -38,7 +47,11 @@ namespace NexusWindowsForm
         private bool iniciado, encuentroActivo, naveReparada, recuperacionUsada, musicaActiva, misionTerminada;
         private bool portalAvisoMostrado;
         private MediaPlayer? musicaFondo;
+        private MediaPlayer? sonidoPasos;
+        private MediaPlayer? sonidoAlerta;
         private ReproductorAudioBucle? musicaCinematica;
+        private bool alertaEnergiaActiva, alertaVidaActiva;
+        private int ticksSonidoPaso;
         private Bitmap? imagenMonstruoHerido, imagenMonstruoCritico;
         private Bitmap? imagenZombieNormal, imagenZombieTransformado;
         private Bitmap? imagenAtaqueCadete, imagenAtaqueMonstruo, imagenPortal;
@@ -47,7 +60,7 @@ namespace NexusWindowsForm
         private Entidad? entidadActual;
         private int fotograma;
         private int ticksMovimiento;
-        private int celulasEnergia;
+        private int celulasVida;
         private int direccionJugador = 4;
         private float resistencia = 100f;
         private int resistenciaMostrada = -1;
@@ -108,6 +121,10 @@ namespace NexusWindowsForm
                 FormClosing += (_, _) =>
                 {
                     DetenerMusica();
+                    sonidoPasos?.Stop();
+                    sonidoAlerta?.Stop();
+                    sonidoPasos?.Close();
+                    sonidoAlerta?.Close();
                     musicaCinematica?.Dispose();
                     relojMovimiento.Stop();
                     relojEscena.Stop();
@@ -128,6 +145,7 @@ namespace NexusWindowsForm
                     relojAnimacionCombate.Dispose();
                 };
                 CargarImagenesCombate();
+                InicializarEfectosSonido();
                 relojAnimacionCombate.Interval = 500;
                 relojAnimacionCombate.Tick += (_, _) => CompletarAnimacionCombate();
                 CrearEscenasPixelArt();
@@ -189,6 +207,76 @@ namespace NexusWindowsForm
             camaraX = jugadorX - panelMapa.ClientSize.Width / 2f;
             camaraY = jugadorY - panelMapa.ClientSize.Height / 2f;
             panelMapa.Invalidate();
+        }
+
+        private void InicializarEfectosSonido()
+        {
+            string carpeta = Path.Combine(Path.GetTempPath(), "NEXUS_V02_Audio");
+            Directory.CreateDirectory(carpeta);
+            string pasos = Path.Combine(carpeta, "pasos.wav");
+            string alerta = Path.Combine(carpeta, "alerta.wav");
+
+            if (!File.Exists(pasos))
+                CrearWavEfecto(pasos, 0.12, t =>
+                {
+                    double envolvente = Math.Exp(-t * 24);
+                    double golpe = Math.Sin(2 * Math.PI * (95 - 25 * t) * t);
+                    double ruido = Random.Shared.NextDouble() * 2 - 1;
+                    return (golpe * 0.62 + ruido * 0.12) * envolvente;
+                });
+
+            if (!File.Exists(alerta))
+                CrearWavEfecto(alerta, 0.62, t =>
+                {
+                    bool pulso = (t < 0.16 || (t > 0.29 && t < 0.45));
+                    if (!pulso) return 0;
+                    double frecuencia = t < 0.16 ? 880 : 660;
+                    double local = t < 0.16 ? t : t - 0.29;
+                    double envolvente = Math.Min(1, local * 35) * Math.Max(0, 1 - local * 5);
+                    return Math.Sin(2 * Math.PI * frecuencia * local) * 0.42 * envolvente;
+                });
+
+            sonidoPasos = new MediaPlayer { Volume = 0.34 };
+            sonidoPasos.Open(new Uri(pasos, UriKind.Absolute));
+            sonidoAlerta = new MediaPlayer { Volume = 0.68 };
+            sonidoAlerta.Open(new Uri(alerta, UriKind.Absolute));
+        }
+
+        private static void CrearWavEfecto(string ruta, double duracion, Func<double, double> formaOnda)
+        {
+            const int frecuenciaMuestreo = 22050;
+            int cantidadMuestras = (int)(frecuenciaMuestreo * duracion);
+            using FileStream archivo = File.Create(ruta);
+            using BinaryWriter escritor = new(archivo);
+            int bytesDatos = cantidadMuestras * sizeof(short);
+
+            escritor.Write(System.Text.Encoding.ASCII.GetBytes("RIFF"));
+            escritor.Write(36 + bytesDatos);
+            escritor.Write(System.Text.Encoding.ASCII.GetBytes("WAVE"));
+            escritor.Write(System.Text.Encoding.ASCII.GetBytes("fmt "));
+            escritor.Write(16);
+            escritor.Write((short)1);
+            escritor.Write((short)1);
+            escritor.Write(frecuenciaMuestreo);
+            escritor.Write(frecuenciaMuestreo * sizeof(short));
+            escritor.Write((short)sizeof(short));
+            escritor.Write((short)16);
+            escritor.Write(System.Text.Encoding.ASCII.GetBytes("data"));
+            escritor.Write(bytesDatos);
+
+            for (int i = 0; i < cantidadMuestras; i++)
+            {
+                double t = (double)i / frecuenciaMuestreo;
+                short muestra = (short)(Math.Clamp(formaOnda(t), -1, 1) * short.MaxValue);
+                escritor.Write(muestra);
+            }
+        }
+
+        private static void ReproducirEfecto(MediaPlayer? reproductor)
+        {
+            if (reproductor == null) return;
+            reproductor.Position = TimeSpan.Zero;
+            reproductor.Play();
         }
 
         private void CrearEscenasPixelArt()
@@ -442,6 +530,10 @@ namespace NexusWindowsForm
             energia = (int)numEnergia.Value;
             conexion = (int)numConexion.Value;
             vida = 100; iniciado = true; encuentroActivo = false; naveReparada = false; recuperacionUsada = false; misionTerminada = false;
+            celulasVida = 0;
+            alertaEnergiaActiva = false;
+            alertaVidaActiva = false;
+            ticksSonidoPaso = 0;
             btnRecuperar.Enabled = true;
             btnRecuperar.Text = "RECUPERAR ENERGÍA";
             nucleosRecolectados.Clear();
@@ -539,6 +631,7 @@ namespace NexusWindowsForm
                 ActualizarPortalCercano();
                 bool inventarioCambio = ActualizarNucleosCercanos();
                 inventarioCambio |= RecolectarCelulaCercana();
+                inventarioCambio |= RecolectarGarrafaCercana();
                 if (inventarioCambio) ActualizarHUD();
                 DetectarEntidad();
                 if (monstruosEnMovimiento) panelMapa.Invalidate();
@@ -556,6 +649,12 @@ namespace NexusWindowsForm
             float siguienteY = Math.Clamp(jugadorY + dy * velocidad, 80, 4920);
             if (!EstaDentroDeObstaculo(new PointF(jugadorX, siguienteY), 13)) jugadorY = siguienteY;
             ticksMovimiento++;
+            ticksSonidoPaso++;
+            if (ticksSonidoPaso >= 20)
+            {
+                ticksSonidoPaso = 0;
+                ReproducirEfecto(sonidoPasos);
+            }
             if (ticksMovimiento % 30 == 0)
             {
                 energia = Math.Max(0, energia - 1);
@@ -571,6 +670,7 @@ namespace NexusWindowsForm
             ActualizarPortalCercano();
             ActualizarNucleosCercanos();
             RecolectarCelulaCercana();
+            RecolectarGarrafaCercana();
             DetectarEntidad();
             ActualizarHUD();
             panelMapa.Invalidate();
@@ -757,11 +857,26 @@ namespace NexusWindowsForm
 
         private bool RecolectarCelulaCercana()
         {
-            int indice = celdasEnergia.FindIndex(p => Math.Abs(p.X - jugadorX) < 34 && Math.Abs(p.Y - jugadorY) < 34);
+            if (!celulasMedicas.TryGetValue(realidad, out List<PointF>? objetos)) return false;
+            int indice = objetos.FindIndex(p => Math.Abs(p.X - jugadorX) < 38 && Math.Abs(p.Y - jugadorY) < 38);
             if (indice < 0) return false;
-            celdasEnergia.RemoveAt(indice);
-            celulasEnergia++;
-            Mensaje("OBJETO RECOGIDO: CÉLULA DE ENERGÍA.");
+
+            objetos.RemoveAt(indice);
+            celulasVida++;
+            Mensaje("OBJETO RECOGIDO: CÉLULA MÉDICA. USA 'USAR CÉLULA' PARA RECUPERAR VIDA.");
+            return true;
+        }
+
+        private bool RecolectarGarrafaCercana()
+        {
+            if (!garrafasEnergia.TryGetValue(realidad, out List<PointF>? objetos)) return false;
+            int indice = objetos.FindIndex(p => Math.Abs(p.X - jugadorX) < 42 && Math.Abs(p.Y - jugadorY) < 42);
+            if (indice < 0) return false;
+
+            objetos.RemoveAt(indice);
+            energia = Math.Min(100, energia + 60);
+            ActualizarHUD();
+            Mensaje("GARRAFA DE ENERGÍA RECOGIDA: +60 ENERGÍA.");
             return true;
         }
 
@@ -887,8 +1002,16 @@ namespace NexusWindowsForm
             animacionCombate = AnimacionCombate.Ninguna;
             if (entidadActual != null)
                 entidadActual.Posicion = new PointF(jugadorX + 220, jugadorY + 180);
+
+            energia = Math.Max(0, energia - 10);
             entidadActual = null; encuentroActivo = false; panelEncuentro.Visible = false;
-            Mensaje("ESCAPASTE. LA ENTIDAD SIGUE EN EL SECTOR.");
+            ActualizarHUD();
+            if (energia == 0)
+            {
+                FinalizarMision("MISIÓN FALLIDA: EL CADETE SE QUEDÓ SIN ENERGÍA.", MessageBoxIcon.Error);
+                return;
+            }
+            Mensaje("ESCAPASTE. PERDISTE 10 PUNTOS DE ENERGÍA. LA ENTIDAD SIGUE EN EL SECTOR.");
             panelMapa.Focus();
         }
 
@@ -1024,13 +1147,36 @@ namespace NexusWindowsForm
 
             DibujarPortal(g);
 
-            foreach (PointF celda in celdasEnergia)
+            if (garrafasEnergia.TryGetValue(realidad, out List<PointF>? garrafas))
+            foreach (PointF garrafa in garrafas)
             {
-                float cx = celda.X - camaraX, cy = celda.Y - camaraY;
-                using SolidBrush energiaBrush = new(Color.Gold);
-                g.FillRectangle(energiaBrush, cx - 8, cy - 8, 16, 16);
-                using Pen energiaPen = new(Color.OrangeRed, 2);
-                g.DrawRectangle(energiaPen, cx - 11, cy - 11, 22, 22);
+                float gx = garrafa.X - camaraX, gy = garrafa.Y - camaraY;
+                using SolidBrush sombraGarrafa = new(Color.FromArgb(130, 0, 0, 0));
+                using SolidBrush cuerpoGarrafa = new(Color.FromArgb(38, 116, 91));
+                using SolidBrush brilloGarrafa = new(Color.FromArgb(115, 225, 174));
+                using Pen bordeGarrafa = new(Color.FromArgb(190, 15, 48, 39), 2);
+                g.FillEllipse(sombraGarrafa, gx - 17, gy + 14, 34, 8);
+                g.FillRectangle(cuerpoGarrafa, gx - 11, gy - 13, 22, 28);
+                g.FillRectangle(cuerpoGarrafa, gx - 6, gy - 19, 12, 7);
+                g.FillRectangle(brilloGarrafa, gx - 7, gy - 9, 4, 17);
+                g.DrawRectangle(bordeGarrafa, gx - 11, gy - 13, 22, 28);
+                using Pen simboloEnergia = new(Color.FromArgb(245, 235, 220, 90), 3);
+                g.DrawLine(simboloEnergia, gx + 3, gy - 7, gx - 2, gy + 1);
+                g.DrawLine(simboloEnergia, gx - 2, gy + 1, gx + 3, gy + 1);
+                g.DrawLine(simboloEnergia, gx + 3, gy + 1, gx - 2, gy + 10);
+            }
+
+            if (celulasMedicas.TryGetValue(realidad, out List<PointF>? celulas))
+            foreach (PointF celula in celulas)
+            {
+                float cx = celula.X - camaraX, cy = celula.Y - camaraY;
+                using SolidBrush baseCelula = new(Color.FromArgb(220, 184, 45, 58));
+                using SolidBrush cruzCelula = new(Color.FromArgb(245, 245, 245));
+                using Pen bordeCelula = new(Color.FromArgb(245, 75, 15, 25), 2);
+                g.FillEllipse(baseCelula, cx - 13, cy - 13, 26, 26);
+                g.DrawEllipse(bordeCelula, cx - 13, cy - 13, 26, 26);
+                g.FillRectangle(cruzCelula, cx - 3, cy - 9, 6, 18);
+                g.FillRectangle(cruzCelula, cx - 9, cy - 3, 18, 6);
             }
 
             foreach (Entidad entidad in entidades.Where(z => !z.Derrotada))
@@ -1578,11 +1724,13 @@ namespace NexusWindowsForm
 
         private void UsarCelula()
         {
-            if (celulasEnergia <= 0) { Mensaje("NO TIENES CÉLULAS DE ENERGÍA."); return; }
-            celulasEnergia--;
-            energia = Math.Min(100, energia + 30);
+            if (celulasVida <= 0) { Mensaje("NO TIENES CÉLULAS MÉDICAS."); return; }
+            if (vida >= 100) { Mensaje("LA VIDA YA ESTÁ AL MÁXIMO."); return; }
+
+            celulasVida--;
+            vida = Math.Min(100, vida + 30);
             ActualizarHUD();
-            Mensaje("CÉLULA UTILIZADA. +30 ENERGÍA.");
+            Mensaje("CÉLULA MÉDICA UTILIZADA: +30 PUNTOS DE VIDA.");
         }
 
         private void CambiarRealidad(string nuevaRealidad)
@@ -1617,7 +1765,7 @@ namespace NexusWindowsForm
             lblConexion.Text = $"CONEXIÓN: {conexion}/100";
             lblPosicion.Text = $"X: {(int)jugadorX}  Y: {(int)jugadorY}  //  {realidad}";
             lblTituloMapa.Text = "ZONA DE EXPLORACIÓN // " + realidad;
-            lblInventario.Text = $"CÉLULAS: {celulasEnergia}\r\nNÚCLEOS: {nucleosRecolectados.Count}/{nucleosNecesarios}";
+            lblInventario.Text = $"CÉLULAS MÉDICAS: {celulasVida}\r\nNÚCLEOS: {nucleosRecolectados.Count}/{nucleosNecesarios}";
             lblContadorNucleos.Text = naveReparada
                 ? $"NAVE LISTA: {nucleosRecolectados.Count}/{nucleosNecesarios}"
                 : $"NÚCLEOS: {nucleosRecolectados.Count}/{nucleosNecesarios}";
@@ -1627,6 +1775,23 @@ namespace NexusWindowsForm
             barraVida.Value = Math.Clamp(vida, 0, 100);
             barraEnergia.Value = Math.Clamp(energia, 0, 100);
             barraConexion.Value = Math.Clamp(conexion, 0, 100);
+
+            // Las alertas se reproducen una sola vez al cruzar el umbral del 20%.
+            if (energia < 20 && !alertaEnergiaActiva)
+            {
+                alertaEnergiaActiva = true;
+                ReproducirEfecto(sonidoAlerta);
+                Mensaje("ALERTA: ENERGÍA POR DEBAJO DEL 20%.");
+            }
+            else if (energia >= 25) alertaEnergiaActiva = false;
+
+            if (vida < 20 && !alertaVidaActiva)
+            {
+                alertaVidaActiva = true;
+                ReproducirEfecto(sonidoAlerta);
+                Mensaje("ALERTA: VIDA POR DEBAJO DEL 20%.");
+            }
+            else if (vida >= 25) alertaVidaActiva = false;
         }
 
         private void Mensaje(string mensaje)
