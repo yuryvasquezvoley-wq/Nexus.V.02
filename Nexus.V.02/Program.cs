@@ -332,6 +332,7 @@ namespace NEXUS
         private string nombre;
         private int vida;
         private int ataque;
+        public bool EsZombie { get; private set; }
 
         public string Nombre
         {
@@ -348,9 +349,10 @@ namespace NEXUS
             get { return ataque; }
         }
 
-        public Bicho()
+        public Bicho(bool esZombie = false)
         {
-            nombre = "BICHO DIMENSIONAL";
+            EsZombie = esZombie;
+            nombre = esZombie ? "ZOMBIE - REALIDAD 102" : "BICHO DIMENSIONAL";
             vida = 30;
             ataque = 10;
         }
@@ -374,6 +376,8 @@ namespace NEXUS
     {
         private string nombre;
         private string[,] mapa;
+        private int zombieX = 5;
+        private int zombieY = 0;
 
         public string Nombre
         {
@@ -398,6 +402,28 @@ namespace NEXUS
                 { ".", "#", ".", ".", "+", ".", "*", ".", ".", "." },
                 { ".", ".", ".", ".", ".", ".", ".", ".", "O", "." }
             };
+
+            // Decoración adicional exclusiva de la Realidad 102.
+            // La Realidad 999 conserva exactamente su mapa anterior.
+            if (nombre == "REALIDAD 102")
+            {
+                int[,] arboles = { { 1, 1 }, { 4, 0 }, { 8, 1 }, { 2, 4 }, { 7, 5 }, { 1, 8 } };
+                int[,] casas = { { 3, 1 }, { 7, 2 }, { 0, 6 }, { 8, 7 } };
+
+                for (int i = 0; i < arboles.GetLength(0); i++)
+                    if (mapa[arboles[i, 0], arboles[i, 1]] == ".")
+                        mapa[arboles[i, 0], arboles[i, 1]] = "T";
+
+                for (int i = 0; i < casas.GetLength(0); i++)
+                    if (mapa[casas[i, 0], casas[i, 1]] == ".")
+                        mapa[casas[i, 0], casas[i, 1]] = "H";
+
+                for (int x = 0; x < 10; x++)
+                {
+                    if (mapa[3, x] == ".") mapa[3, x] = "=";
+                    if (mapa[7, x] == ".") mapa[7, x] = "=";
+                }
+            }
 
             // Coloca el portal de extracción en una casilla libre aleatoria.
             // Nunca aparece debajo del cadete ni sobre otro elemento del mapa.
@@ -425,6 +451,36 @@ namespace NEXUS
             mapa[y, x] = elemento;
         }
 
+        public void MoverZombie(int jugadorX, int jugadorY)
+        {
+            if (Nombre != "REALIDAD 102")
+                return;
+
+            int[,] direcciones = { { 0, -1 }, { 0, 1 }, { -1, 0 }, { 1, 0 } };
+            int inicio = Random.Shared.Next(0, 4);
+
+            for (int i = 0; i < 4; i++)
+            {
+                int direccion = (inicio + i) % 4;
+                int nuevoX = zombieX + direcciones[direccion, 0];
+                int nuevoY = zombieY + direcciones[direccion, 1];
+
+                if (nuevoX < 0 || nuevoX >= 10 || nuevoY < 0 || nuevoY >= 10)
+                    continue;
+
+                if (nuevoX == jugadorX && nuevoY == jugadorY)
+                    continue;
+
+                string terreno = mapa[nuevoY, nuevoX];
+                if (terreno == "." || terreno == "T" || terreno == "H" || terreno == "=")
+                {
+                    zombieX = nuevoX;
+                    zombieY = nuevoY;
+                    return;
+                }
+            }
+        }
+
         public void MostrarMapa(int jugadorX, int jugadorY)
         {
             Console.ForegroundColor = ConsoleColor.Red;
@@ -450,10 +506,27 @@ namespace NEXUS
                         continue;
                     }
 
+                    if (Nombre == "REALIDAD 102" &&
+                        fila == zombieY && columna == zombieX)
+                    {
+                        Console.ForegroundColor = ConsoleColor.DarkGreen;
+                        Console.Write("[Z] ");
+                        continue;
+                    }
+
                     string elemento =
                         mapa[fila, columna];
 
-                    if (elemento == "*")
+                    if (elemento == "T")
+                        Console.ForegroundColor = ConsoleColor.Green;
+
+                    else if (elemento == "H")
+                        Console.ForegroundColor = ConsoleColor.Yellow;
+
+                    else if (elemento == "=")
+                        Console.ForegroundColor = ConsoleColor.DarkGray;
+
+                    else if (elemento == "*")
                         Console.ForegroundColor =
                             ConsoleColor.White;
 
@@ -496,6 +569,9 @@ namespace NEXUS
                         "#" => "[X] ",
                         "O" => "[O] ",
                         "R" => "[R] ",
+                        "T" => "♣♣  ",
+                        "H" => "⌂   ",
+                        "=" => "════",
                         _ => "??  "
                     };
                     Console.Write(baldosa);
@@ -513,7 +589,9 @@ namespace NEXUS
 
             Console.WriteLine();
             Console.WriteLine("@ Cadete   [E] Extracción   [+] Recurso   [!] Anomalía");
-            Console.WriteLine("[X] Peligro   [R] Zona de anomalía   [O] Núcleo   [E] Portal de extracción   :: Ruinas");
+            Console.WriteLine("[X] Peligro   [R] Anomalía   [O] Núcleo   ♣♣ Árbol   ⌂ Casa   ════ Calle");
+            if (Nombre == "REALIDAD 102")
+                Console.WriteLine("[Z] Zombie en movimiento");
         }
     }
 
@@ -1027,6 +1105,9 @@ namespace NEXUS
 
                 ProcesarCasilla();
 
+                // El zombie se desplaza únicamente en la Realidad 102.
+                realidadActual.MoverZombie(posicionX, posicionY);
+
                 if (explorador.Vida <= 0)
                 {
                     Derrota();
@@ -1199,8 +1280,8 @@ namespace NEXUS
 
         private void EncontrarBicho()
         {
-            Bicho bicho =
-                new Bicho();
+            bool esZombie = realidadActual.Nombre == "REALIDAD 102";
+            Bicho bicho = new Bicho(esZombie);
             CombateBicho(bicho);
         }
 
@@ -1210,7 +1291,11 @@ namespace NEXUS
             while (bicho.Vida > 0 &&
                    explorador.Vida > 0)
             {
-                var decision = NexusWindowsForm.BattleDialog.Show(explorador.Vida, bicho.Vida);
+                var decision = NexusWindowsForm.BattleDialog.Show(
+                    explorador.Vida,
+                    bicho.Vida,
+                    bicho.EsZombie
+                );
                 if (decision == System.Windows.Forms.DialogResult.Abort)
                 {
                     Console.WriteLine(">> HAS ESCAPADO DEL BICHO.");
