@@ -39,7 +39,7 @@ namespace NexusWindowsForm
         private PictureBox imgContadorNucleos = null!;
         private Label lblContadorNucleos = null!;
         private Panel panelAcciones = null!;
-        private Panel panelEncuentro = null!;
+        private BufferedPanel panelEncuentro = null!;
         private PictureBox imgMonstruo = null!;
         private Label lblMonstruo = null!;
         private Label lblDetalleMonstruo = null!;
@@ -114,7 +114,7 @@ namespace NexusWindowsForm
             btnVolver = new Button();
             lblMensaje = new Label();
             panelAcciones = new Panel();
-            panelEncuentro = new Panel();
+            panelEncuentro = new BufferedPanel();
             imgMonstruo = new PictureBox();
             lblMonstruo = new Label();
             lblDetalleMonstruo = new Label();
@@ -396,6 +396,7 @@ namespace NexusWindowsForm
             panelEncuentro.Size = new Size(620, 420);
             panelEncuentro.Location = new Point(320, 170);
             panelEncuentro.Visible = false;
+            panelEncuentro.TabStop = true;
             lblMonstruo.Text = "ENTIDAD DETECTADA";
             lblMonstruo.Font = new Font("Consolas", 18F, FontStyle.Bold);
             lblMonstruo.ForeColor = Color.FromArgb(255, 35, 55);
@@ -406,6 +407,7 @@ namespace NexusWindowsForm
             imgMonstruo.Size = new Size(556, 240);
             imgMonstruo.SizeMode = PictureBoxSizeMode.Zoom;
             imgMonstruo.BackColor = Color.Black;
+            imgMonstruo.Visible = false;
             lblDetalleMonstruo.Location = new Point(12, 289);
             lblDetalleMonstruo.Size = new Size(596, 22);
             lblDetalleMonstruo.Font = new Font("Consolas", 10F, FontStyle.Bold);
@@ -424,8 +426,8 @@ namespace NexusWindowsForm
             barraVidaCadeteCombate.Size = new Size(480, 18);
             barraVidaCadeteCombate.Maximum = 100;
             barraVidaCadeteCombate.ForeColor = Color.FromArgb(226, 39, 67);
-            ConfigurarBotonAccion(btnAtacar, "ATACAR", 135, 377, 160);
-            ConfigurarBotonAccion(btnEscapar, "ESCAPAR", 325, 377, 160);
+            ConfigurarBotonAccion(btnAtacar, "DISPARAR  [R]", 135, 377, 160);
+            ConfigurarBotonAccion(btnEscapar, "ESCAPAR  [ESC]", 325, 377, 160);
             panelEncuentro.Controls.AddRange(new Control[] { lblMonstruo, imgMonstruo, lblDetalleMonstruo, barraVidaMonstruo, lblVidaCadeteCombate, barraVidaCadeteCombate, btnAtacar, btnEscapar });
 
             panelJuego.Controls.Add(panelMapaContenedor);

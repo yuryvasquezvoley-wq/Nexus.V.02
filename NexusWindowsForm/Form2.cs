@@ -36,7 +36,6 @@ namespace NexusWindowsForm
         private readonly HashSet<Keys> teclas = new();
         private readonly System.Windows.Forms.Timer relojMovimiento = new();
         private readonly System.Windows.Forms.Timer relojEscena = new();
-        private readonly System.Windows.Forms.Timer relojAnimacionCombate = new();
         private readonly Bitmap[,] spritesCadete = new Bitmap[4, 2];
         private const int nucleosNecesarios = 4;
 
@@ -55,8 +54,8 @@ namespace NexusWindowsForm
         private int ticksSonidoPaso;
         private Bitmap? imagenMonstruoHerido, imagenMonstruoCritico;
         private Bitmap? imagenZombieNormal, imagenZombieTransformado;
-        private Bitmap? imagenAtaqueCadete, imagenAtaqueMonstruo, imagenPortal;
-        private AnimacionCombate animacionCombate;
+        private Bitmap? imagenPortal;
+        private Bitmap? imagenArenaCombate, imagenCadeteCombate1, imagenCadeteCombate2, imagenMonstruoArena;
         private string realidad = "REALIDAD 102";
         private Entidad? entidadActual;
         private int fotograma;
@@ -66,24 +65,28 @@ namespace NexusWindowsForm
         private float resistencia = 100f;
         private int resistenciaMostrada = -1;
         private bool jugadorCaminando;
-        private bool mostrarRasgunio;
+        private readonly List<ProyectilCombate> proyectilesCombate = new();
+        private PointF posicionCadeteCombate, posicionMonstruoCombate;
+        private DateTime monstruoAturdidoHasta, siguienteAtaqueMonstruo, finAnticipacionMonstruo;
+        private DateTime finGolpeMonstruo, cadeteAturdidoHasta, saltoHasta, siguienteDisparo;
+        private bool mirandoDerecha = true, ataqueMonstruoPendiente;
+
+        private sealed class ProyectilCombate(float x, float y, int direccion)
+        {
+            public float X = x;
+            public float Y = y;
+            public int Direccion = direccion;
+        }
 
         private sealed record NucleoDimensional(string Id, string Realidad, PointF Posicion);
-
-        private enum AnimacionCombate
-        {
-            Ninguna,
-            AtaqueCadete,
-            AtaqueMonstruo
-        }
 
         private sealed class Entidad
         {
             public string Nombre { get; init; } = "";
             public string Tipo { get; init; } = "";
             public PointF Posicion { get; set; }
-            public int Vida { get; set; } = 60;
-            public int VidaMaxima { get; init; } = 60;
+            public int Vida { get; set; } = 200;
+            public int VidaMaxima { get; init; } = 200;
             public Bitmap Sprite { get; init; } = null!;
             public PointF DestinoMovimiento { get; set; }
             public float Velocidad { get; init; } = 1.1f;
@@ -129,7 +132,6 @@ namespace NexusWindowsForm
                     musicaCinematica?.Dispose();
                     relojMovimiento.Stop();
                     relojEscena.Stop();
-                    relojAnimacionCombate.Stop();
                 };
                 FormClosed += (_, _) =>
                 {
@@ -138,22 +140,21 @@ namespace NexusWindowsForm
                     imagenMonstruoCritico?.Dispose();
                     imagenZombieNormal?.Dispose();
                     imagenZombieTransformado?.Dispose();
-                    imagenAtaqueCadete?.Dispose();
-                    imagenAtaqueMonstruo?.Dispose();
                     imagenPortal?.Dispose();
+                    imagenArenaCombate?.Dispose();
+                    imagenCadeteCombate1?.Dispose();
+                    imagenCadeteCombate2?.Dispose();
+                    imagenMonstruoArena?.Dispose();
                     relojMovimiento.Dispose();
                     relojEscena.Dispose();
-                    relojAnimacionCombate.Dispose();
                 };
                 CargarImagenesCombate();
                 InicializarEfectosSonido();
-                relojAnimacionCombate.Interval = 500;
-                relojAnimacionCombate.Tick += (_, _) => CompletarAnimacionCombate();
                 CrearEscenasPixelArt();
                 CrearEntidades();
                 CrearSpritesCadete();
                 panelMapa.Paint += DibujarMundo;
-                imgMonstruo.Paint += DibujarRasgunio;
+                panelEncuentro.Paint += DibujarArenaCombate;
                 panelMapa.Resize += (_, _) => panelMapa.Invalidate();
                 relojMovimiento.Interval = 16;
                 relojMovimiento.Tick += (_, _) => ActualizarMovimiento();
@@ -298,9 +299,11 @@ namespace NexusWindowsForm
             imagenMonstruoCritico = CargarImagen("DemogorgonCritico.jpg");
             imagenZombieNormal = CargarImagen("Zombie102_Normal.png");
             imagenZombieTransformado = CargarImagen("Zombie102_Transformado.png");
-            imagenAtaqueCadete = CargarImagen("AtaqueCadete.jpg");
-            imagenAtaqueMonstruo = CargarImagen("AtaqueMonstruo.jpg");
             imagenPortal = CargarImagen("PortalDimensional.png");
+            imagenArenaCombate = CargarImagen("ArenaCombateHawkins.jpg");
+            imagenCadeteCombate1 = CargarImagen("CadeteArena1.png");
+            imagenCadeteCombate2 = CargarImagen("CadeteArena2.png");
+            imagenMonstruoArena = CargarImagen("DemogorgonArena.png");
         }
 
         private static Bitmap? CargarImagen(string nombre)
@@ -403,7 +406,7 @@ namespace NexusWindowsForm
             for (int i = 0; i < 8; i++)
             {
                 PointF posicion = ObtenerPosicionSegura(520);
-                int vidaMonstruo = 42 + (i % 4) * 7;
+                const int vidaMonstruo = 200;
                 entidades.Add(new Entidad
                 {
                     Nombre = esZombie ? "ZOMBIE ERRANTE" : nombres[i],
@@ -567,9 +570,42 @@ namespace NexusWindowsForm
             if (e.KeyCode is Keys.ShiftKey or Keys.LShiftKey or Keys.RShiftKey)
             {
                 teclas.Add(e.KeyCode);
+                e.Handled = true;
+                e.SuppressKeyPress = true;
                 return;
             }
-            if (e.KeyCode == Keys.Escape && encuentroActivo) { EscaparEntidad(); e.Handled = true; return; }
+            if (encuentroActivo)
+            {
+                if (e.KeyCode == Keys.Escape)
+                {
+                    EscaparEntidad();
+                    e.Handled = true;
+                    e.SuppressKeyPress = true;
+                    return;
+                }
+                if (e.KeyCode == Keys.Space)
+                {
+                    if (teclas.Add(Keys.Space)) IniciarSaltoCombate();
+                    e.Handled = true;
+                    e.SuppressKeyPress = true;
+                    return;
+                }
+                if (e.KeyCode == Keys.R)
+                {
+                    if (teclas.Add(Keys.R)) DispararProyectilCombate();
+                    e.Handled = true;
+                    e.SuppressKeyPress = true;
+                    return;
+                }
+                if (e.KeyCode is Keys.W or Keys.A or Keys.S or Keys.D or Keys.Up or Keys.Down or Keys.Left or Keys.Right)
+                {
+                    teclas.Add(e.KeyCode);
+                    e.Handled = true;
+                    e.SuppressKeyPress = true;
+                }
+                return;
+            }
+            if (e.KeyCode == Keys.Escape) { Close(); e.Handled = true; return; }
             if (e.KeyCode == Keys.E && !encuentroActivo)
             {
                 IntentarCruzarPortal();
@@ -586,6 +622,11 @@ namespace NexusWindowsForm
         private void Form2_KeyUp(object? sender, KeyEventArgs e)
         {
             teclas.Remove(e.KeyCode);
+            if (encuentroActivo)
+            {
+                panelEncuentro.Invalidate();
+                return;
+            }
             if (teclas.Count == 0 && jugadorCaminando)
             {
                 jugadorCaminando = false;
@@ -617,13 +658,16 @@ namespace NexusWindowsForm
         private void ActualizarMovimiento()
         {
             if (!iniciado || !panelJuego.Visible) return;
-            bool monstruosEnMovimiento = ActualizarMonstruos();
             if (encuentroActivo)
             {
-                ActualizarResistencia(false);
-                if (monstruosEnMovimiento) panelMapa.Invalidate();
+                bool moviendoEnCombate = teclas.Any(k => k is Keys.W or Keys.A or Keys.S or Keys.D or
+                    Keys.Up or Keys.Down or Keys.Left or Keys.Right);
+                bool correrEnCombate = moviendoEnCombate && TeclaShiftPresionada() && resistencia > 0 && energia > 0;
+                ActualizarResistencia(correrEnCombate);
+                ActualizarArenaCombate();
                 return;
             }
+            bool monstruosEnMovimiento = ActualizarMonstruos();
 
             float dx = 0, dy = 0;
             if (teclas.Contains(Keys.W) || teclas.Contains(Keys.Up)) dy--;
@@ -943,121 +987,322 @@ namespace NexusWindowsForm
                 EstaEnRadioDeInteraccion(e.Posicion, 88));
             if (encontrada == null) return;
             encuentroActivo = true; entidadActual = encontrada; teclas.Clear();
-            lblMonstruo.Text = encontrada.Nombre;
+            lblMonstruo.Text = $"ENCUENTRO // {encontrada.Nombre}";
             lblDetalleMonstruo.Text = $"{encontrada.Tipo}  //  VIDA: {encontrada.Vida}/{encontrada.VidaMaxima}";
-            ActualizarImagenMonstruo(encontrada);
             barraVidaMonstruo.Value = 0;
             barraVidaMonstruo.Maximum = encontrada.VidaMaxima;
             barraVidaMonstruo.Value = encontrada.Vida;
             barraVidaCadeteCombate.Value = Math.Clamp(vida, 0, 100);
             lblVidaCadeteCombate.Text = $"VIDA DEL CADETE: {vida}/100";
+            panelEncuentro.BackgroundImage = imagenArenaCombate;
+            panelEncuentro.BackgroundImageLayout = ImageLayout.Stretch;
+            imgMonstruo.Visible = false;
+            btnAtacar.Text = "DISPARAR  [R]";
+            btnEscapar.Text = "ESCAPAR  [ESC]";
             btnAtacar.Enabled = true;
             btnEscapar.Enabled = true;
-            animacionCombate = AnimacionCombate.Ninguna;
+            proyectilesCombate.Clear();
+            ataqueMonstruoPendiente = false;
+            monstruoAturdidoHasta = DateTime.MinValue;
+            finGolpeMonstruo = DateTime.MinValue;
+            cadeteAturdidoHasta = DateTime.MinValue;
+            saltoHasta = DateTime.MinValue;
+            DateTime ahora = DateTime.UtcNow;
+            siguienteAtaqueMonstruo = ahora.AddMilliseconds(850);
+            siguienteDisparo = DateTime.MinValue;
+            mirandoDerecha = true;
+            AjustarPanelEncuentro();
+            RectangleF arena = LimitesArenaCombate();
+            posicionCadeteCombate = new PointF(arena.Left + 115, arena.Bottom - 10);
+            posicionMonstruoCombate = new PointF(arena.Right - 145, arena.Bottom - 10);
             panelEncuentro.Visible = true; panelEncuentro.BringToFront();
-            Mensaje("ALERTA: UNA ENTIDAD TE HA DETECTADO.");
+            panelEncuentro.Focus();
+            Mensaje("ENCUENTRO: WASD MOVER  //  R DISPARAR  //  ESPACIO SALTAR  //  SHIFT CORRER.");
+            panelEncuentro.Invalidate();
         }
 
         private void AtacarEntidad()
         {
-            if (!encuentroActivo || entidadActual == null || animacionCombate != AnimacionCombate.Ninguna) return;
-            try { System.Media.SystemSounds.Hand.Play(); } catch { /* El juego continúa aunque el audio no esté disponible. */ }
-            entidadActual.Vida = Math.Max(0, entidadActual.Vida - 19);
-            mostrarRasgunio = entidadActual.EsZombie;
-            imgMonstruo.Invalidate();
-            barraVidaMonstruo.Value = Math.Clamp(entidadActual.Vida, 0, barraVidaMonstruo.Maximum);
-            lblDetalleMonstruo.Text = $"{entidadActual.Tipo}  //  VIDA: {entidadActual.Vida}/{entidadActual.VidaMaxima}";
-            imgMonstruo.Image = imagenAtaqueCadete ?? ObtenerImagenMonstruo(entidadActual);
-            animacionCombate = AnimacionCombate.AtaqueCadete;
-            btnAtacar.Enabled = false;
-            btnEscapar.Enabled = false;
-            relojAnimacionCombate.Stop();
-            relojAnimacionCombate.Start();
+            DispararProyectilCombate();
         }
 
-        private void DibujarRasgunio(object? sender, PaintEventArgs e)
+        private RectangleF LimitesArenaCombate()
         {
-            if (!mostrarRasgunio || entidadActual?.EsZombie != true) return;
-
-            Graphics g = e.Graphics;
-            g.SmoothingMode = SmoothingMode.None;
-            using Pen sombra = new(Color.FromArgb(190, 45, 10, 15), 10);
-            using Pen rasgunio = new(Color.FromArgb(235, 220, 42, 48), 5);
-            using Pen brillo = new(Color.FromArgb(230, 255, 145, 135), 2);
-            Point[] a = { new(imgMonstruo.Width / 2 - 65, imgMonstruo.Height / 2 - 42),
-                          new(imgMonstruo.Width / 2 - 25, imgMonstruo.Height / 2 - 4),
-                          new(imgMonstruo.Width / 2 - 5, imgMonstruo.Height / 2 - 27) };
-            Point[] b = { new(imgMonstruo.Width / 2 - 35, imgMonstruo.Height / 2 - 48),
-                          new(imgMonstruo.Width / 2 + 5, imgMonstruo.Height / 2 - 10),
-                          new(imgMonstruo.Width / 2 + 25, imgMonstruo.Height / 2 - 33) };
-            g.DrawLines(sombra, a); g.DrawLines(rasgunio, a); g.DrawLines(brillo, a);
-            g.DrawLines(sombra, b); g.DrawLines(rasgunio, b); g.DrawLines(brillo, b);
+            float ancho = Math.Max(1, panelEncuentro.ClientSize.Width);
+            float alto = Math.Max(1, panelEncuentro.ClientSize.Height);
+            float margenX = Math.Clamp(ancho * 0.045f, 28f, 76f);
+            float superior = Math.Max(132f, alto * 0.19f);
+            float inferior = Math.Max(superior + 220f, alto - 185f);
+            return RectangleF.FromLTRB(margenX, superior, ancho - margenX, inferior);
         }
 
-        private void CompletarAnimacionCombate()
+        private void IniciarSaltoCombate()
         {
-            relojAnimacionCombate.Stop();
-            mostrarRasgunio = false;
-            imgMonstruo.Invalidate();
-            if (!encuentroActivo || entidadActual == null)
+            DateTime ahora = DateTime.UtcNow;
+            if (ahora < saltoHasta) return;
+            saltoHasta = ahora.AddMilliseconds(620);
+            panelEncuentro.Invalidate();
+        }
+
+        private void DispararProyectilCombate()
+        {
+            if (!encuentroActivo || entidadActual == null) return;
+            DateTime ahora = DateTime.UtcNow;
+            if (ahora < siguienteDisparo) return;
+            siguienteDisparo = ahora.AddMilliseconds(260);
+            proyectilesCombate.Add(new ProyectilCombate(
+                posicionCadeteCombate.X + (mirandoDerecha ? 42 : -42),
+                posicionCadeteCombate.Y - 74,
+                mirandoDerecha ? 1 : -1));
+            panelEncuentro.Invalidate();
+        }
+
+        private void ActualizarArenaCombate()
+        {
+            if (!encuentroActivo || entidadActual == null) return;
+            DateTime ahora = DateTime.UtcNow;
+            RectangleF arena = LimitesArenaCombate();
+
+            if (teclas.Contains(Keys.R) && ahora >= siguienteDisparo)
+                DispararProyectilCombate();
+
+            float dxCadete = 0, dyCadete = 0;
+            if (teclas.Contains(Keys.A) || teclas.Contains(Keys.Left)) dxCadete--;
+            if (teclas.Contains(Keys.D) || teclas.Contains(Keys.Right)) dxCadete++;
+            if (teclas.Contains(Keys.W) || teclas.Contains(Keys.Up)) dyCadete--;
+            if (teclas.Contains(Keys.S) || teclas.Contains(Keys.Down)) dyCadete++;
+            if (dxCadete != 0 || dyCadete != 0)
             {
-                animacionCombate = AnimacionCombate.Ninguna;
-                return;
+                float magnitud = MathF.Sqrt(dxCadete * dxCadete + dyCadete * dyCadete);
+                dxCadete /= magnitud;
+                dyCadete /= magnitud;
+                bool correr = TeclaShiftPresionada() && resistencia > 0 && energia > 0;
+                float velocidad = correr ? 7.2f : 4.2f;
+                posicionCadeteCombate = new PointF(
+                    Math.Clamp(posicionCadeteCombate.X + dxCadete * velocidad, arena.Left + 32, arena.Right - 32),
+                    Math.Clamp(posicionCadeteCombate.Y + dyCadete * velocidad, arena.Top + 150, arena.Bottom - 8));
+                if (dxCadete < 0) mirandoDerecha = false;
+                if (dxCadete > 0) mirandoDerecha = true;
             }
 
-            if (animacionCombate == AnimacionCombate.AtaqueCadete)
+            for (int i = proyectilesCombate.Count - 1; i >= 0; i--)
             {
-                if (entidadActual.Vida <= 0)
+                ProyectilCombate proyectil = proyectilesCombate[i];
+                proyectil.X += proyectil.Direccion * 17f;
+                bool impacto = Math.Abs(proyectil.X - posicionMonstruoCombate.X) < 63 &&
+                    Math.Abs(proyectil.Y - (posicionMonstruoCombate.Y - 102)) < 88;
+                if (impacto)
                 {
-                    Entidad monstruoDerrotado = entidadActual;
-                    monstruoDerrotado.Derrotada = true;
-                    encuentroActivo = false;
-                    panelEncuentro.Visible = false;
-                    ReaparecerEntidad(monstruoDerrotado);
-                    entidadActual = null;
-                    animacionCombate = AnimacionCombate.Ninguna;
-                    energia = Math.Max(0, energia - 5);
-                    Mensaje("ENTIDAD ELIMINADA. SECTOR DESPEJADO.");
+                    proyectilesCombate.RemoveAt(i);
+                    entidadActual.Vida = Math.Max(0, entidadActual.Vida - 10);
+                    monstruoAturdidoHasta = ahora.AddMilliseconds(500);
+                    siguienteAtaqueMonstruo = monstruoAturdidoHasta.AddMilliseconds(450);
+                    ataqueMonstruoPendiente = false;
+                    barraVidaMonstruo.Value = Math.Clamp(entidadActual.Vida, 0, barraVidaMonstruo.Maximum);
+                    lblDetalleMonstruo.Text = $"{entidadActual.Tipo}  //  VIDA: {entidadActual.Vida}/{entidadActual.VidaMaxima}  //  ATURDIDO";
+                    if (entidadActual.Vida <= 0)
+                    {
+                        CompletarEncuentro();
+                        return;
+                    }
+                }
+                else if (proyectil.X < arena.Left - 10 || proyectil.X > arena.Right + 10)
+                    proyectilesCombate.RemoveAt(i);
+            }
+
+            float dxMonstruo = posicionCadeteCombate.X - posicionMonstruoCombate.X;
+            float dyMonstruo = posicionCadeteCombate.Y - posicionMonstruoCombate.Y;
+            float distancia = MathF.Sqrt(dxMonstruo * dxMonstruo + dyMonstruo * dyMonstruo);
+            bool aturdido = ahora < monstruoAturdidoHasta;
+            if (!aturdido && !ataqueMonstruoPendiente && distancia > 128f)
+            {
+                float paso = Math.Min(2.55f, distancia - 112f);
+                posicionMonstruoCombate = new PointF(
+                    Math.Clamp(posicionMonstruoCombate.X + dxMonstruo / distancia * paso, arena.Left + 70, arena.Right - 70),
+                    Math.Clamp(posicionMonstruoCombate.Y + dyMonstruo / distancia * paso, arena.Top + 160, arena.Bottom - 8));
+            }
+
+            if (!aturdido && !ataqueMonstruoPendiente && distancia <= 150f && ahora >= siguienteAtaqueMonstruo)
+            {
+                ataqueMonstruoPendiente = true;
+                finAnticipacionMonstruo = ahora.AddMilliseconds(430);
+                siguienteAtaqueMonstruo = ahora.AddMilliseconds(1650);
+            }
+            if (ataqueMonstruoPendiente && ahora >= finAnticipacionMonstruo)
+            {
+                ataqueMonstruoPendiente = false;
+                finGolpeMonstruo = ahora.AddMilliseconds(260);
+                dxMonstruo = posicionCadeteCombate.X - posicionMonstruoCombate.X;
+                dyMonstruo = posicionCadeteCombate.Y - posicionMonstruoCombate.Y;
+                distancia = MathF.Sqrt(dxMonstruo * dxMonstruo + dyMonstruo * dyMonstruo);
+                if (distancia <= 175f && ahora >= saltoHasta)
+                {
+                    vida = Math.Max(0, vida - 10);
+                    cadeteAturdidoHasta = ahora.AddMilliseconds(260);
+                    barraVidaCadeteCombate.Value = Math.Clamp(vida, 0, 100);
+                    lblVidaCadeteCombate.Text = $"VIDA DEL CADETE: {vida}/100  //  GOLPE RECIBIDO (-10)";
                     ActualizarHUD();
-                    panelMapa.Invalidate();
-                    return;
+                    if (vida <= 0)
+                    {
+                        FinalizarMision("EL CADETE HA CAÍDO. MISIÓN FALLIDA.", MessageBoxIcon.Error);
+                        return;
+                    }
                 }
-
-                vida = Math.Max(0, vida - 12);
-                lblDetalleMonstruo.Text = $"{entidadActual.Tipo}  //  VIDA: {entidadActual.Vida}/{entidadActual.VidaMaxima}";
-                barraVidaCadeteCombate.Value = vida;
-                lblVidaCadeteCombate.Text = $"VIDA DEL CADETE: {vida}/100  //  {entidadActual.Nombre} TE ATACÓ (-12)";
-                imgMonstruo.Image = imagenAtaqueMonstruo ?? ObtenerImagenMonstruo(entidadActual);
-                animacionCombate = AnimacionCombate.AtaqueMonstruo;
-                ActualizarHUD();
-                relojAnimacionCombate.Start();
-                return;
+                else
+                    lblVidaCadeteCombate.Text = $"VIDA DEL CADETE: {vida}/100  //  GOLPE ESQUIVADO";
             }
 
-            if (animacionCombate == AnimacionCombate.AtaqueMonstruo)
-            {
-                animacionCombate = AnimacionCombate.Ninguna;
-                if (vida <= 0)
-                {
-                    FinalizarMision("EL CADETE HA CAÍDO. MISIÓN FALLIDA.", MessageBoxIcon.Error);
-                    return;
-                }
-                ActualizarImagenMonstruo(entidadActual);
-                btnAtacar.Enabled = true;
-                btnEscapar.Enabled = true;
-            }
+            lblDetalleMonstruo.Text = $"{entidadActual.Tipo}  //  VIDA: {entidadActual.Vida}/{entidadActual.VidaMaxima}" +
+                (ahora < monstruoAturdidoHasta ? "  //  ATURDIDO" : "");
+            panelEncuentro.Invalidate();
+        }
+
+        private void CompletarEncuentro()
+        {
+            if (entidadActual == null) return;
+            Entidad derrotada = entidadActual;
+            derrotada.Derrotada = true;
+            encuentroActivo = false;
+            entidadActual = null;
+            teclas.Clear();
+            jugadorCaminando = false;
+            proyectilesCombate.Clear();
+            ataqueMonstruoPendiente = false;
+            panelEncuentro.Visible = false;
+            ReaparecerEntidad(derrotada);
+            energia = Math.Max(0, energia - 5);
+            ActualizarHUD();
+            Mensaje("ENTIDAD DERROTADA. REGRESASTE A HAWKINS.");
+            panelMapa.Focus();
             panelMapa.Invalidate();
+        }
+
+        private void DibujarArenaCombate(object? sender, PaintEventArgs e)
+        {
+            if (!encuentroActivo || entidadActual == null) return;
+            Graphics g = e.Graphics;
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
+            g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half;
+            RectangleF arena = LimitesArenaCombate();
+            using (SolidBrush tinte = new(Color.FromArgb(34, 2, 5, 16)))
+                g.FillRectangle(tinte, panelEncuentro.ClientRectangle);
+            using (Pen borde = new(Color.FromArgb(150, 93, 211, 231), 2))
+                g.DrawRectangle(borde, arena.X, arena.Y, arena.Width, arena.Height);
+
+            DateTime ahora = DateTime.UtcNow;
+            float alturaSalto = 0;
+            if (ahora < saltoHasta)
+            {
+                float progreso = 1f - (float)(saltoHasta - ahora).TotalMilliseconds / 620f;
+                alturaSalto = MathF.Sin(Math.Clamp(progreso, 0f, 1f) * MathF.PI) * 86f;
+            }
+
+            DibujarSombraCombate(g, posicionMonstruoCombate, 74, 18);
+            bool monstruoAturdido = ahora < monstruoAturdidoHasta;
+            float vaivenMonstruo = monstruoAturdido ? MathF.Sin(Environment.TickCount * 0.06f) * 7f : 0f;
+            float avanceGolpe = 0;
+            if (ahora < finGolpeMonstruo)
+            {
+                float progresoGolpe = 1f - (float)(finGolpeMonstruo - ahora).TotalMilliseconds / 260f;
+                avanceGolpe = MathF.Sin(Math.Clamp(progresoGolpe, 0f, 1f) * MathF.PI) * 36f;
+            }
+            bool monstruoMiraIzquierda = posicionMonstruoCombate.X > posicionCadeteCombate.X;
+            float desplazamientoGolpe = monstruoMiraIzquierda ? -avanceGolpe : avanceGolpe;
+            float monstruoDibujoX = posicionMonstruoCombate.X + vaivenMonstruo + desplazamientoGolpe;
+            float monstruoDibujoY = posicionMonstruoCombate.Y - avanceGolpe * 0.15f;
+            DibujarSpriteCombate(g, imagenMonstruoArena ?? entidadActual.Sprite,
+                new RectangleF(monstruoDibujoX - 86,
+                    monstruoDibujoY - 212, 172, 212), monstruoMiraIzquierda);
+            if (monstruoAturdido)
+            {
+                using Pen destello = new(Color.FromArgb(220, 255, 230, 155), 3);
+                g.DrawEllipse(destello, posicionMonstruoCombate.X - 42, posicionMonstruoCombate.Y - 185, 84, 68);
+            }
+            if (ahora < finGolpeMonstruo)
+            {
+                float direccion = monstruoMiraIzquierda ? -1f : 1f;
+                using Pen estelaGolpe = new(Color.FromArgb(210, 255, 89, 92), 7);
+                using Pen brilloGolpe = new(Color.FromArgb(235, 255, 222, 195), 2);
+                PointF inicio = new(monstruoDibujoX + direccion * 48, monstruoDibujoY - 122);
+                PointF final = new(posicionCadeteCombate.X - direccion * 18, posicionCadeteCombate.Y - 94);
+                g.DrawLine(estelaGolpe, inicio, final);
+                g.DrawLine(brilloGolpe, inicio, final);
+            }
+
+            foreach (ProyectilCombate proyectil in proyectilesCombate)
+            {
+                using Pen resplandor = new(Color.FromArgb(145, 91, 225, 255), 10);
+                using Pen rayo = new(Color.FromArgb(255, 255, 233, 151), 4);
+                float finX = proyectil.X + proyectil.Direccion * 24;
+                g.DrawLine(resplandor, proyectil.X, proyectil.Y, finX, proyectil.Y);
+                g.DrawLine(rayo, proyectil.X, proyectil.Y, finX, proyectil.Y);
+            }
+
+            DibujarSombraCombate(g, posicionCadeteCombate, 43, 12);
+            Image? spriteCadete = teclas.Contains(Keys.R)
+                ? imagenCadeteCombate2
+                : teclas.Contains(Keys.A) || teclas.Contains(Keys.D) ||
+                teclas.Contains(Keys.W) || teclas.Contains(Keys.S) || teclas.Contains(Keys.Left) ||
+                teclas.Contains(Keys.Right) || teclas.Contains(Keys.Up) || teclas.Contains(Keys.Down)
+                ? (fotograma / 2 % 2 == 0 ? imagenCadeteCombate1 : imagenCadeteCombate2)
+                : imagenCadeteCombate1;
+            if (ahora < cadeteAturdidoHasta && Environment.TickCount % 100 < 50)
+            {
+                using SolidBrush brillo = new(Color.FromArgb(110, 255, 255, 255));
+                g.FillEllipse(brillo, posicionCadeteCombate.X - 44, posicionCadeteCombate.Y - 150 - alturaSalto, 88, 112);
+            }
+            DibujarSpriteCombate(g, spriteCadete ?? spritesCadete[2, 0],
+                new RectangleF(posicionCadeteCombate.X - 51,
+                    posicionCadeteCombate.Y - 136 - alturaSalto, 102, 136), !mirandoDerecha);
+
+            if (ataqueMonstruoPendiente)
+            {
+                using Font aviso = new("Consolas", Math.Clamp(ClientSize.Height / 44f, 16f, 25f), FontStyle.Bold);
+                using SolidBrush colorAviso = new(Color.FromArgb(245, 255, 222, 138));
+                using StringFormat centrado = new() { Alignment = StringAlignment.Center };
+                g.DrawString("¡EL DEMOGORGON SE PREPARA!  SALTA CON ESPACIO", aviso, colorAviso,
+                    new RectangleF(arena.Left, arena.Top + 10, arena.Width, 34), centrado);
+            }
+
+            using Font ayuda = new("Consolas", Math.Clamp(ClientSize.Height / 100f, 10f, 15f), FontStyle.Bold);
+            using SolidBrush textoAyuda = new(Color.FromArgb(235, 224, 242, 238));
+            g.DrawString("W A S D  MOVER     R  DISPARAR     ESPACIO  SALTAR     SHIFT  CORRER",
+                ayuda, textoAyuda, arena.Left + 8, arena.Bottom + 9);
+        }
+
+        private static void DibujarSombraCombate(Graphics g, PointF posicion, float ancho, float alto)
+        {
+            using SolidBrush sombra = new(Color.FromArgb(150, 0, 0, 0));
+            g.FillEllipse(sombra, posicion.X - ancho / 2, posicion.Y - alto / 2, ancho, alto);
+        }
+
+        private static void DibujarSpriteCombate(Graphics g, Image sprite, RectangleF destino, bool invertir)
+        {
+            GraphicsState estado = g.Save();
+            if (invertir)
+            {
+                float centroX = destino.Left + destino.Width / 2f;
+                g.TranslateTransform(centroX, 0);
+                g.ScaleTransform(-1, 1);
+                g.TranslateTransform(-centroX, 0);
+            }
+            g.DrawImage(sprite, destino);
+            g.Restore(estado);
         }
 
         private void EscaparEntidad()
         {
-            relojAnimacionCombate.Stop();
-            animacionCombate = AnimacionCombate.Ninguna;
             if (entidadActual != null)
                 entidadActual.Posicion = new PointF(jugadorX + 220, jugadorY + 180);
-
+            proyectilesCombate.Clear();
+            ataqueMonstruoPendiente = false;
+            entidadActual = null;
+            encuentroActivo = false;
+            panelEncuentro.Visible = false;
+            teclas.Clear();
+            jugadorCaminando = false;
             energia = Math.Max(0, energia - 10);
-            entidadActual = null; encuentroActivo = false; panelEncuentro.Visible = false;
             ActualizarHUD();
             Mensaje("ESCAPASTE. PERDISTE 10 PUNTOS DE ENERGÍA. LA ENTIDAD SIGUE EN EL SECTOR.");
             panelMapa.Focus();
@@ -1710,8 +1955,6 @@ namespace NexusWindowsForm
             entidadActual = null;
             teclas.Clear();
             relojMovimiento.Stop();
-            relojAnimacionCombate.Stop();
-            animacionCombate = AnimacionCombate.Ninguna;
             panelEncuentro.Visible = false;
             DetenerMusica();
             ActualizarHUD();
@@ -1784,27 +2027,23 @@ namespace NexusWindowsForm
             int alto = ClientSize.Height;
             int margen = Math.Clamp(Math.Min(ancho, alto) / 32, 18, 42);
             panelEncuentro.SetBounds(0, 0, ancho, alto);
-            lblMonstruo.SetBounds(margen, 18, ancho - margen * 2, 48);
-            lblMonstruo.Font = new Font("Consolas", Math.Clamp(alto / 38f, 20f, 34f), FontStyle.Bold);
+            lblMonstruo.SetBounds(margen, 14, ancho - margen * 2, 42);
+            lblMonstruo.Font = new Font("Consolas", Math.Clamp(alto / 40f, 20f, 34f), FontStyle.Bold);
+            lblDetalleMonstruo.SetBounds(margen, 57, ancho - margen * 2, 23);
 
-            int yBotones = alto - margen - 58;
-            int anchoBarra = Math.Min(680, ancho - margen * 2);
+            int anchoBarra = Math.Min(620, ancho - margen * 2);
             int xBarra = (ancho - anchoBarra) / 2;
-            barraVidaCadeteCombate.SetBounds(xBarra, yBotones - 39, anchoBarra, 20);
-            lblVidaCadeteCombate.SetBounds(margen, yBotones - 68, ancho - margen * 2, 24);
-            barraVidaMonstruo.SetBounds(xBarra, yBotones - 104, anchoBarra, 20);
-            lblDetalleMonstruo.SetBounds(margen, yBotones - 133, ancho - margen * 2, 24);
-
-            int yImagen = 76;
-            int altoImagen = Math.Max(160, lblDetalleMonstruo.Top - yImagen - 8);
-            int anchoImagen = Math.Min(ancho - margen * 2, (int)(altoImagen * 1.83f));
-            imgMonstruo.SetBounds((ancho - anchoImagen) / 2, yImagen, anchoImagen, altoImagen);
+            barraVidaMonstruo.SetBounds(xBarra, 84, anchoBarra, 20);
+            lblVidaCadeteCombate.SetBounds(margen, alto - 155, ancho - margen * 2, 24);
+            barraVidaCadeteCombate.SetBounds(xBarra, alto - 127, anchoBarra, 18);
+            imgMonstruo.Visible = false;
+            imgMonstruo.SetBounds(0, 0, 1, 1);
 
             int espacioBotones = 26;
             int anchoBoton = Math.Min(260, (ancho - margen * 2 - espacioBotones) / 2);
             int xPrimerBoton = (ancho - (anchoBoton * 2 + espacioBotones)) / 2;
-            btnAtacar.SetBounds(xPrimerBoton, yBotones, anchoBoton, 48);
-            btnEscapar.SetBounds(xPrimerBoton + anchoBoton + espacioBotones, yBotones, anchoBoton, 48);
+            btnAtacar.SetBounds(xPrimerBoton, alto - 62, anchoBoton, 46);
+            btnEscapar.SetBounds(xPrimerBoton + anchoBoton + espacioBotones, alto - 62, anchoBoton, 46);
         }
 
         private void UsarCelula()
