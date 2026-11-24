@@ -70,7 +70,7 @@ namespace NexusWindowsForm
         private PointF posicionCadeteCombate, posicionMonstruoCombate;
         private float alturaCadeteCombate, velocidadVerticalCadeteCombate;
         private float alturaMonstruoCombate, velocidadVerticalMonstruoCombate, velocidadHorizontalSaltoMonstruo;
-        private DateTime monstruoAturdidoHasta, siguienteAtaqueMonstruo, finAnticipacionMonstruo;
+        private DateTime siguienteAtaqueMonstruo, finAnticipacionMonstruo;
         private DateTime finGolpeMonstruo, cadeteAturdidoHasta, saltoHasta, siguienteDisparo;
         private DateTime siguienteSaltoMonstruo, siguienteBolaFuego;
         private bool mirandoDerecha = true, ataqueMonstruoPendiente;
@@ -1020,7 +1020,6 @@ namespace NexusWindowsForm
             proyectilesCombate.Clear();
             bolasFuegoCombate.Clear();
             ataqueMonstruoPendiente = false;
-            monstruoAturdidoHasta = DateTime.MinValue;
             finGolpeMonstruo = DateTime.MinValue;
             cadeteAturdidoHasta = DateTime.MinValue;
             saltoHasta = DateTime.MinValue;
@@ -1177,12 +1176,8 @@ namespace NexusWindowsForm
                 {
                     proyectilesCombate.RemoveAt(i);
                     entidadActual.Vida = Math.Max(0, entidadActual.Vida - 10);
-                    monstruoAturdidoHasta = ahora.AddMilliseconds(500);
-                    siguienteAtaqueMonstruo = monstruoAturdidoHasta.AddMilliseconds(450);
-                    velocidadHorizontalSaltoMonstruo = 0;
-                    ataqueMonstruoPendiente = false;
                     barraVidaMonstruo.Value = Math.Clamp(entidadActual.Vida, 0, barraVidaMonstruo.Maximum);
-                    lblDetalleMonstruo.Text = $"{entidadActual.Tipo}  //  VIDA: {entidadActual.Vida}/{entidadActual.VidaMaxima}  //  ATURDIDO";
+                    lblDetalleMonstruo.Text = $"{entidadActual.Tipo}  //  VIDA: {entidadActual.Vida}/{entidadActual.VidaMaxima}";
                     if (entidadActual.Vida <= 0)
                     {
                         CompletarEncuentro();
@@ -1212,18 +1207,14 @@ namespace NexusWindowsForm
 
             float dxMonstruo = posicionCadeteCombate.X - posicionMonstruoCombate.X;
             float distanciaX = Math.Abs(dxMonstruo);
-            bool aturdido = ahora < monstruoAturdidoHasta;
             bool monstruoEnAire = alturaMonstruoCombate > 0 || velocidadVerticalMonstruoCombate > 0;
 
             if (monstruoEnAire)
             {
-                if (!aturdido)
-                {
-                    float margenMonstruo = AnchoSpriteMonstruoCombate() / 2f + 8f;
-                    posicionMonstruoCombate = new PointF(
-                        Math.Clamp(posicionMonstruoCombate.X + velocidadHorizontalSaltoMonstruo, arena.Left + margenMonstruo, arena.Right - margenMonstruo),
-                        posicionMonstruoCombate.Y);
-                }
+                float margenMonstruo = AnchoSpriteMonstruoCombate() / 2f + 8f;
+                posicionMonstruoCombate = new PointF(
+                    Math.Clamp(posicionMonstruoCombate.X + velocidadHorizontalSaltoMonstruo, arena.Left + margenMonstruo, arena.Right - margenMonstruo),
+                    posicionMonstruoCombate.Y);
                 alturaMonstruoCombate += velocidadVerticalMonstruoCombate;
                 velocidadVerticalMonstruoCombate -= 0.84f;
                 if (alturaMonstruoCombate <= 0)
@@ -1235,7 +1226,7 @@ namespace NexusWindowsForm
                 dxMonstruo = posicionCadeteCombate.X - posicionMonstruoCombate.X;
                 distanciaX = Math.Abs(dxMonstruo);
             }
-            else if (!aturdido && !ataqueMonstruoPendiente)
+            else if (!ataqueMonstruoPendiente)
             {
                 if (distanciaX > 128f)
                 {
@@ -1262,7 +1253,7 @@ namespace NexusWindowsForm
             }
 
             float alcanceGolpe = Math.Max(150f, AnchoSpriteMonstruoCombate() * 0.38f);
-            if (!aturdido && !monstruoEnAire && !ataqueMonstruoPendiente &&
+            if (!monstruoEnAire && !ataqueMonstruoPendiente &&
                 distanciaX <= alcanceGolpe && ahora >= siguienteAtaqueMonstruo)
             {
                 ataqueMonstruoPendiente = true;
@@ -1283,8 +1274,7 @@ namespace NexusWindowsForm
                     lblVidaCadeteCombate.Text = $"VIDA DEL CADETE: {vida}/100  //  GOLPE ESQUIVADO";
             }
 
-            lblDetalleMonstruo.Text = $"{entidadActual.Tipo}  //  VIDA: {entidadActual.Vida}/{entidadActual.VidaMaxima}" +
-                (ahora < monstruoAturdidoHasta ? "  //  ATURDIDO" : "");
+            lblDetalleMonstruo.Text = $"{entidadActual.Tipo}  //  VIDA: {entidadActual.Vida}/{entidadActual.VidaMaxima}";
             panelEncuentro.Invalidate();
         }
 
@@ -1325,9 +1315,8 @@ namespace NexusWindowsForm
             DateTime ahora = DateTime.UtcNow;
             float altoMonstruo = AltoSpriteMonstruoCombate();
             float anchoMonstruo = AnchoSpriteMonstruoCombate();
-            bool monstruoAturdido = ahora < monstruoAturdidoHasta;
             bool monstruoMiraIzquierda = posicionMonstruoCombate.X > posicionCadeteCombate.X;
-            float vaivenMonstruo = monstruoAturdido ? MathF.Sin(Environment.TickCount * 0.06f) * 7f : 0f;
+            float vaivenMonstruo = 0f;
             float avanceGolpe = 0;
             if (ahora < finGolpeMonstruo)
             {
@@ -1341,20 +1330,13 @@ namespace NexusWindowsForm
             DibujarSombraCombate(g, posicionMonstruoCombate, anchoMonstruo * 0.64f, 24);
             if (entidadActual.EsJefe)
             {
-                using SolidBrush auraJefe = new(Color.FromArgb(monstruoAturdido ? 48 : 34, 238, 24, 52));
+                using SolidBrush auraJefe = new(Color.FromArgb(34, 238, 24, 52));
                 g.FillEllipse(auraJefe, monstruoDibujoX - anchoMonstruo * 0.43f,
                     monstruoDibujoY - altoMonstruo * 0.79f, anchoMonstruo * 0.86f, altoMonstruo * 0.73f);
             }
             DibujarSpriteCombate(g, imagenMonstruoArena ?? entidadActual.Sprite,
                 new RectangleF(monstruoDibujoX - anchoMonstruo / 2f,
                     monstruoDibujoY - altoMonstruo, anchoMonstruo, altoMonstruo), monstruoMiraIzquierda);
-            if (monstruoAturdido)
-            {
-                using Pen destello = new(Color.FromArgb(230, 255, 230, 155), 4);
-                float cabeza = altoMonstruo * 0.84f;
-                g.DrawEllipse(destello, monstruoDibujoX - anchoMonstruo * 0.22f,
-                    monstruoDibujoY - cabeza - 12, anchoMonstruo * 0.44f, 44);
-            }
             if (ahora < finGolpeMonstruo)
             {
                 using Pen estelaGolpe = new(Color.FromArgb(210, 255, 89, 92), 8);
