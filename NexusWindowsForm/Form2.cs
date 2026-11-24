@@ -614,7 +614,7 @@ namespace NexusWindowsForm
                     e.SuppressKeyPress = true;
                     return;
                 }
-                if (e.KeyCode is Keys.A or Keys.D or Keys.Left or Keys.Right)
+                if (e.KeyCode is Keys.A or Keys.D or Keys.S or Keys.Left or Keys.Right or Keys.Down)
                 {
                     teclas.Add(e.KeyCode);
                     e.Handled = true;
@@ -1041,7 +1041,7 @@ namespace NexusWindowsForm
             posicionMonstruoCombate = new PointF(arena.Right - margenMonstruo, arena.Bottom - 8);
             panelEncuentro.Visible = true; panelEncuentro.BringToFront();
             panelEncuentro.Focus();
-            Mensaje("ENCUENTRO: A/D MOVER  //  R DISPARAR  //  ESPACIO SALTAR  //  SHIFT CORRER.");
+            Mensaje("ENCUENTRO: A/D MOVER  //  S AGACHARSE  //  R DISPARAR  //  ESPACIO SALTAR  //  SHIFT CORRER.");
             panelEncuentro.Invalidate();
         }
 
@@ -1075,9 +1075,10 @@ namespace NexusWindowsForm
             DateTime ahora = DateTime.UtcNow;
             if (ahora < siguienteDisparo) return;
             siguienteDisparo = ahora.AddMilliseconds(260);
+            bool agachado = teclas.Contains(Keys.S) || teclas.Contains(Keys.Down);
             proyectilesCombate.Add(new ProyectilCombate(
                 posicionCadeteCombate.X + (mirandoDerecha ? 88 : -88),
-                posicionCadeteCombate.Y - alturaCadeteCombate - 116,
+                posicionCadeteCombate.Y - alturaCadeteCombate - (agachado ? 84 : 116),
                 mirandoDerecha ? 1 : -1));
             panelEncuentro.Invalidate();
         }
@@ -1108,7 +1109,8 @@ namespace NexusWindowsForm
             float origenX = posicionMonstruoCombate.X + direccion * AnchoSpriteMonstruoCombate() * 0.27f;
             float origenY = posicionMonstruoCombate.Y - alturaMonstruoCombate - altoMonstruo * 0.52f;
             float objetivoX = posicionCadeteCombate.X;
-            float objetivoY = posicionCadeteCombate.Y - alturaCadeteCombate - 112f;
+            bool cadeteAgachado = teclas.Contains(Keys.S) || teclas.Contains(Keys.Down);
+            float objetivoY = posicionCadeteCombate.Y - alturaCadeteCombate - (cadeteAgachado ? 84f : 112f);
             float dx = objetivoX - origenX;
             float dy = objetivoY - origenY;
             float magnitud = MathF.Max(1f, MathF.Sqrt(dx * dx + dy * dy));
@@ -1143,7 +1145,7 @@ namespace NexusWindowsForm
             if (dxCadete != 0)
             {
                 bool correr = TeclaShiftPresionada() && resistencia > 0 && energia > 0;
-                float velocidad = correr ? 7.2f : 4.2f;
+                float velocidad = correr ? 9.4f : 6.4f;
                 posicionCadeteCombate = new PointF(
                     Math.Clamp(posicionCadeteCombate.X + dxCadete * velocidad, arena.Left + 110, arena.Right - 110),
                     posicionCadeteCombate.Y);
@@ -1194,8 +1196,10 @@ namespace NexusWindowsForm
                 BolaFuegoCombate bola = bolasFuegoCombate[i];
                 bola.X += bola.VelocidadX;
                 bola.Y += bola.VelocidadY;
-                float centroCadeteY = posicionCadeteCombate.Y - alturaCadeteCombate - 112f;
-                if (Math.Abs(bola.X - posicionCadeteCombate.X) < 38 && Math.Abs(bola.Y - centroCadeteY) < 48)
+                bool cadeteAgachado = teclas.Contains(Keys.S) || teclas.Contains(Keys.Down);
+                float centroCadeteY = posicionCadeteCombate.Y - alturaCadeteCombate - (cadeteAgachado ? 84f : 112f);
+                float margenImpactoY = cadeteAgachado ? 30f : 48f;
+                if (Math.Abs(bola.X - posicionCadeteCombate.X) < 38 && Math.Abs(bola.Y - centroCadeteY) < margenImpactoY)
                 {
                     bolasFuegoCombate.RemoveAt(i);
                     if (!DanarCadeteEnCombate("BOLA DE FUEGO")) return;
@@ -1241,8 +1245,8 @@ namespace NexusWindowsForm
 
                 if (distanciaX is > 270f and < 780f && ahora >= siguienteSaltoMonstruo)
                 {
-                    velocidadHorizontalSaltoMonstruo = Math.Sign(dxMonstruo) * (entidadActual.EsJefe ? 10.5f : 9f);
-                    velocidadVerticalMonstruoCombate = entidadActual.EsJefe ? 17.5f : 16f;
+                    velocidadHorizontalSaltoMonstruo = Math.Sign(dxMonstruo) * (entidadActual.EsJefe ? 8.8f : 7.8f);
+                    velocidadVerticalMonstruoCombate = entidadActual.EsJefe ? 23f : 22f;
                     siguienteSaltoMonstruo = ahora.AddMilliseconds(entidadActual.EsJefe ? 2550 : 3300);
                     alturaMonstruoCombate = 1;
                 }
@@ -1266,7 +1270,8 @@ namespace NexusWindowsForm
                 finGolpeMonstruo = ahora.AddMilliseconds(260);
                 dxMonstruo = posicionCadeteCombate.X - posicionMonstruoCombate.X;
                 distanciaX = Math.Abs(dxMonstruo);
-                if (distanciaX <= alcanceGolpe && alturaCadeteCombate < 64f)
+                bool cadeteAgachado = teclas.Contains(Keys.S) || teclas.Contains(Keys.Down);
+                if (distanciaX <= alcanceGolpe && alturaCadeteCombate < 64f && !cadeteAgachado)
                 {
                     if (!DanarCadeteEnCombate("GOLPE RECIBIDO")) return;
                 }
@@ -1369,7 +1374,8 @@ namespace NexusWindowsForm
                 g.DrawLine(rayo, proyectil.X, proyectil.Y, finX, proyectil.Y);
             }
 
-            float altoCadete = 230f;
+            bool cadeteAgachado = teclas.Contains(Keys.S) || teclas.Contains(Keys.Down);
+            float altoCadete = cadeteAgachado ? 166f : 230f;
             Image? spriteCadete = teclas.Contains(Keys.R)
                 ? imagenCadeteCombate2
                 : teclas.Contains(Keys.A) || teclas.Contains(Keys.D) ||
@@ -1405,7 +1411,7 @@ namespace NexusWindowsForm
 
             using Font ayuda = new("Consolas", Math.Clamp(ClientSize.Height / 100f, 10f, 15f), FontStyle.Bold);
             using SolidBrush textoAyuda = new(Color.FromArgb(235, 224, 242, 238));
-            g.DrawString("A / D  MOVER     R  DISPARAR     ESPACIO  SALTAR     SHIFT  CORRER",
+            g.DrawString("A / D  MOVER     S  AGACHARSE     R  DISPARAR     ESPACIO  SALTAR     SHIFT  CORRER",
                 ayuda, textoAyuda, arena.Left + 8, arena.Bottom + 9);
         }
 
