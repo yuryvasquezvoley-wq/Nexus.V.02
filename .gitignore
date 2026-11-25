@@ -380,3 +380,7 @@ pubspec.lock
 *.gradle
 *.exe
 >>>>>>> 777716ffaac541d044a996c7be1f6d6fd9c7a335
+# Codex-generated local evidence and release package
+/tmp/
+/output/publish/
+/output/release/*.zip

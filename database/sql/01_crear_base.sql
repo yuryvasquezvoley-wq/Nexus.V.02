@@ -27,7 +27,9 @@ BEGIN
         CONSTRAINT CK_Partida_Realidad CHECK (Realidad IN (N'REALIDAD 102', N'REALIDAD 999')),
         CONSTRAINT CK_Partida_Recursos CHECK
             (Vida BETWEEN 0 AND 100 AND Energia BETWEEN 0 AND 100 AND Conexion BETWEEN 0 AND 100
-             AND Resistencia BETWEEN 0 AND 100 AND CelulasMedicas >= 0)
+             AND Resistencia BETWEEN 0 AND 100 AND CelulasMedicas >= 0),
+        CONSTRAINT CK_Partida_Posicion CHECK
+            (PosicionX BETWEEN 0 AND 5000 AND PosicionY BETWEEN 0 AND 5000)
     );
 END;
 GO
@@ -66,7 +68,11 @@ BEGIN
         CONSTRAINT PK_EnemigoPartida PRIMARY KEY (SlotId, EnemigoId),
         CONSTRAINT FK_EnemigoPartida_Partida FOREIGN KEY (SlotId) REFERENCES dbo.Partida(SlotId) ON DELETE CASCADE,
         CONSTRAINT CK_EnemigoPartida_Realidad CHECK (Realidad IN (N'REALIDAD 102', N'REALIDAD 999')),
-        CONSTRAINT CK_EnemigoPartida_Vida CHECK (Vida BETWEEN 0 AND VidaMaxima AND VidaMaxima > 0)
+        CONSTRAINT CK_EnemigoPartida_Vida CHECK (Vida BETWEEN 0 AND VidaMaxima AND VidaMaxima > 0),
+        CONSTRAINT CK_EnemigoPartida_Posicion CHECK
+            (PosicionX BETWEEN 0 AND 5000 AND PosicionY BETWEEN 0 AND 5000
+             AND DestinoX BETWEEN 0 AND 5000 AND DestinoY BETWEEN 0 AND 5000),
+        CONSTRAINT CK_EnemigoPartida_Velocidad CHECK (Velocidad BETWEEN 0 AND 10)
     );
 END;
 GO
@@ -84,7 +90,9 @@ BEGIN
         CONSTRAINT PK_ObjetoPartida PRIMARY KEY (SlotId, Realidad, Tipo, Indice),
         CONSTRAINT FK_ObjetoPartida_Partida FOREIGN KEY (SlotId) REFERENCES dbo.Partida(SlotId) ON DELETE CASCADE,
         CONSTRAINT CK_ObjetoPartida_Realidad CHECK (Realidad IN (N'REALIDAD 102', N'REALIDAD 999')),
-        CONSTRAINT CK_ObjetoPartida_Tipo CHECK (Tipo IN (N'ENERGIA', N'CELULA'))
+        CONSTRAINT CK_ObjetoPartida_Tipo CHECK (Tipo IN (N'ENERGIA', N'CELULA')),
+        CONSTRAINT CK_ObjetoPartida_Posicion CHECK
+            (Indice >= 0 AND PosicionX BETWEEN 0 AND 5000 AND PosicionY BETWEEN 0 AND 5000)
     );
 END;
 GO
@@ -99,7 +107,9 @@ BEGIN
         PosicionY  float         NOT NULL,
         CONSTRAINT PK_PortalPartida PRIMARY KEY (SlotId, Realidad),
         CONSTRAINT FK_PortalPartida_Partida FOREIGN KEY (SlotId) REFERENCES dbo.Partida(SlotId) ON DELETE CASCADE,
-        CONSTRAINT CK_PortalPartida_Realidad CHECK (Realidad IN (N'REALIDAD 102', N'REALIDAD 999'))
+        CONSTRAINT CK_PortalPartida_Realidad CHECK (Realidad IN (N'REALIDAD 102', N'REALIDAD 999')),
+        CONSTRAINT CK_PortalPartida_Posicion CHECK
+            (PosicionX BETWEEN 0 AND 5000 AND PosicionY BETWEEN 0 AND 5000)
     );
 END;
 GO

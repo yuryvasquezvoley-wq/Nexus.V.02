@@ -217,5 +217,51 @@ public sealed class RepositorioPartidasSql
         if (!float.IsFinite(estado.PosicionX) || !float.IsFinite(estado.PosicionY) ||
             estado.PosicionX is < 0 or > 5000 || estado.PosicionY is < 0 or > 5000)
             throw new ArgumentException("La posición del jugador no es válida.");
+
+        if (estado.NucleosRecolectados == null || estado.Enemigos == null ||
+            estado.Objetos == null || estado.Portales == null)
+            throw new ArgumentException("El estado debe incluir sus colecciones de partida.");
+
+        if (estado.NucleosRecolectados.Any(id => string.IsNullOrWhiteSpace(id) || id.Length > 20))
+            throw new ArgumentException("Hay un identificador de núcleo vacío o demasiado largo.");
+
+        if (estado.Enemigos.Select(e => e.Id).Distinct(StringComparer.Ordinal).Count() != estado.Enemigos.Count)
+            throw new ArgumentException("La partida contiene identificadores de enemigo repetidos.");
+        foreach (EstadoEnemigo enemigo in estado.Enemigos)
+        {
+            if (string.IsNullOrWhiteSpace(enemigo.Id) || enemigo.Id.Length > 80 ||
+                string.IsNullOrWhiteSpace(enemigo.Nombre) || enemigo.Nombre.Length > 80 ||
+                string.IsNullOrWhiteSpace(enemigo.Tipo) || enemigo.Tipo.Length > 60 ||
+                enemigo.Realidad is not ("REALIDAD 102" or "REALIDAD 999"))
+                throw new ArgumentException("Un enemigo tiene texto o realidad no válidos.");
+            if (enemigo.VidaMaxima <= 0 || enemigo.Vida < 0 || enemigo.Vida > enemigo.VidaMaxima)
+                throw new ArgumentException("La vida de un enemigo está fuera de rango.");
+            if (!CoordenadaValida(enemigo.X) || !CoordenadaValida(enemigo.Y) ||
+                !CoordenadaValida(enemigo.DestinoX) || !CoordenadaValida(enemigo.DestinoY) ||
+                !float.IsFinite(enemigo.Velocidad) || enemigo.Velocidad is < 0 or > 10)
+                throw new ArgumentException("La posición o velocidad de un enemigo no es válida.");
+        }
+
+        if (estado.Objetos.GroupBy(o => (o.Realidad, o.Tipo, o.Indice)).Any(g => g.Count() > 1))
+            throw new ArgumentException("La partida contiene objetos repetidos.");
+        foreach (EstadoObjeto objeto in estado.Objetos)
+        {
+            if (objeto.Realidad is not ("REALIDAD 102" or "REALIDAD 999") ||
+                objeto.Tipo is not ("ENERGIA" or "CELULA") || objeto.Indice < 0 ||
+                !CoordenadaValida(objeto.X) || !CoordenadaValida(objeto.Y))
+                throw new ArgumentException("Un objeto tiene tipo, realidad o posición no válidos.");
+        }
+
+        if (estado.Portales.GroupBy(p => p.Realidad, StringComparer.Ordinal).Any(g => g.Count() > 1))
+            throw new ArgumentException("La partida contiene más de un portal en la misma realidad.");
+        foreach (EstadoPortal portal in estado.Portales)
+        {
+            if (portal.Realidad is not ("REALIDAD 102" or "REALIDAD 999") ||
+                !CoordenadaValida(portal.X) || !CoordenadaValida(portal.Y))
+                throw new ArgumentException("Un portal tiene realidad o posición no válidos.");
+        }
     }
+
+    private static bool CoordenadaValida(float coordenada) =>
+        float.IsFinite(coordenada) && coordenada is >= 0 and <= 5000;
 }

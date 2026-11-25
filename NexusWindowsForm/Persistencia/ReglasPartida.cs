@@ -6,8 +6,10 @@ public static class ReglasPartida
 {
     public static ResultadoRecuperacion RecuperarEnergia(int energia, int conexion, bool yaSeUso)
     {
-        if (energia is < 0 or > 100 || conexion is < 0 or > 100)
-            throw new ArgumentOutOfRangeException(nameof(energia), "Energía y conexión deben estar entre 0 y 100.");
+        if (energia is < 0 or > 100)
+            throw new ArgumentOutOfRangeException(nameof(energia), "La energía debe estar entre 0 y 100.");
+        if (conexion is < 0 or > 100)
+            throw new ArgumentOutOfRangeException(nameof(conexion), "La conexión debe estar entre 0 y 100.");
         if (yaSeUso) return new(false, true, energia, conexion);
 
         int energiaNueva = Math.Min(100, energia + 20);
