@@ -144,10 +144,10 @@ public sealed class RepositorioPartidasSql
             estado = new EstadoPartida
             {
                 NombreCadete = lector.GetString(0), Edad = lector.GetInt32(1),
-                Realidad = lector.GetString(2), PosicionX = Convert.ToSingle(lector.GetDouble(3)),
-                PosicionY = Convert.ToSingle(lector.GetDouble(4)), Vida = lector.GetInt32(5),
+                Realidad = lector.GetString(2), PosicionX = LeerFlotante(lector, 3),
+                PosicionY = LeerFlotante(lector, 4), Vida = lector.GetInt32(5),
                 Energia = lector.GetInt32(6), Conexion = lector.GetInt32(7),
-                CelulasMedicas = lector.GetInt32(8), Resistencia = Convert.ToSingle(lector.GetDouble(9)),
+                CelulasMedicas = lector.GetInt32(8), Resistencia = LeerFlotante(lector, 9),
                 NaveReparada = lector.GetBoolean(10), RecuperacionUsada = lector.GetBoolean(11)
             };
         }
@@ -169,10 +169,10 @@ public sealed class RepositorioPartidasSql
             while (lector.Read()) estado.Enemigos.Add(new EstadoEnemigo
             {
                 Id = lector.GetString(0), Realidad = lector.GetString(1), Nombre = lector.GetString(2),
-                Tipo = lector.GetString(3), X = Convert.ToSingle(lector.GetDouble(4)),
-                Y = Convert.ToSingle(lector.GetDouble(5)), DestinoX = Convert.ToSingle(lector.GetDouble(6)),
-                DestinoY = Convert.ToSingle(lector.GetDouble(7)), Vida = lector.GetInt32(8),
-                VidaMaxima = lector.GetInt32(9), Velocidad = Convert.ToSingle(lector.GetDouble(10)),
+                Tipo = lector.GetString(3), X = LeerFlotante(lector, 4),
+                Y = LeerFlotante(lector, 5), DestinoX = LeerFlotante(lector, 6),
+                DestinoY = LeerFlotante(lector, 7), Vida = lector.GetInt32(8),
+                VidaMaxima = lector.GetInt32(9), Velocidad = LeerFlotante(lector, 10),
                 EsJefe = lector.GetBoolean(11), EsZombie = lector.GetBoolean(12), Derrotada = lector.GetBoolean(13)
             });
         }
@@ -183,7 +183,7 @@ public sealed class RepositorioPartidasSql
             while (lector.Read()) estado.Objetos.Add(new EstadoObjeto
             {
                 Realidad = lector.GetString(0), Tipo = lector.GetString(1), Indice = lector.GetInt32(2),
-                X = Convert.ToSingle(lector.GetDouble(3)), Y = Convert.ToSingle(lector.GetDouble(4))
+                X = LeerFlotante(lector, 3), Y = LeerFlotante(lector, 4)
             });
         }
         using (SqlCommand comando = new("SELECT Realidad, PosicionX, PosicionY FROM dbo.PortalPartida WHERE SlotId=@slot;", conexion))
@@ -192,7 +192,7 @@ public sealed class RepositorioPartidasSql
             using SqlDataReader lector = comando.ExecuteReader();
             while (lector.Read()) estado.Portales.Add(new EstadoPortal
             {
-                Realidad = lector.GetString(0), X = Convert.ToSingle(lector.GetDouble(1)), Y = Convert.ToSingle(lector.GetDouble(2))
+                Realidad = lector.GetString(0), X = LeerFlotante(lector, 1), Y = LeerFlotante(lector, 2)
             });
         }
         return estado;
@@ -233,6 +233,9 @@ public sealed class RepositorioPartidasSql
         agregarParametros(comando);
         comando.ExecuteNonQuery();
     }
+
+    private static float LeerFlotante(SqlDataReader lector, int indice) =>
+        Convert.ToSingle(lector.GetValue(indice), System.Globalization.CultureInfo.InvariantCulture);
 
     private static void Validar(EstadoPartida estado)
     {
