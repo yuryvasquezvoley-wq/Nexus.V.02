@@ -198,7 +198,7 @@ public sealed class RepositorioPartidasSql
         return estado;
     }
 
-    /// <summary>Deletes the saved slot and its related rows through the schema's cascading foreign keys.</summary>
+    /// <summary>Deletes the saved slot and its dependent rows atomically in SQL Server.</summary>
     public bool Eliminar()
     {
         using SqlConnection conexion = new(CadenaConexionConfigurada);
