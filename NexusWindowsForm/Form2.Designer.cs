@@ -51,6 +51,8 @@ namespace NexusWindowsForm
         private Button btnAnalizar = null!;
         private Button btnRecuperar = null!;
         private Button btnUsarCelula = null!;
+        private Button btnGuardarPartida = null!;
+        private Button btnCargarPartida = null!;
         private Button btnVolver = null!;
         private Label lblMensaje = null!;
         private PictureBox imgPueblo = null!;
@@ -111,6 +113,8 @@ namespace NexusWindowsForm
             btnAnalizar = new Button();
             btnRecuperar = new Button();
             btnUsarCelula = new Button();
+            btnGuardarPartida = new Button();
+            btnCargarPartida = new Button();
             btnVolver = new Button();
             lblMensaje = new Label();
             panelAcciones = new Panel();
@@ -388,8 +392,13 @@ namespace NexusWindowsForm
             ConfigurarBotonAccion(btnAnalizar, "ANALIZAR ANOMALÍA", 18, 16, 190);
             ConfigurarBotonAccion(btnRecuperar, "RECUPERAR ENERGÍA", 220, 16, 190);
             ConfigurarBotonAccion(btnUsarCelula, "USAR CÉLULA", 422, 16, 160);
+            ConfigurarBotonAccion(btnGuardarPartida, "GUARDAR PARTIDA", 590, 16, 160);
+            ConfigurarBotonAccion(btnCargarPartida, "CARGAR PARTIDA", 760, 16, 160);
             ConfigurarBotonAccion(btnVolver, "VOLVER AL MENÚ", 756, 16, 190);
-            panelAcciones.Controls.AddRange(new Control[] { btnAnalizar, btnRecuperar, btnUsarCelula, btnVolver });
+            panelAcciones.Controls.AddRange(new Control[]
+            {
+                btnAnalizar, btnRecuperar, btnUsarCelula, btnGuardarPartida, btnCargarPartida, btnVolver
+            });
 
             panelEncuentro.BackColor = Color.FromArgb(24, 3, 12);
             panelEncuentro.BorderStyle = BorderStyle.FixedSingle;

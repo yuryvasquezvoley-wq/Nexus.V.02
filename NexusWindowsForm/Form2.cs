@@ -3,6 +3,7 @@ using System.Drawing.Drawing2D;
 using System.IO;
 using System.Windows.Forms;
 using MediaPlayer = System.Windows.Media.MediaPlayer;
+using NexusWindowsForm.Persistencia;
 
 namespace NexusWindowsForm
 {
@@ -10,6 +11,8 @@ namespace NexusWindowsForm
     {
         private readonly Color rojo = Color.FromArgb(230, 20, 48);
         private readonly List<Entidad> entidades = new();
+        private readonly Dictionary<string, List<EstadoEnemigo>> enemigosGuardadosPorRealidad = new(StringComparer.Ordinal);
+        private readonly RepositorioPartidasSql repositorioPartidas = new();
         private readonly Dictionary<string, List<PointF>> garrafasEnergia = new(StringComparer.Ordinal)
         {
             ["REALIDAD 102"] = new() { new(1700, 1200), new(3900, 1700), new(4200, 3600), new(1100, 4100) },
@@ -94,6 +97,8 @@ namespace NexusWindowsForm
 
         private sealed class Entidad
         {
+            public string Id { get; init; } = "";
+            public string Realidad { get; init; } = "REALIDAD 102";
             public string Nombre { get; init; } = "";
             public string Tipo { get; init; } = "";
             public PointF Posicion { get; set; }
@@ -180,6 +185,8 @@ namespace NexusWindowsForm
             btnAnalizar.Click += (_, _) => AnalizarAnomalia();
             btnRecuperar.Click += (_, _) => RecuperarEnergia();
             btnUsarCelula.Click += (_, _) => UsarCelula();
+            btnGuardarPartida.Click += (_, _) => GuardarPartida();
+            btnCargarPartida.Click += (_, _) => CargarPartida();
             btnVolver.Click += (_, _) => Close();
             btnAtacar.Click += (_, _) => AtacarEntidad();
             btnEscapar.Click += (_, _) => EscaparEntidad();
@@ -206,15 +213,19 @@ namespace NexusWindowsForm
             lblContadorNucleos.SetBounds(Math.Max(12, anchoMapa - 208), 45, 190, 38);
             lblContadorNucleos.BringToFront();
             panelAcciones.SetBounds(0, panelJuego.ClientSize.Height - panelAcciones.Height - lblMensaje.Height, panelJuego.ClientSize.Width, panelAcciones.Height);
-            int[] anchos = { 190, 190, 160, 150, 190 };
-            Button[] botones = { btnAnalizar, btnRecuperar, btnUsarCelula, btnVolver };
-            int espacio = 12;
-            int total = anchos.Sum() + espacio * (botones.Length - 1);
+            int[] anchos = { 165, 170, 135, 160, 160, 155 };
+            Button[] botones = { btnAnalizar, btnRecuperar, btnUsarCelula, btnGuardarPartida, btnCargarPartida, btnVolver };
+            int espacio = 9;
+            float escala = Math.Min(1f, Math.Max(0.65f,
+                (panelAcciones.ClientSize.Width - 24f - espacio * (botones.Length - 1)) / anchos.Sum()));
+            int total = (int)(anchos.Sum() * escala) + espacio * (botones.Length - 1);
             int x = Math.Max(12, (panelAcciones.ClientSize.Width - total) / 2);
             for (int i = 0; i < botones.Length; i++)
             {
-                botones[i].SetBounds(x, 16, anchos[i], 40);
-                x += anchos[i] + espacio;
+                int ancho = (int)(anchos[i] * escala);
+                botones[i].SetBounds(x, 16, ancho, 40);
+                botones[i].Font = new Font("Consolas", escala < 0.82f ? 7.5f : 8.5f, FontStyle.Bold);
+                x += ancho + espacio;
             }
             panelRegistro.Location = new Point((ClientSize.Width - panelRegistro.Width) / 2, (ClientSize.Height - panelRegistro.Height) / 2);
             AjustarPanelEncuentro();
@@ -426,6 +437,8 @@ namespace NexusWindowsForm
                     Nombre = esZombie
                         ? esJefe ? "ZOMBIE MUTADO" : "ZOMBIE ERRANTE"
                         : esJefe ? "DEMOGORGON ALFA" : nombres[i],
+                    Id = $"{realidad}-ENTIDAD-{i + 1}",
+                    Realidad = realidad,
                     Tipo = esJefe ? "ÉLITE DIMENSIONAL" : esZombie ? "Infectado" : tipos[i % tipos.Length],
                     Posicion = posicion,
                     DestinoMovimiento = new PointF(posicion.X + Random.Shared.Next(-240, 241),
@@ -568,6 +581,9 @@ namespace NexusWindowsForm
             realidad = selector.RealidadSeleccionada;
             ColocarPortalesAleatorios();
             jugadorX = 2500; jugadorY = 2500;
+            enemigosGuardadosPorRealidad.Clear();
+            RestablecerObjetosRecolectables();
+            CrearEntidades();
 
             iniciado = true;
             camaraX = jugadorX - panelMapa.ClientSize.Width / 2f;
@@ -578,6 +594,206 @@ namespace NexusWindowsForm
             IniciarMusica();
             ActualizarHUD(); Mensaje("MISIÓN ACTIVA: RECUPERA 4 NÚCLEOS Y REPARA TU NAVE.");
             panelMapa.Focus();
+        }
+
+        private void GuardarPartida()
+        {
+            if (!iniciado || encuentroActivo)
+            {
+                Mensaje("GUARDA LA PARTIDA DESDE EL MAPA, FUERA DEL COMBATE.");
+                return;
+            }
+
+            try
+            {
+                repositorioPartidas.Guardar(CapturarEstadoPartida());
+                Mensaje($"PARTIDA GUARDADA EN SQL SERVER. REALIDAD: {realidad}; NÚCLEOS: {nucleosRecolectados.Count}/{nucleosNecesarios}.");
+            }
+            catch (Exception)
+            {
+                Mensaje("NO SE PUDO GUARDAR. REVISA SQL SERVER, EL ESQUEMA Y NEXUS_SQL_CONNECTION.");
+            }
+        }
+
+        private void CargarPartida()
+        {
+            if (!iniciado || encuentroActivo)
+            {
+                Mensaje("INICIA LA MISIÓN Y CARGA LA PARTIDA DESDE EL MAPA.");
+                return;
+            }
+
+            try
+            {
+                EstadoPartida? estado = repositorioPartidas.Cargar();
+                if (estado == null)
+                {
+                    Mensaje("NO HAY UNA PARTIDA GUARDADA EN SQL SERVER.");
+                    return;
+                }
+
+                AplicarEstadoPartida(estado);
+                Mensaje($"PARTIDA RESTAURADA. CADETE {nombreExplorador}; REALIDAD {realidad[^3..]}; NÚCLEOS {nucleosRecolectados.Count}/{nucleosNecesarios}.");
+            }
+            catch (Exception)
+            {
+                Mensaje("NO SE PUDO CARGAR. REVISA SQL SERVER, EL ESQUEMA Y NEXUS_SQL_CONNECTION.");
+            }
+        }
+
+        private EstadoPartida CapturarEstadoPartida()
+        {
+            GuardarEnemigosActivosEnMemoria();
+            EstadoPartida estado = new()
+            {
+                NombreCadete = nombreExplorador,
+                Edad = edad,
+                Realidad = realidad,
+                PosicionX = jugadorX,
+                PosicionY = jugadorY,
+                Vida = vida,
+                Energia = energia,
+                Conexion = conexion,
+                CelulasMedicas = celulasVida,
+                Resistencia = resistencia,
+                NaveReparada = naveReparada,
+                RecuperacionUsada = recuperacionUsada,
+                NucleosRecolectados = nucleosRecolectados.ToList(),
+                Enemigos = enemigosGuardadosPorRealidad.Values.SelectMany(x => x).ToList(),
+                Portales = portales.Select(p => new EstadoPortal
+                {
+                    Realidad = p.Key, X = p.Value.X, Y = p.Value.Y
+                }).ToList()
+            };
+
+            foreach ((string dimension, List<PointF> posiciones) in garrafasEnergia)
+                estado.Objetos.AddRange(posiciones.Select((p, i) => new EstadoObjeto
+                {
+                    Realidad = dimension, Tipo = "ENERGIA", Indice = i, X = p.X, Y = p.Y
+                }));
+            foreach ((string dimension, List<PointF> posiciones) in celulasMedicas)
+                estado.Objetos.AddRange(posiciones.Select((p, i) => new EstadoObjeto
+                {
+                    Realidad = dimension, Tipo = "CELULA", Indice = i, X = p.X, Y = p.Y
+                }));
+            return estado;
+        }
+
+        private void AplicarEstadoPartida(EstadoPartida estado)
+        {
+            if (string.IsNullOrWhiteSpace(estado.NombreCadete) || estado.NombreCadete.Length > 50 ||
+                estado.Edad is < 1 or > 120 || estado.Realidad is not ("REALIDAD 102" or "REALIDAD 999") ||
+                estado.Vida is < 0 or > 100 || estado.Energia is < 0 or > 100 || estado.Conexion is < 0 or > 100 ||
+                estado.CelulasMedicas < 0 || estado.Resistencia is < 0 or > 100 ||
+                !float.IsFinite(estado.PosicionX) || !float.IsFinite(estado.PosicionY) ||
+                estado.PosicionX is < 0 or > 5000 || estado.PosicionY is < 0 or > 5000)
+                throw new InvalidDataException("La partida guardada contiene datos no válidos.");
+
+            enemigosGuardadosPorRealidad.Clear();
+            foreach (IGrouping<string, EstadoEnemigo> grupo in estado.Enemigos.GroupBy(x => x.Realidad, StringComparer.Ordinal))
+                enemigosGuardadosPorRealidad[grupo.Key] = grupo.ToList();
+
+            realidad = estado.Realidad;
+            CrearEntidades();
+            AplicarEnemigosGuardadosDeLaRealidadActual();
+
+            nombreExplorador = estado.NombreCadete;
+            edad = estado.Edad;
+            vida = estado.Vida;
+            energia = estado.Energia;
+            conexion = estado.Conexion;
+            celulasVida = estado.CelulasMedicas;
+            resistencia = estado.Resistencia;
+            resistenciaMostrada = -1;
+            naveReparada = estado.NaveReparada;
+            recuperacionUsada = estado.RecuperacionUsada;
+            nucleosRecolectados.Clear();
+            foreach (string id in estado.NucleosRecolectados)
+                if (nucleos.Any(n => n.Id == id)) nucleosRecolectados.Add(id);
+
+            portales.Clear();
+            foreach (EstadoPortal portal in estado.Portales)
+                if (portal.Realidad is "REALIDAD 102" or "REALIDAD 999" &&
+                    float.IsFinite(portal.X) && float.IsFinite(portal.Y))
+                    portales[portal.Realidad] = new PointF(Math.Clamp(portal.X, 80, 4920), Math.Clamp(portal.Y, 80, 4920));
+            if (portales.Count < 2) ColocarPortalesAleatorios();
+
+            RestablecerObjetosRecolectables();
+            foreach (List<PointF> lista in garrafasEnergia.Values) lista.Clear();
+            foreach (List<PointF> lista in celulasMedicas.Values) lista.Clear();
+            foreach (EstadoObjeto objeto in estado.Objetos)
+            {
+                if (objeto.Realidad is not ("REALIDAD 102" or "REALIDAD 999") ||
+                    !float.IsFinite(objeto.X) || !float.IsFinite(objeto.Y)) continue;
+                Dictionary<string, List<PointF>>? destino = objeto.Tipo switch
+                {
+                    "ENERGIA" => garrafasEnergia,
+                    "CELULA" => celulasMedicas,
+                    _ => null
+                };
+                if (destino != null && destino.TryGetValue(objeto.Realidad, out List<PointF>? lista))
+                    lista.Add(new PointF(Math.Clamp(objeto.X, 80, 4920), Math.Clamp(objeto.Y, 80, 4920)));
+            }
+
+            jugadorX = estado.PosicionX;
+            jugadorY = estado.PosicionY;
+            portalAvisoMostrado = false;
+            misionTerminada = vida <= 0;
+            encuentroActivo = false;
+            entidadActual = null;
+            teclas.Clear();
+            jugadorCaminando = false;
+            btnRecuperar.Enabled = !recuperacionUsada;
+            btnRecuperar.Text = recuperacionUsada ? "RECUPERACIÓN USADA" : "RECUPERAR ENERGÍA";
+            panelEncuentro.Visible = false;
+            panelRegistro.Visible = false;
+            panelJuego.Visible = true;
+            panelJuego.BringToFront();
+            lblEncabezado.BringToFront();
+            camaraX = jugadorX - panelMapa.ClientSize.Width / 2f;
+            camaraY = jugadorY - panelMapa.ClientSize.Height / 2f;
+            relojMovimiento.Start();
+            IniciarMusica();
+            ActualizarHUD();
+            panelMapa.Focus();
+            panelMapa.Invalidate();
+        }
+
+        private void GuardarEnemigosActivosEnMemoria()
+        {
+            enemigosGuardadosPorRealidad[realidad] = entidades.Select(e => new EstadoEnemigo
+            {
+                Id = e.Id, Realidad = e.Realidad, Nombre = e.Nombre, Tipo = e.Tipo,
+                X = e.Posicion.X, Y = e.Posicion.Y,
+                DestinoX = e.DestinoMovimiento.X, DestinoY = e.DestinoMovimiento.Y,
+                Vida = e.Vida, VidaMaxima = e.VidaMaxima, Velocidad = e.Velocidad,
+                EsJefe = e.EsJefe, EsZombie = e.EsZombie, Derrotada = e.Derrotada
+            }).ToList();
+        }
+
+        private void AplicarEnemigosGuardadosDeLaRealidadActual()
+        {
+            if (!enemigosGuardadosPorRealidad.TryGetValue(realidad, out List<EstadoEnemigo>? estados)) return;
+            Dictionary<string, EstadoEnemigo> porId = estados.ToDictionary(e => e.Id, StringComparer.Ordinal);
+            foreach (Entidad entidad in entidades)
+            {
+                if (!porId.TryGetValue(entidad.Id, out EstadoEnemigo? estado)) continue;
+                if (estado.VidaMaxima != entidad.VidaMaxima || estado.Vida is < 0 || estado.Vida > estado.VidaMaxima ||
+                    !float.IsFinite(estado.X) || !float.IsFinite(estado.Y) ||
+                    !float.IsFinite(estado.DestinoX) || !float.IsFinite(estado.DestinoY)) continue;
+                entidad.Posicion = new PointF(Math.Clamp(estado.X, 80, 4920), Math.Clamp(estado.Y, 80, 4920));
+                entidad.DestinoMovimiento = new PointF(Math.Clamp(estado.DestinoX, 80, 4920), Math.Clamp(estado.DestinoY, 80, 4920));
+                entidad.Vida = estado.Vida;
+                entidad.Derrotada = estado.Derrotada;
+            }
+        }
+
+        private void RestablecerObjetosRecolectables()
+        {
+            garrafasEnergia["REALIDAD 102"] = new() { new(1700, 1200), new(3900, 1700), new(4200, 3600), new(1100, 4100) };
+            garrafasEnergia["REALIDAD 999"] = new() { new(900, 1200), new(1900, 2800), new(3300, 3900), new(4500, 1500) };
+            celulasMedicas["REALIDAD 102"] = new() { new(2600, 2850), new(3600, 3000), new(1250, 1650) };
+            celulasMedicas["REALIDAD 999"] = new() { new(700, 3200), new(2450, 900), new(4200, 4150) };
         }
 
         private void Form2_KeyDown(object? sender, KeyEventArgs e)
@@ -2152,16 +2368,25 @@ namespace NexusWindowsForm
 
         private void RecuperarEnergia()
         {
-            if (recuperacionUsada)
+            ResultadoRecuperacion resultado = ReglasPartida.RecuperarEnergia(energia, conexion, recuperacionUsada);
+            if (resultado.YaSeUso)
             {
                 Mensaje("LA RECUPERACIÓN DE ENERGÍA YA SE UTILIZÓ EN ESTA MISIÓN.");
                 return;
             }
+
+            if (!resultado.Aplicada)
+            {
+                Mensaje("ENERGÍA Y CONEXIÓN YA ESTÁN AL MÁXIMO. LA RECUPERACIÓN SIGUE DISPONIBLE.");
+                return;
+            }
+
             recuperacionUsada = true;
             btnRecuperar.Enabled = false;
             btnRecuperar.Text = "RECUPERACIÓN USADA";
-            energia = Math.Min(100, energia + 20); conexion = Math.Min(100, conexion + 10);
-            ActualizarHUD(); Mensaje("SE RECUPERARON 20 PUNTOS DE ENERGÍA.");
+            energia = resultado.Energia;
+            conexion = resultado.Conexion;
+            ActualizarHUD(); Mensaje("RECUPERACIÓN APLICADA: +20 ENERGÍA Y +10 CONEXIÓN, SIN SUPERAR EL 100%.");
         }
 
         private void AjustarPanelEncuentro()
@@ -2205,6 +2430,7 @@ namespace NexusWindowsForm
         private void CambiarRealidad(string nuevaRealidad)
         {
             if (nuevaRealidad == realidad || !portales.TryGetValue(nuevaRealidad, out PointF portalDestino)) return;
+            GuardarEnemigosActivosEnMemoria();
             encuentroActivo = false;
             entidadActual = null;
             panelEncuentro.Visible = false;
@@ -2217,6 +2443,7 @@ namespace NexusWindowsForm
             portalAvisoMostrado = false;
             camaraX = jugadorX - panelMapa.Width / 2f; camaraY = jugadorY - panelMapa.Height / 2f;
             CrearEntidades();
+            AplicarEnemigosGuardadosDeLaRealidadActual();
             ActualizarHUD(); panelMapa.Invalidate();
             Mensaje("CRUCE POR PORTAL COMPLETADO: " + realidad + ". USA W, A, S Y D PARA EXPLORAR.");
         }
