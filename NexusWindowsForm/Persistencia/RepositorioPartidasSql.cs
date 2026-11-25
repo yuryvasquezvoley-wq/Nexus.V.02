@@ -198,6 +198,35 @@ public sealed class RepositorioPartidasSql
         return estado;
     }
 
+    /// <summary>Deletes the saved slot and its related rows through the schema's cascading foreign keys.</summary>
+    public bool Eliminar()
+    {
+        using SqlConnection conexion = new(CadenaConexionConfigurada);
+        conexion.Open();
+        using SqlTransaction transaccion = conexion.BeginTransaction();
+        try
+        {
+            foreach (string tabla in new[]
+                     { "NucleoPartida", "EnemigoPartida", "ObjetoPartida", "PortalPartida" })
+            {
+                using SqlCommand detalle = new($"DELETE dbo.{tabla} WHERE SlotId=@slot;", conexion, transaccion);
+                detalle.Parameters.AddWithValue("@slot", SlotId);
+                detalle.ExecuteNonQuery();
+            }
+
+            using SqlCommand partida = new("DELETE dbo.Partida WHERE SlotId=@slot;", conexion, transaccion);
+            partida.Parameters.AddWithValue("@slot", SlotId);
+            bool eliminada = partida.ExecuteNonQuery() > 0;
+            transaccion.Commit();
+            return eliminada;
+        }
+        catch
+        {
+            transaccion.Rollback();
+            throw;
+        }
+    }
+
     private static void Ejecutar(SqlConnection conexion, SqlTransaction transaccion, string sql, Action<SqlCommand> agregarParametros)
     {
         using SqlCommand comando = new(sql, conexion, transaccion);

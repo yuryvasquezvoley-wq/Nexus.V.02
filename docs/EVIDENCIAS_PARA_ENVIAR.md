@@ -20,6 +20,8 @@ Si la consulta 1 no devuelve filas, inicia NEXUS, crea una partida, guarda con *
 4. Cierra el juego por completo. Abre NEXUS otra vez, carga la partida y toma otra captura donde se vea el mismo cadete, realidad, estado y progreso.
 5. Ejecuta la consulta SQL 1 y las consultas de recuentos para acompañar las capturas.
 
+Desde el menú principal también puedes capturar los tres botones de gestión. Para probar **GUARDAR PARTIDA**, inicia una sesión, vuelve al menú y guarda; para **CARGAR PARTIDA**, cierra y vuelve a abrir desde el menú; para **ELIMINAR PARTIDA**, confirma el borrado y ejecuta otra vez las consultas 1 y 2: la partida debe desaparecer y sus recuentos quedar en cero.
+
 ## Prueba de `RecuperarEnergia()`
 
 1. Con energía y conexión por debajo del máximo, pulsa **RECUPERAR ENERGÍA** y captura los valores antes y después. La acción correcta restaura energía y conexión hasta sus límites y consume la recuperación única.

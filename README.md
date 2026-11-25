@@ -38,7 +38,7 @@ Para otra instancia, define `NEXUS_SQL_CONNECTION` antes de iniciar el juego. Ej
 $env:NEXUS_SQL_CONNECTION = "Data Source=localhost;Initial Catalog=NexusGame;Integrated Security=True;TrustServerCertificate=True;Connect Timeout=5"
 ```
 
-Después, guarda y carga desde los botones del mapa. Si no existe una partida guardada, **CARGAR PARTIDA** informa que no hay datos. La partida no se guarda automáticamente.
+Después, puedes guardar/cargar desde los botones del mapa o desde el menú principal. **GUARDAR PARTIDA** en el menú conserva en SQL el estado de la sesión al volver desde el mapa; **CARGAR PARTIDA** abre directamente el último guardado y **ELIMINAR PARTIDA** borra el slot y sus datos relacionados en una transacción. Se necesita iniciar o cargar una sesión antes de guardar desde el menú. La partida no se guarda automáticamente.
 
 ## Base de código
 

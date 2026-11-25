@@ -78,6 +78,14 @@ namespace NexusWindowsForm
         private DateTime siguienteSaltoMonstruo, siguienteBolaFuego;
         private bool mirandoDerecha = true, ataqueMonstruoPendiente;
 
+        [System.ComponentModel.Browsable(false)]
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
+        public bool CargarPartidaAlIniciar { get; set; }
+
+        [System.ComponentModel.Browsable(false)]
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
+        public EstadoPartida? EstadoAlCerrar { get; private set; }
+
         private sealed class ProyectilCombate(float x, float y, int direccion)
         {
             public float X = x;
@@ -142,6 +150,11 @@ namespace NexusWindowsForm
                     musicaCinematica = new ReproductorAudioBucle(rutaAudioCinematica, 0.45);
                 FormClosing += (_, _) =>
                 {
+                    if (iniciado && !encuentroActivo)
+                    {
+                        try { EstadoAlCerrar = CapturarEstadoPartida(); }
+                        catch { EstadoAlCerrar = null; }
+                    }
                     DetenerMusica();
                     sonidoPasos?.Stop();
                     sonidoAlerta?.Stop();
@@ -196,6 +209,10 @@ namespace NexusWindowsForm
             Resize += (_, _) => AjustarLayout();
             Shown += (_, _) => AjustarLayout();
             Shown += (_, _) => musicaCinematica?.Iniciar();
+            Shown += (_, _) =>
+            {
+                if (CargarPartidaAlIniciar) CargarPartidaDesdeMenu();
+            };
         }
 
 
@@ -638,6 +655,34 @@ namespace NexusWindowsForm
             catch (Exception)
             {
                 Mensaje("NO SE PUDO CARGAR. REVISA SQL SERVER, EL ESQUEMA Y NEXUS_SQL_CONNECTION.");
+            }
+        }
+
+        private void CargarPartidaDesdeMenu()
+        {
+            try
+            {
+                EstadoPartida? estado = repositorioPartidas.Cargar();
+                if (estado == null)
+                {
+                    MessageBox.Show(this, "No hay una partida guardada en SQL Server.",
+                        "NEXUS // CARGAR PARTIDA", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    Close();
+                    return;
+                }
+
+                iniciado = true;
+                musicaCinematica?.Detener();
+                AplicarEstadoPartida(estado);
+                Mensaje($"PARTIDA CARGADA. CADETE {nombreExplorador}; REALIDAD {realidad[^3..]}; NÚCLEOS {nucleosRecolectados.Count}/{nucleosNecesarios}.");
+            }
+            catch (Exception ex)
+            {
+                iniciado = false;
+                MessageBox.Show(this,
+                    $"No se pudo cargar. Revisa que exista NexusGame y que la conexión SQL sea la misma que usa NEXUS.\n\nDetalle: {ex.Message}",
+                    "NEXUS // ERROR SQL", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Close();
             }
         }
 

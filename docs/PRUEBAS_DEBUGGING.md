@@ -19,6 +19,9 @@ Este documento registra qué se comprobó en la rama y qué necesita una instanc
 | T09 | Desconexión o nombre de base inválido | Mensaje entendible; no cerrar inesperadamente el juego | Pendiente de prueba con SQL Server |
 | T10 | Ejecutar `02_prueba_esquema.sql` | Confirmar tablas/relaciones con rollback | Pendiente de ejecutar en SSMS |
 | T11 | Ejecutar `03_consultas_verificacion.sql` | Mostrar resumen e integridad, errores 0 | Pendiente de SSMS con partida real guardada |
+| T12 | Guardar desde el menú después de volver del mapa | Persistir el último estado de sesión en el slot SQL | Pendiente de interacción/captura |
+| T13 | Cargar desde el menú principal | Abrir el estado SQL guardado sin crear un cadete nuevo | Pendiente de interacción/captura |
+| T14 | Eliminar desde el menú y revisar conteos SQL | Borrar el slot; sus tablas dependientes quedan vacías por cascada | Pendiente de interacción/captura |
 
 ## Cambio revisado: energía
 
