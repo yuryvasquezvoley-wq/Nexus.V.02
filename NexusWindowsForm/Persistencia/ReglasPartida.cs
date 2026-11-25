@@ -4,6 +4,33 @@ public readonly record struct ResultadoRecuperacion(bool Aplicada, bool YaSeUso,
 
 public static class ReglasPartida
 {
+    public static bool NombreCadeteValido(string? nombre)
+    {
+        if (string.IsNullOrWhiteSpace(nombre) || nombre.Length > 50 || nombre != nombre.Trim())
+            return false;
+
+        bool hayLetra = false;
+        bool espacioAnterior = true;
+        foreach (char caracter in nombre)
+        {
+            if (char.IsLetter(caracter))
+            {
+                hayLetra = true;
+                espacioAnterior = false;
+            }
+            else if (caracter == ' ' && !espacioAnterior)
+            {
+                espacioAnterior = true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        return hayLetra && !espacioAnterior;
+    }
+
     public static ResultadoRecuperacion RecuperarEnergia(int energia, int conexion, bool yaSeUso)
     {
         if (energia is < 0 or > 100)

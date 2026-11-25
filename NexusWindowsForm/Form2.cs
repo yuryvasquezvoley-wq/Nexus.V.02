@@ -123,6 +123,9 @@ namespace NexusWindowsForm
         public Form2()
         {
             InitializeComponent();
+            txtNombre.MaxLength = 50;
+            txtNombre.KeyPress += TxtNombre_KeyPress;
+            txtNombre.TextChanged += TxtNombre_TextChanged;
             bool enDisenador = System.ComponentModel.LicenseManager.UsageMode == System.ComponentModel.LicenseUsageMode.Designtime;
             panelJuego.Visible = enDisenador;
             panelRegistro.Visible = true;
@@ -213,6 +216,32 @@ namespace NexusWindowsForm
             {
                 if (CargarPartidaAlIniciar) CargarPartidaDesdeMenu();
             };
+        }
+
+        private static void TxtNombre_KeyPress(object? sender, KeyPressEventArgs e)
+        {
+            if (!char.IsControl(e.KeyChar) && !char.IsLetter(e.KeyChar) && e.KeyChar != ' ')
+                e.Handled = true;
+        }
+
+        private void TxtNombre_TextChanged(object? sender, EventArgs e)
+        {
+            string texto = txtNombre.Text;
+            System.Text.StringBuilder limpio = new(texto.Length);
+            foreach (char caracter in texto)
+            {
+                if (char.IsLetter(caracter))
+                    limpio.Append(caracter);
+                else if (caracter == ' ' && limpio.Length > 0 && limpio[^1] != ' ')
+                    limpio.Append(caracter);
+            }
+
+            string nombreLimpio = limpio.ToString();
+            if (texto == nombreLimpio) return;
+
+            int posicion = txtNombre.SelectionStart;
+            txtNombre.Text = nombreLimpio;
+            txtNombre.SelectionStart = Math.Min(posicion, nombreLimpio.Length);
         }
 
 
@@ -458,8 +487,8 @@ namespace NexusWindowsForm
                     Realidad = realidad,
                     Tipo = esJefe ? "ÉLITE DIMENSIONAL" : esZombie ? "Infectado" : tipos[i % tipos.Length],
                     Posicion = posicion,
-                    DestinoMovimiento = new PointF(posicion.X + Random.Shared.Next(-240, 241),
-                                                   posicion.Y + Random.Shared.Next(-240, 241)),
+                    DestinoMovimiento = new PointF(LimitarCoordenadaMapa(posicion.X + Random.Shared.Next(-240, 241)),
+                                                   LimitarCoordenadaMapa(posicion.Y + Random.Shared.Next(-240, 241))),
                     Velocidad = esJefe ? 1.8f : 1.45f + (i % 3) * 0.18f,
                     Sprite = CrearSpriteMonstruo(esZombie),
                     EsZombie = esZombie,
@@ -493,8 +522,8 @@ namespace NexusWindowsForm
         private void ReaparecerEntidad(Entidad entidad)
         {
             entidad.Posicion = ObtenerPosicionSegura(720);
-            entidad.DestinoMovimiento = new PointF(entidad.Posicion.X + Random.Shared.Next(-260, 261),
-                                                   entidad.Posicion.Y + Random.Shared.Next(-260, 261));
+            entidad.DestinoMovimiento = new PointF(LimitarCoordenadaMapa(entidad.Posicion.X + Random.Shared.Next(-260, 261)),
+                                                   LimitarCoordenadaMapa(entidad.Posicion.Y + Random.Shared.Next(-260, 261)));
             entidad.Vida = entidad.VidaMaxima;
             entidad.Derrotada = false;
         }
@@ -574,9 +603,9 @@ namespace NexusWindowsForm
 
         private void IniciarSistema()
         {
-            if (string.IsNullOrWhiteSpace(txtNombre.Text))
+            if (!ReglasPartida.NombreCadeteValido(txtNombre.Text))
             {
-                MessageBox.Show("Ingresa el nombre del cadete para iniciar NEXUS.", "NEXUS", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Escribe el nombre del cadete usando solo letras. Puedes separar nombres con un espacio.", "NEXUS", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 txtNombre.Focus(); return;
             }
             using Form3 selector = new(txtNombre.Text.Trim(), realidad, true);
@@ -809,12 +838,16 @@ namespace NexusWindowsForm
             enemigosGuardadosPorRealidad[realidad] = entidades.Select(e => new EstadoEnemigo
             {
                 Id = e.Id, Realidad = e.Realidad, Nombre = e.Nombre, Tipo = e.Tipo,
-                X = e.Posicion.X, Y = e.Posicion.Y,
-                DestinoX = e.DestinoMovimiento.X, DestinoY = e.DestinoMovimiento.Y,
+                X = LimitarCoordenadaMapa(e.Posicion.X), Y = LimitarCoordenadaMapa(e.Posicion.Y),
+                DestinoX = LimitarCoordenadaMapa(e.DestinoMovimiento.X),
+                DestinoY = LimitarCoordenadaMapa(e.DestinoMovimiento.Y),
                 Vida = e.Vida, VidaMaxima = e.VidaMaxima, Velocidad = e.Velocidad,
                 EsJefe = e.EsJefe, EsZombie = e.EsZombie, Derrotada = e.Derrotada
             }).ToList();
         }
+
+        private static float LimitarCoordenadaMapa(float coordenada) =>
+            Math.Clamp(float.IsFinite(coordenada) ? coordenada : 2500f, 80f, 4920f);
 
         private void AplicarEnemigosGuardadosDeLaRealidadActual()
         {

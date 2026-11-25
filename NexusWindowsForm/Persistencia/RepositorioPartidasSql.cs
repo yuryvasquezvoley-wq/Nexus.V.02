@@ -236,8 +236,8 @@ public sealed class RepositorioPartidasSql
 
     private static void Validar(EstadoPartida estado)
     {
-        if (string.IsNullOrWhiteSpace(estado.NombreCadete) || estado.NombreCadete.Length > 50)
-            throw new ArgumentException("El nombre debe tener entre 1 y 50 caracteres.");
+        if (!ReglasPartida.NombreCadeteValido(estado.NombreCadete))
+            throw new ArgumentException("El nombre debe tener de 1 a 50 letras; se permiten espacios sencillos entre nombres.");
         if (estado.Edad is < 1 or > 120 || estado.Realidad is not ("REALIDAD 102" or "REALIDAD 999"))
             throw new ArgumentException("La edad o la realidad guardada no son válidas.");
         if (estado.Vida is < 0 or > 100 || estado.Energia is < 0 or > 100 || estado.Conexion is < 0 or > 100 ||
@@ -266,9 +266,10 @@ public sealed class RepositorioPartidasSql
             if (enemigo.VidaMaxima <= 0 || enemigo.Vida < 0 || enemigo.Vida > enemigo.VidaMaxima)
                 throw new ArgumentException("La vida de un enemigo está fuera de rango.");
             if (!CoordenadaValida(enemigo.X) || !CoordenadaValida(enemigo.Y) ||
-                !CoordenadaValida(enemigo.DestinoX) || !CoordenadaValida(enemigo.DestinoY) ||
-                !float.IsFinite(enemigo.Velocidad) || enemigo.Velocidad is < 0 or > 10)
-                throw new ArgumentException("La posición o velocidad de un enemigo no es válida.");
+                !CoordenadaValida(enemigo.DestinoX) || !CoordenadaValida(enemigo.DestinoY))
+                throw new ArgumentException("La posición o destino de un enemigo debe estar entre 0 y 5000.");
+            if (!float.IsFinite(enemigo.Velocidad) || enemigo.Velocidad is < 0 or > 10)
+                throw new ArgumentException("La velocidad de un enemigo debe estar entre 0 y 10.");
         }
 
         if (estado.Objetos.GroupBy(o => (o.Realidad, o.Tipo, o.Indice)).Any(g => g.Count() > 1))
